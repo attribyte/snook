@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -o errexit
+source config.sh
+
+CLASSPATH="$INSTALL_DIR/target/${SERVER_NAME}-${VERSION}.jar"
+
+DEP_LIB_DIR="$INSTALL_DIR/target/dependency"
+for jar in $(ls $DEP_LIB_DIR/*.jar);
+do
+        CLASSPATH=$CLASSPATH:$jar
+done
+export CLASSPATH
+
+if [ -f "$LOCAL_CONFIG" ]; then
+  nohup $JAVA_EXE Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS $LOCAL_CONFIG 1> $CONSOLE_LOG 2>&1 &
+else
+  nohup $JAVA_EXE -Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS 1> $CONSOLE_LOG 2>&1 &
+fi
+echo $! > $INSTALL_DIR/run/$PIDFILE

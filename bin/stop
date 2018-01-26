@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+source config.sh
+
+if [ ! -f "$INSTALL_DIR/run/$PIDFILE" ]
+then
+	echo "${SERVER_DESCRIPTON} service does not seem to be running!"
+	exit 0
+fi
+
+PID=$(cat $INSTALL_DIR/run/$PIDFILE)
+echo "Stopping ${SERVER_NAME} $PID"
+
+ATTEMPTS_LEFT=30
+while [ $ATTEMPTS_LEFT -gt 0 ]
+do
+    kill $PID 2>/dev/null
+    if [ $? -eq 1 ]
+    then
+        echo "Stopped ${SERVER_NAME} $PID normally"
+        rm $INSTALL_DIR/run/$PIDFILE
+        break
+    fi
+    ATTEMPTS_LEFT=$(($ATTEMPTS_LEFT - 1))
+    sleep 1
+done
+
+#Kill
+if [ $ATTEMPTS_LEFT -eq 0 ]
+then
+    echo "Killed ${SERVER_NAME} $PID!"
+    kill -9 $PID
+    rm $INSTALL_DIR/run/$PIDFILE
+fi
