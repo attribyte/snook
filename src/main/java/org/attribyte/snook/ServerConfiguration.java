@@ -42,6 +42,7 @@ public class ServerConfiguration {
       this.sendDateHeader = DEFAULT_SEND_DATE_HEADER;
       this.idleTimeout = InitUtil.millisFromTime(DEFAULT_IDLE_TIMEOUT);
       this.maxFormContentSize = DEFAULT_MAX_FORM_CONTENT_SIZE;
+      this.debug = false;
    }
 
    /**
@@ -52,16 +53,22 @@ public class ServerConfiguration {
     */
    public ServerConfiguration(final String namePrefix, final Properties props) throws InitializationException {
       InitUtil init = new InitUtil(namePrefix, props, true);
-      this.listenIP = init.getProperty("listenIP", DEFAULT_LISTEN_IP);
-      this.httpPort = init.getIntProperty("httpPort", DEFAULT_LISTEN_PORT);
-      this.outputBufferSize = init.getIntProperty("outputBufferSize", DEFAULT_OUTPUT_BUFFER_SIZE);
-      this.requestHeaderSize = init.getIntProperty("requestHeaderSize", DEFAULT_MAX_REQUEST_HEADER_SIZE);
-      this.responseHeaderSize = init.getIntProperty("responseHeaderSize", DEFAULT_MAX_RESPONSE_HEADER_SIZE);
-      this.sendServerVersion = init.getProperty("sendServerVersion", Boolean.toString(DEFAULT_SEND_SERVER_VERSION)).equalsIgnoreCase("true");
-      this.sendDateHeader = init.getProperty("sendDateHeader", Boolean.toString(DEFAULT_SEND_DATE_HEADER)).equalsIgnoreCase("true");
-      this.idleTimeout = InitUtil.millisFromTime(init.getProperty("idleTimeout", DEFAULT_IDLE_TIMEOUT));
-      this.maxFormContentSize = init.getIntProperty("maxFormContentSize", DEFAULT_MAX_RESPONSE_HEADER_SIZE);
+      this.listenIP = init.getProperty(LISTEN_IP_PROPERTY, DEFAULT_LISTEN_IP);
+      this.httpPort = init.getIntProperty(LISTEN_PORT_PROPERTY, DEFAULT_LISTEN_PORT);
+      this.outputBufferSize = init.getIntProperty(OUTPUT_BUFFER_SIZE_PROPERTY, DEFAULT_OUTPUT_BUFFER_SIZE);
+      this.requestHeaderSize = init.getIntProperty(MAX_REQUEST_HEADER_PROPERTY, DEFAULT_MAX_REQUEST_HEADER_SIZE);
+      this.responseHeaderSize = init.getIntProperty(MAX_RESPONSE_HEADER_PROPERTY, DEFAULT_MAX_RESPONSE_HEADER_SIZE);
+      this.sendServerVersion = init.getProperty(SEND_SERVER_VERSION_PROPERTY, Boolean.toString(DEFAULT_SEND_SERVER_VERSION)).equalsIgnoreCase("true");
+      this.sendDateHeader = init.getProperty(SEND_DATE_HEADER_PROPERTY, Boolean.toString(DEFAULT_SEND_DATE_HEADER)).equalsIgnoreCase("true");
+      this.idleTimeout = InitUtil.millisFromTime(init.getProperty(IDLE_TIMEOUT_PROPERTY, DEFAULT_IDLE_TIMEOUT));
+      this.maxFormContentSize = init.getIntProperty(MAX_FORM_CONTENT_SIZE_PROPERTY, DEFAULT_MAX_RESPONSE_HEADER_SIZE);
+      this.debug = init.getProperty(DEBUG_PROPERTY, Boolean.toString(DEFAULT_DEBUG_MODE)).equalsIgnoreCase("true");
    }
+
+   /**
+    * The listen IP property name ({@value}).
+    */
+   public static final String LISTEN_IP_PROPERTY = "listenIP";
 
    /**
     * The default value for the listen IP {@value}.
@@ -69,45 +76,94 @@ public class ServerConfiguration {
    public static final String DEFAULT_LISTEN_IP = "127.0.0.1";
 
    /**
+    * The listen port property name ({@value}).
+    */
+   public static final String LISTEN_PORT_PROPERTY = "httpPort";
+
+   /**
     * The default listen port {@value}.
     */
    public static final int DEFAULT_LISTEN_PORT = 8081;
 
    /**
-    * The default value for the output buffer size {@value}.
+    * The listen output buffer size property name ({@value}).
+    */
+   public static final String OUTPUT_BUFFER_SIZE_PROPERTY = "outputBufferSize";
+
+   /**
+    * The default value for the output buffer size ({@value}).
     */
    public static final int DEFAULT_OUTPUT_BUFFER_SIZE = 32768;
 
    /**
-    * The default value for the maximum request header size {@value}.
+    * The maximum request header size property name ({@value}).
+    */
+   public static final String MAX_REQUEST_HEADER_PROPERTY = "maxRequestHeaderSize";
+
+   /**
+    * The default value for the maximum request header size ({@value}).
     */
    public static final int DEFAULT_MAX_REQUEST_HEADER_SIZE = 8192;
 
    /**
-    * The default value for the maximum response header size {@value}.
+    * The maximum response header size property name ({@value}).
+    */
+   public static final String MAX_RESPONSE_HEADER_PROPERTY = "maxResponseHeaderSize";
+
+   /**
+    * The default value for the maximum response header size ({@value}).
     */
    public static final int DEFAULT_MAX_RESPONSE_HEADER_SIZE = 8192;
 
    /**
-    * The default value for sending the server version {@value}.
+    * The send server version property name ({@value}).
+    */
+   public static final String SEND_SERVER_VERSION_PROPERTY = "sendServerVersion";
+
+   /**
+    * The default value for sending the server version ({@value}).
     */
    public static final boolean DEFAULT_SEND_SERVER_VERSION = false;
 
    /**
-    * The default value for sending the date header {@value}.
+    * The send date header property name ({@value}).
+    */
+   public static final String SEND_DATE_HEADER_PROPERTY = "sendDateHeader";
+
+   /**
+    * The default value for sending the date header ({@value}).
     */
    public static final boolean DEFAULT_SEND_DATE_HEADER = false;
 
    /**
-    * The default valud for the maximum form content size {@value}.
+    * The maximum form content size property name ({@value}).
+    */
+   public static final String MAX_FORM_CONTENT_SIZE_PROPERTY = "maxFormContentSize";
+
+   /**
+    * The default valud for the maximum form content size ({@value}).
     */
    public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 10000000;
 
+   /**
+    * The idle timeout property name ({@value}).
+    */
+   public static final String IDLE_TIMEOUT_PROPERTY = "idleTimeout";
 
    /**
-    * The default value for idle timeout {@value}.
+    * The default value for idle timeout ({@value}).
     */
    public static final String DEFAULT_IDLE_TIMEOUT = "30s";
+
+   /**
+    * The "debug" mode property name ({@value}).
+    */
+   public static final String DEBUG_PROPERTY = "debug";
+
+   /**
+    * The default "debug" mode ({@value}).
+    */
+   public static final boolean DEFAULT_DEBUG_MODE = false;
 
    /**
     * The IP this server is listening on.
@@ -154,4 +210,8 @@ public class ServerConfiguration {
     */
    public final int maxFormContentSize;
 
+   /**
+    * Is "debug" mode configured?
+    */
+   public final boolean debug;
 }

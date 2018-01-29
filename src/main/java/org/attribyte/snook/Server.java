@@ -25,6 +25,8 @@ import com.codahale.metrics.servlets.MetricsServlet;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.attribyte.api.Logger;
 import org.attribyte.util.InitUtil;
@@ -68,34 +70,40 @@ public abstract class Server {
       args = commandLineParameters(args, parameterMap);
       this.props = loadProperties(propsResourceName, args, parameterMap);
       PropertyConfigurator.configure(new InitUtil("log.", this.props).getProperties());
+      final org.apache.log4j.Logger log4jLogger = org.apache.log4j.Logger.getLogger(loggerName);
+
       this.logger = new Logger() {
-         private final org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(loggerName);
 
          public void debug(String msg) {
-            this.logger.debug(msg);
+            log4jLogger.debug(msg);
          }
 
          public void info(String msg) {
-            this.logger.info(msg);
+            log4jLogger.info(msg);
          }
 
          public void warn(String msg) {
-            this.logger.warn(msg);
+            log4jLogger.warn(msg);
          }
 
          public void warn(String msg, Throwable t) {
-            this.logger.warn(msg, t);
+            log4jLogger.warn(msg, t);
          }
 
          public void error(String msg) {
-            this.logger.error(msg);
+            log4jLogger.error(msg);
          }
 
          public void error(String msg, Throwable t) {
-            this.logger.error(msg, t);
+            log4jLogger.error(msg, t);
          }
       };
       this.serverConfiguration = new ServerConfiguration("server.", props);
+      this.debug = debug(this.serverConfiguration.debug);
+      if(this.debug) {
+         LogManager.getRootLogger().setLevel(Level.DEBUG);
+         log4jLogger.setLevel(Level.DEBUG);
+      }
       this.httpServer = httpServer();
       this.rootContext = rootContext(withGzip);
    }
@@ -257,6 +265,21 @@ public abstract class Server {
       return new File(systemInstallDir);
    }
 
+   /**
+    * The system property name that holds the debug flag ({@value}).
+    */
+   public static final String DEBUG_SYSTEM_PROP = "server.debug";
+
+   /**
+    * Gets the debug mode.
+    * @param defaultValue The default value.
+    * @return The debug mode.
+    */
+   private static boolean debug(final boolean defaultValue) {
+      return System.getProperty(DEBUG_SYSTEM_PROP, Boolean.toString(defaultValue)).equalsIgnoreCase("true");
+   }
+
+
    protected void logInfo(final String str) {
       System.out.println(str);
       if(logger != null) {
@@ -330,6 +353,11 @@ public abstract class Server {
       if(requestLog != null) {
          httpServer.setRequestLog(requestLog);
       }
+      if(debug) {
+         httpServer.setDumpAfterStart(true);
+         httpServer.setDumpBeforeStop(true);
+      }
+      httpServer.setStopAtShutdown(true);
       return httpServer;
    }
 
@@ -357,7 +385,7 @@ public abstract class Server {
     */
    private RequestLog initRequestLog() {
 
-      String requestLogPath = props.getProperty("requestLog.Dir", "").trim();
+      String requestLogPath = props.getProperty(REQUEST_LOG_DIRECTORY_PROPERTY, "").trim();
       if(requestLogPath.isEmpty()) {
          return null;
       }
@@ -366,12 +394,12 @@ public abstract class Server {
          requestLogPath = requestLogPath + "/";
       }
 
-      String requestLogBase = props.getProperty("requestLogBase", "server");
+      String requestLogBase = props.getProperty(REQUEST_LOG_BASE_PROPERTY, REQUEST_LOG_BASE_DEFAULT);
 
-      int requestLogRetainDays = Integer.parseInt(props.getProperty("requestLogRetainDays", "180"));
-      boolean requestLogExtendedFormat = props.getProperty("requestLogExtended", "true").equalsIgnoreCase("true");
+      int requestLogRetainDays = Integer.parseInt(props.getProperty(REQUEST_LOG_RETAIN_DAYS_PROPERTY, Integer.toString(REQUEST_LOG_RETAIN_DAYS_DEFAULT)));
+      boolean requestLogExtendedFormat = props.getProperty(REQUEST_LOG_EXTENDED_PROPERTY, Boolean.toString(REQUEST_LOG_EXTENDED_DEFAULT)).equalsIgnoreCase("true");
 
-      String requestLogTimeZone = props.getProperty("requestLogTimeZone", TimeZone.getDefault().getID());
+      String requestLogTimeZone = props.getProperty(REQUEST_LOG_TIMEZONE_PROPERTY, TimeZone.getDefault().getID());
 
       NCSARequestLog requestLog = new NCSARequestLog(requestLogPath + requestLogBase + "-yyyy_mm_dd.request.log");
       requestLog.setRetainDays(requestLogRetainDays);
@@ -382,6 +410,50 @@ public abstract class Server {
       requestLog.setPreferProxiedForAddress(true);
       return requestLog;
    }
+
+   /**
+    * The request log directory property name ({@value}).
+    */
+   public static final String REQUEST_LOG_DIRECTORY_PROPERTY = "requestLog.Dir";
+
+   /**
+    * The request log base name property name ({@value}).
+    */
+   public static final String REQUEST_LOG_BASE_PROPERTY = "requestLogBase";
+
+   /**
+    * The request log base default value (@{@value}).
+    */
+   public static final String REQUEST_LOG_BASE_DEFAULT = "server";
+
+   /**
+    * The request log retain days property name ({@value}).
+    */
+   public static final String REQUEST_LOG_RETAIN_DAYS_PROPERTY = "requestLogRetainDays";
+
+   /**
+    * The default request log retain days ({@value}).
+    */
+   public static final int REQUEST_LOG_RETAIN_DAYS_DEFAULT = 180;
+
+   /**
+    * The request log extended option property ({@value}).
+    */
+   public static final String REQUEST_LOG_EXTENDED_PROPERTY = "requestLogExtended";
+
+   /**
+    * The request log extended option default value ({@value}).
+    */
+   public static final boolean REQUEST_LOG_EXTENDED_DEFAULT = true;
+
+
+   /**
+    * The request log time zone property ({@value}.
+    * <p>
+    *    Value must be a valid timezone ID. If unspecified, default is the system default.
+    * </p>
+    */
+   public static final String REQUEST_LOG_TIMEZONE_PROPERTY = "requestLogTimeZone";
 
    /**
     * Adds a metrics reporting servlet at the specified path.
@@ -444,4 +516,9 @@ public abstract class Server {
     * The root context.
     */
    protected final ServletContextHandler rootContext;
+
+   /**
+    * Is the server running in "debug" mode?
+    */
+   protected final boolean debug;
 }

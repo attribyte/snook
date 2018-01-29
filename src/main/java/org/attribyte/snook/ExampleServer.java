@@ -19,17 +19,15 @@ package org.attribyte.snook;
 
 import org.eclipse.jetty.servlet.ServletHolder;
 
-public class ProxyServer extends Server {
+public class ExampleServer extends Server {
 
-   public ProxyServer(String[] args) throws Exception {
-      super(args, "", "proxy", true);
+   public ExampleServer(String[] args) throws Exception {
+      super(args, "", "example", true);
    }
 
    public static void main(String[] args) throws Exception {
-      ProxyServer server = new ProxyServer(args);
-      server.rootContext.addServlet(new ServletHolder(new CommandProxyServlet()), "/*");
-      server.httpServer.setDumpBeforeStop(true);
-      server.httpServer.setStopAtShutdown(true);
+      ExampleServer server = new ExampleServer(args);
+      server.rootContext.addServlet(new ServletHolder(new UptimeServlet()), "/*");
       server.httpServer.start();
       server.httpServer.join();
    }
