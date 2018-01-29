@@ -24,7 +24,16 @@
         </developer>
     </developers>
     <scm>
+        <connection>scm:git:git@github.com:attribyte/snook.git</connection>
+        <developerConnection>scm:git:git@github.com:attribyte/snook.git</developerConnection>
+        <url>git@github.com:attribyte/snook.git</url>
     </scm>
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
     <dependencies>
         <dependency>
             <groupId>org.attribyte</groupId>
