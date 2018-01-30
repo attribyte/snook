@@ -23,7 +23,6 @@ import com.codahale.metrics.health.HealthCheckRegistry;
 import com.codahale.metrics.servlets.HealthCheckServlet;
 import com.codahale.metrics.servlets.MetricsServlet;
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
@@ -45,11 +44,12 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
+
+import static org.attribyte.snook.Util.commandLineParameters;
 
 public abstract class Server {
 
@@ -106,69 +106,6 @@ public abstract class Server {
       }
       this.httpServer = httpServer();
       this.rootContext = rootContext(withGzip);
-   }
-
-   /**
-    * The default string that starts a parameter ({@value}).
-    */
-   public static final String DEFAULT_PARAMETER_START = "-";
-
-   /**
-    * Removes arguments like -username=test from a command line and adds them to a map.
-    * <p>
-    *   Adds a version of every key that is all lower-case.
-    * </p>
-    * @param args The input arguments.
-    * @param parameterMap The map to which parameters are added.
-    * @return The input array with parameters removed.
-    */
-   public static String[] commandLineParameters(String[] args, Map<String, String> parameterMap) {
-      return commandLineParameters(DEFAULT_PARAMETER_START, args, parameterMap);
-   }
-
-   /**
-    * Removes arguments like -username=test from a command line and adds them to a map.
-    * <p>
-    *   Adds a version of every key that is all lower-case.
-    *   If a parameter has no value, "true" is added to the map as the value.
-    * </p>
-    * @param parameterStartPrefix The prefix that starts parameters.
-    * @param args The input arguments.
-    * @param parameterMap The map to which parameters are added.
-    * @return The input array with parameters removed.
-    */
-   public static String[] commandLineParameters(final String parameterStartPrefix, String[] args, Map<String, String> parameterMap) {
-
-      if(args == null || args.length == 0) {
-         return args;
-      }
-
-      List<String> argList = Lists.newArrayListWithExpectedSize(8);
-      for(String arg : args) {
-         if(arg.isEmpty()) {
-            continue;
-         }
-
-         arg = arg.trim();
-
-         if(arg.startsWith(parameterStartPrefix)) {
-            String nameVal = arg.substring(parameterStartPrefix.length());
-            int index = nameVal.indexOf('=');
-            if(index == -1) {
-               parameterMap.put(nameVal, "true");
-            } else {
-               String name = nameVal.substring(0, index).trim();
-               String val = nameVal.substring(index+1).trim();
-               parameterMap.put(name, val);
-               parameterMap.put(name.toLowerCase(), val);
-            }
-
-         } else {
-            argList.add(arg);
-         }
-      }
-
-      return argList.toArray(new String[argList.size()]);
    }
 
    /**
@@ -472,8 +409,9 @@ public abstract class Server {
     * Adds a metrics reporting servlet at the specified path.
     * @param registry The metric registry.
     * @param path The report path.
+    * @return A self-reference.
     */
-   protected void addMetricsServlet(final MetricRegistry registry, final String path) {
+   protected Server addMetricsServlet(final MetricRegistry registry, final String path) {
 
       MetricsServlet metricsServlet = new MetricsServlet(registry);
       rootContext.addEventListener(new MetricsServlet.ContextListener() {
@@ -493,16 +431,19 @@ public abstract class Server {
          }
       });
       rootContext.addServlet(new ServletHolder(metricsServlet), path);
+      return this;
    }
 
    /**
     * Adds a health check servlet to the server.
     * @param registry The health check registry.
     * @param path The report path.
+    * @return A self-reference.
     */
-   protected void addHealthCheckServlet(final HealthCheckRegistry registry, final String path) {
+   protected Server addHealthCheckServlet(final HealthCheckRegistry registry, final String path) {
       HealthCheckServlet healthCheckServlet = new HealthCheckServlet(registry);
       rootContext.addServlet(new ServletHolder(healthCheckServlet), path);
+      return this;
    }
 
    /**
