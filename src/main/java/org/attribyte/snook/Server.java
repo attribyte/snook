@@ -422,7 +422,7 @@ public abstract class Server {
    public static final String REQUEST_LOG_BASE_PROPERTY = "requestLogBase";
 
    /**
-    * The request log base default value (@{@value}).
+    * The request log base default value ({@value}).
     */
    public static final String REQUEST_LOG_BASE_DEFAULT = "server";
 
@@ -448,7 +448,7 @@ public abstract class Server {
 
 
    /**
-    * The request log time zone property ({@value}.
+    * The request log time zone property ({@value}).
     * <p>
     *    Value must be a valid timezone ID. If unspecified, default is the system default.
     * </p>
