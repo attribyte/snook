@@ -4,6 +4,10 @@ Scaffolding for building Jetty-based servers.
 
 ## License
 
+## Documentation
+
+* [Javadoc](https://attribyte.com/projects/snook/javadoc/index.html)
+
 Copyright 2018 [Attribyte, LLC](https://attribyte.com)
 
 Licensed under the Apache License, Version 2.0 (the "License");
