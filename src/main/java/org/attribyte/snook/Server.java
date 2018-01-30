@@ -280,25 +280,38 @@ public abstract class Server {
    }
 
 
-   protected void logInfo(final String str) {
-      System.out.println(str);
+   /**
+    * Logs an informational message to {@code System.out} and the logger, if configured.
+    * @param message The message.
+    */
+   protected void logInfo(final String message) {
+      System.out.println(message);
       if(logger != null) {
-         logger.info(str);
+         logger.info(message);
       }
    }
 
-   protected void logError(final String str) {
-      System.err.println(str);
+   /**
+    * Logs an error message to {@code System.err} and the logger, if configured.
+    * @param message The message.
+    */
+   protected void logError(final String message) {
+      System.err.println(message);
       if(logger != null) {
-         logger.error(str);
+         logger.error(message);
       }
    }
 
-   protected void logError(final String str, final Throwable t) {
-      System.err.println(str);
+   /**
+    * Logs an error to {@code System.err} and the logger, if configured and prints the stack trace.
+    * @param message The message.
+    * @param t A throwable.
+    */
+   protected void logError(final String message, final Throwable t) {
+      System.err.println(message);
       t.printStackTrace();
       if(logger != null) {
-         logger.error(str, t);
+         logger.error(message, t);
       }
    }
 
@@ -380,7 +393,7 @@ public abstract class Server {
    }
 
    /**
-    * Initialize the server request logger.
+    * Initializes the server request logger.
     * @return The logger or {@code null} if none.
     */
    private RequestLog initRequestLog() {
