@@ -141,7 +141,7 @@ public class ServerConfiguration {
    public static final String MAX_FORM_CONTENT_SIZE_PROPERTY = "maxFormContentSize";
 
    /**
-    * The default valud for the maximum form content size ({@value}).
+    * The default value for the maximum form content size ({@value}).
     */
    public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 10000000;
 
