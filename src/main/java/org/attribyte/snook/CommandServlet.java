@@ -18,12 +18,18 @@
 
 package org.attribyte.snook;
 
+import com.codahale.metrics.InstrumentedExecutorService;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.attribyte.api.http.Header;
+import org.attribyte.essem.metrics.Timer;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -32,6 +38,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -70,14 +77,16 @@ public abstract class CommandServlet extends HttpServlet {
                             final int maxConcurrentCommands) {
       this.contentType = contentType;
       this.maxWaitSeconds = maxWaitSeconds;
-      this.commandExecutor = MoreExecutors.getExitingExecutorService(
-              new ThreadPoolExecutor(1, maxConcurrentCommands,
-                      30, TimeUnit.SECONDS,
-                      new LinkedBlockingQueue<>(),
-                      new ThreadFactoryBuilder().setNameFormat("command-servlet-%d").build(),
-                      new ThreadPoolExecutor.AbortPolicy()
-                      )
-      );
+      this.executorRegistry = new MetricRegistry();
+      this.commandExecutor =
+              new InstrumentedExecutorService(MoreExecutors.getExitingExecutorService(
+                      new ThreadPoolExecutor(1, maxConcurrentCommands,
+                              30, TimeUnit.SECONDS,
+                              new LinkedBlockingQueue<>(),
+                              new ThreadFactoryBuilder().setNameFormat("command-servlet-%d").build(),
+                              new ThreadPoolExecutor.AbortPolicy()
+                      )), executorRegistry, "executor"
+              );
       this.timeLimiter = SimpleTimeLimiter.create(this.commandExecutor);
    }
 
@@ -117,23 +126,31 @@ public abstract class CommandServlet extends HttpServlet {
 
       ProcessBuilder processBuilder = new ProcessBuilder();
       processBuilder.command(command(request));
-      processBuilder.redirectErrorStream();
-
+      final Timer.Context ctx = commands.time();
       try {
          final CommandResult result = timeLimiter.callWithTimeout(new Callable<CommandResult>() {
             @Override
             public CommandResult call() {
                try {
                   Process process = processBuilder.start();
-                  try(InputStream is = new BufferedInputStream(process.getInputStream())) {
+                  try(InputStream is = new BufferedInputStream(process.getInputStream());
+                      InputStream es = new BufferedInputStream(process.getErrorStream())) {
+                     byte[] input = ByteStreams.toByteArray(is);
+                     byte[] err = ByteStreams.toByteArray(es);
                      int exitCode = process.waitFor();
-                     return new CommandResult(ByteStreams.toByteArray(is), exitCode);
-                  } catch(IOException | InterruptedException ioe) {
+                     return new CommandResult(input, err, exitCode);
+                  } catch(IOException ioe) {
+                     failedCommands.mark();
                      return new CommandResult(ioe);
+                  } catch(InterruptedException ie) {
+                     Thread.currentThread().interrupt();
+                     failedCommands.mark();
+                     return new CommandResult(ie);
                   } finally {
                      process.destroyForcibly();
                   }
                } catch(IOException ioe) {
+                  failedCommands.mark();
                   return new CommandResult(ioe);
                }
             }
@@ -154,12 +171,17 @@ public abstract class CommandServlet extends HttpServlet {
             response.sendError(500, result.exception.getMessage());
          }
       } catch(TimeoutException te) {
+         timedOutCommands.mark();
+         failedCommands.mark();
          response.sendError(500, String.format("Execution time exceeded %s seconds", maxWaitSeconds));
       } catch(ExecutionException ee) {
+         failedCommands.mark();
          response.sendError(500, ee.getMessage());
       } catch(InterruptedException ie) {
          response.sendError(500, "Interrupted during execution");
          Thread.currentThread().interrupt();
+      } finally {
+         ctx.stop();
       }
    }
 
@@ -171,10 +193,14 @@ public abstract class CommandServlet extends HttpServlet {
       /**
        * Creates a result with a response.
        * @param response The response.
+       * @param err The error stream output.
        * @param exitCode The process exit code.
        */
-      public CommandResult(final byte[] response, final int exitCode) {
+      public CommandResult(final byte[] response,
+                           final byte[] err,
+                           final int exitCode) {
          this.response = response;
+         this.err = err;
          this.exitCode = exitCode;
          this.exception = null;
       }
@@ -185,6 +211,7 @@ public abstract class CommandServlet extends HttpServlet {
        */
       public CommandResult(Throwable exception) {
          this.response = null;
+         this.err = null;
          this.exitCode = 0;
          this.exception = exception;
       }
@@ -193,6 +220,11 @@ public abstract class CommandServlet extends HttpServlet {
        * The command output (bytes).
        */
       final byte[] response;
+
+      /**
+       * The error stream output (bytes).
+       */
+      final byte[] err;
 
       /**
        * The command exit code.
@@ -208,6 +240,19 @@ public abstract class CommandServlet extends HttpServlet {
    @Override
    public void destroy() {
       this.commandExecutor.shutdown();
+   }
+
+   /**
+    * Gets metrics recorded for this servlet.
+    * @return The map of metrics vs name.
+    */
+   public Map<String, Metric> metrics() {
+      return ImmutableMap.of(
+              "commands", commands,
+              "timedOutCommands", timedOutCommands,
+              "failedCommands", failedCommands,
+              "commandService", executorRegistry
+      );
    }
 
    /**
@@ -239,4 +284,24 @@ public abstract class CommandServlet extends HttpServlet {
     * The executor for commands.
     */
    private final ExecutorService commandExecutor;
+
+   /**
+    * Time all commands.
+    */
+   private final Timer commands = new Timer();
+
+   /**
+    * Record all commands that time-out.
+    */
+   private final Meter timedOutCommands = new Meter();
+
+   /**
+    * Record all commands that fail due to exception or other error, including time-out.
+    */
+   private final Meter failedCommands = new Meter();
+
+   /**
+    * A registry holding executor instrumentation.
+    */
+   private final MetricRegistry executorRegistry;
 }
