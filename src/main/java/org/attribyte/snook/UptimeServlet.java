@@ -29,6 +29,10 @@ import java.util.List;
 @SuppressWarnings("serial")
 public class UptimeServlet extends CommandServlet {
 
+   UptimeServlet() {
+      super(1);
+   }
+
    @Override
    protected List<String> command(HttpServletRequest request) {
       return ImmutableList.of("/usr/bin/uptime", "--pretty");

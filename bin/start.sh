@@ -30,12 +30,13 @@ then
   mkdir "$INSTALL_DIR/run"
 fi
 
-if [ -z ${1} ]
+if [ -z $1 ]
 then
   echo "The server name must be specified to start"
   exit 1
 else
-  SERVER_NAME=${1}
+  echo "Starting service: $1"
+  SERVER_NAME=$1
   CONFIG_FILE="${SERVER_NAME}.config.sh"
 fi
 
@@ -51,7 +52,7 @@ PID_FILE="${SERVER_NAME}.pid"
 source "$INSTALL_DIR/config/$CONFIG_FILE"
 CLASSPATH="${INSTALL_DIR}/target/${SERVER_JAR}:${INSTALL_DIR}/target/dependency/*"
 
-if [ -z ${2} ]
+if [ -z $2 ]
 then
   DEBUG="false"
 else

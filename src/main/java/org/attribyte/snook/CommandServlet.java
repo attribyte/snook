@@ -19,6 +19,9 @@
 package org.attribyte.snook;
 
 import com.google.common.io.ByteStreams;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SimpleTimeLimiter;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -27,7 +30,13 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * A servlet that executes commands and returns the console output as the response.
@@ -39,30 +48,36 @@ import java.util.concurrent.TimeUnit;
 public abstract class CommandServlet extends HttpServlet {
 
    /**
-    * Gets the content type sent with the response.
-    * @return The content type.
+    * Creates a command servlet with defaults.
+    * @param maxConcurrentCommands The maximum number of concurrently running commands.
     */
-   protected String contentType() {
-      return DEFAULT_CONTENT_TYPE;
+   protected CommandServlet(final int maxConcurrentCommands) {
+      this(DEFAULT_CONTENT_TYPE, DEFAULT_MAX_WAIT_SECONDS, maxConcurrentCommands);
    }
 
-   /**
-    * The default content type ({@value}).
-    */
-   public static final String DEFAULT_CONTENT_TYPE = "text/plain";
 
    /**
-    * The maximum number of seconds to wait for the command to complete.
-    * @return The number of seconds.
+    * Creates a command servlet.
+    * @param contentType The content type returned with the response.
+    * @param maxWaitSeconds The maximum number of seconds to wait for a command
+    * to complete before aborting and returning an error.
+    * @param maxConcurrentCommands The maximum number of concurrently running commands.
     */
-   protected int maxWaitSeconds() {
-      return DEFAULT_MAX_WAIT_SECONDS;
+   protected CommandServlet(final String contentType,
+                            final int maxWaitSeconds,
+                            final int maxConcurrentCommands) {
+      this.contentType = contentType;
+      this.maxWaitSeconds = maxWaitSeconds;
+      this.commandExecutor = MoreExecutors.getExitingExecutorService(
+              new ThreadPoolExecutor(1, maxConcurrentCommands,
+                      30, TimeUnit.SECONDS,
+                      new LinkedBlockingQueue<>(),
+                      new ThreadFactoryBuilder().setNameFormat("command-servlet-%d").build(),
+                      new ThreadPoolExecutor.AbortPolicy()
+                      )
+      );
+      this.timeLimiter = SimpleTimeLimiter.create(this.commandExecutor);
    }
-
-   /**
-    * The default number of seconds to wait for the command to finish ({@value}).
-    */
-   public static final int DEFAULT_MAX_WAIT_SECONDS = 15;
 
    /**
     * The command followed by a list of arguments.
@@ -85,20 +100,124 @@ public abstract class CommandServlet extends HttpServlet {
 
    protected final void request(final HttpServletRequest request,
                                 final HttpServletResponse response) throws IOException {
+
       ProcessBuilder processBuilder = new ProcessBuilder();
       processBuilder.command(command(request));
       processBuilder.redirectErrorStream();
-      Process process = processBuilder.start();
-      try(InputStream is = new BufferedInputStream(process.getInputStream())) {
-         boolean complete = process.waitFor(maxWaitSeconds(), TimeUnit.SECONDS);
-         response.setStatus(complete ? 200 : 500);
-         response.setContentType(contentType());
-         ByteStreams.copy(is, response.getOutputStream());
-         response.getOutputStream().flush();
+
+      try {
+         final CommandResult result = timeLimiter.callWithTimeout(new Callable<CommandResult>() {
+            @Override
+            public CommandResult call() {
+               try {
+                  Process process = processBuilder.start();
+                  try(InputStream is = new BufferedInputStream(process.getInputStream())) {
+                     int exitCode = process.waitFor();
+                     return new CommandResult(ByteStreams.toByteArray(is), exitCode);
+                  } catch(IOException | InterruptedException ioe) {
+                     return new CommandResult(ioe);
+                  } finally {
+                     process.destroyForcibly();
+                  }
+               } catch(IOException ioe) {
+                  return new CommandResult(ioe);
+               }
+            }
+         }, maxWaitSeconds, TimeUnit.SECONDS);
+
+         if(result.exception == null) {
+            response.setStatus(result.exitCode == 0 ? 200 : 500);
+            response.setContentType(contentType);
+            response.setContentLength(result.response.length);
+            response.getOutputStream().write(result.response);
+            response.getOutputStream().flush();
+         } else {
+            response.sendError(500, result.exception.getMessage());
+         }
+      } catch(TimeoutException te) {
+         response.sendError(500, String.format("Execution time exceeded %s seconds", maxWaitSeconds));
+      } catch(ExecutionException ee) {
+         response.sendError(500, ee.getMessage());
       } catch(InterruptedException ie) {
-         response.sendError(500, "Interrupted");
-      } finally {
-         process.destroyForcibly();
+         response.sendError(500, "Interrupted during execution");
+         Thread.currentThread().interrupt();
       }
    }
+
+   /**
+    * The result of running a command.
+    */
+   private static final class CommandResult {
+
+      /**
+       * Creates a result with a response.
+       * @param response The response.
+       * @param exitCode The process exit code.
+       */
+      public CommandResult(final byte[] response, final int exitCode) {
+         this.response = response;
+         this.exitCode = exitCode;
+         this.exception = null;
+      }
+
+      /**
+       * Creates an error result.
+       * @param exception The exception.
+       */
+      public CommandResult(Throwable exception) {
+         this.response = null;
+         this.exitCode = 0;
+         this.exception = exception;
+      }
+
+      /**
+       * The command output (bytes).
+       */
+      final byte[] response;
+
+      /**
+       * The command exit code.
+       */
+      final int exitCode;
+
+      /**
+       * An exception, if any.
+       */
+      final Throwable exception;
+   }
+
+   @Override
+   public void destroy() {
+      this.commandExecutor.shutdown();
+   }
+
+   /**
+    * The default content type ({@value}).
+    */
+   public static final String DEFAULT_CONTENT_TYPE = "text/plain";
+
+   /**
+    * The default number of seconds to wait for the command to finish ({@value}).
+    */
+   public static final int DEFAULT_MAX_WAIT_SECONDS = 15;
+
+   /**
+    * The content type.
+    */
+   private final String contentType;
+
+   /**
+    * The maximum wait in seconds.
+    */
+   private final int maxWaitSeconds;
+
+   /**
+    * The time limiter.
+    */
+   private final SimpleTimeLimiter timeLimiter;
+
+   /**
+    * The executor for commands.
+    */
+   private final ExecutorService commandExecutor;
 }
