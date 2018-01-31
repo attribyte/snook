@@ -18,10 +18,12 @@
 
 package org.attribyte.snook;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.attribyte.api.http.Header;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -86,6 +88,18 @@ public abstract class CommandServlet extends HttpServlet {
     */
    protected abstract List<String> command(HttpServletRequest request);
 
+   /**
+    * A list of headers to add to the response.
+    * <p>
+    *    Override to add custom response headers.
+    * </p>
+    * @param request The HTTP request.
+    * @return A list of headers.
+    */
+   protected List<Header> responseHeaders(HttpServletRequest request) {
+      return ImmutableList.of();
+   }
+
    @Override
    protected final void doGet(final HttpServletRequest request,
                               final HttpServletResponse response) throws IOException {
@@ -129,6 +143,11 @@ public abstract class CommandServlet extends HttpServlet {
             response.setStatus(result.exitCode == 0 ? 200 : 500);
             response.setContentType(contentType);
             response.setContentLength(result.response.length);
+            for(Header header : responseHeaders(request)) {
+               if(!response.containsHeader(header.name)) {
+                  response.setHeader(header.name, header.getValue());
+               }
+            }
             response.getOutputStream().write(result.response);
             response.getOutputStream().flush();
          } else {
