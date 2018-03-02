@@ -29,13 +29,18 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.attribyte.api.Logger;
 import org.attribyte.util.InitUtil;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -103,6 +108,8 @@ public abstract class Server {
       if(this.debug) {
          LogManager.getRootLogger().setLevel(Level.DEBUG);
          log4jLogger.setLevel(Level.DEBUG);
+         System.out.println("Configuration...");
+         System.out.println(this.serverConfiguration.toString());
       }
       this.httpServer = httpServer();
       this.rootContext = rootContext(withGzip);
@@ -294,11 +301,35 @@ public abstract class Server {
       httpConfig.setResponseHeaderSize(serverConfiguration.responseHeaderSize);
       httpConfig.setSendServerVersion(serverConfiguration.sendServerVersion);
       httpConfig.setSendDateHeader(serverConfiguration.sendDateHeader);
+
       ServerConnector httpConnector = new ServerConnector(httpServer, new HttpConnectionFactory(httpConfig));
       httpConnector.setHost(serverConfiguration.listenIP);
       httpConnector.setPort(serverConfiguration.httpPort);
       httpConnector.setIdleTimeout(serverConfiguration.idleTimeout);
-      httpServer.addConnector(httpConnector);
+
+      if(serverConfiguration.sslContextFactory.isPresent()) {
+         httpConfig.setSecureScheme("https");
+         httpConfig.setSecurePort(serverConfiguration.httpsPort);
+         HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
+         httpsConfig.addCustomizer(new SecureRequestCustomizer());
+
+         ServerConnector httpsConnector = new ServerConnector(httpServer,
+                 new SslConnectionFactory(serverConfiguration.sslContextFactory.get(), HttpVersion.HTTP_1_1.asString()),
+                 new HttpConnectionFactory(httpsConfig));
+         httpsConnector.setPort(serverConfiguration.httpsPort);
+         switch(serverConfiguration.connectionSecurity) {
+            case BOTH:
+            case REDIRECT:
+               httpServer.setConnectors(new Connector[] {httpConnector, httpsConnector});
+               break;
+            default:
+               httpServer.addConnector(httpsConnector);
+               break;
+         }
+      } else {
+         httpServer.addConnector(httpConnector);
+      }
+
       RequestLog requestLog = initRequestLog();
       if(requestLog != null) {
          httpServer.setRequestLog(requestLog);
@@ -315,17 +346,26 @@ public abstract class Server {
       ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SECURITY);
       rootContext.setContextPath("/");
       rootContext.setMaxFormContentSize(serverConfiguration.maxFormContentSize);
-
+      boolean withSecureRedirect = serverConfiguration.connectionSecurity == ServerConfiguration.ConnectionSecurity.REDIRECT;
       if(withGzip) {
          GzipHandler gzip = new GzipHandler();
-         this.httpServer.setHandler(gzip);
+         if(withSecureRedirect) {
+            HandlerList handlers = new HandlerList();
+            handlers.setHandlers(new Handler[]{new SecuredRedirectHandler(), gzip});
+            this.httpServer.setHandler(handlers);
+         } else {
+            this.httpServer.setHandler(gzip);
+         }
          HandlerList handlers = new HandlerList();
          handlers.setHandlers(new Handler[]{rootContext});
          gzip.setHandler(handlers);
+      } else if(withSecureRedirect) {
+         HandlerList handlers = new HandlerList();
+         handlers.setHandlers(new Handler[]{new SecuredRedirectHandler(), rootContext});
+         this.httpServer.setHandler(handlers);
       } else {
          this.httpServer.setHandler(rootContext);
       }
-
       return rootContext;
    }
 

@@ -18,9 +18,13 @@
 
 package org.attribyte.snook;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Strings;
 import org.attribyte.api.InitializationException;
 import org.attribyte.util.InitUtil;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+import java.util.Optional;
 import java.util.Properties;
 
 /**
@@ -29,12 +33,63 @@ import java.util.Properties;
 public class ServerConfiguration {
 
    /**
+    * The connection security option.
+    */
+   public enum ConnectionSecurity {
+
+      /**
+       * No secure connections.
+       */
+      NONE,
+
+      /**
+       * Both secure and insecure connections allowed.
+       */
+      BOTH,
+
+      /**
+       * Only secure connections allowed.
+       */
+      SECURE_ONLY,
+
+      /**
+       * Redirect to a secure connection.
+       */
+      REDIRECT;
+
+
+      /**
+       * Create connection security from a string.
+       * One of: {@code none}, {@code both}, {@code secure_only} or {@code redirect}.
+       * @param str The string.
+       * @return The connection security.
+       * @throws InitializationException if value {@code null}, empty or invalid.
+       */
+      public static ConnectionSecurity fromString(final String str) throws InitializationException {
+         switch(Strings.nullToEmpty(str.toLowerCase())) {
+            case "none":
+               return NONE;
+            case "both":
+               return BOTH;
+            case "secure_only":
+            case "secureonly":
+               return SECURE_ONLY;
+            case "redirect":
+               return REDIRECT;
+            default:
+               throw new InitializationException(String.format("The 'connectionSecurity', '%s' is invalid", Strings.nullToEmpty(str)));
+         }
+      }
+   }
+
+   /**
     * Creates a server configuration with default values.
     * @throws InitializationException on invalid configuration.
     */
    public ServerConfiguration() throws InitializationException {
       this.listenIP = DEFAULT_LISTEN_IP;
       this.httpPort = DEFAULT_LISTEN_PORT;
+      this.httpsPort = DEFAULT_SECURE_LISTEN_PORT;
       this.outputBufferSize = DEFAULT_OUTPUT_BUFFER_SIZE;
       this.requestHeaderSize = DEFAULT_MAX_REQUEST_HEADER_SIZE;
       this.responseHeaderSize = DEFAULT_MAX_RESPONSE_HEADER_SIZE;
@@ -43,6 +98,12 @@ public class ServerConfiguration {
       this.idleTimeout = InitUtil.millisFromTime(DEFAULT_IDLE_TIMEOUT);
       this.maxFormContentSize = DEFAULT_MAX_FORM_CONTENT_SIZE;
       this.debug = false;
+      this.connectionSecurity = ConnectionSecurity.fromString(DEFAULT_CONNECTION_SECURITY);
+      this.keyStorePath = "";
+      this.keyStorePasswordWasSpecified = false;
+      this.trustStorePath = "";
+      this.trustStorePasswordWasSpecified = false;
+      this.sslContextFactory = Optional.empty();
    }
 
    /**
@@ -55,6 +116,7 @@ public class ServerConfiguration {
       InitUtil init = new InitUtil(namePrefix, props, true);
       this.listenIP = init.getProperty(LISTEN_IP_PROPERTY, DEFAULT_LISTEN_IP);
       this.httpPort = init.getIntProperty(LISTEN_PORT_PROPERTY, DEFAULT_LISTEN_PORT);
+      this.httpsPort = init.getIntProperty(SECURE_LISTEN_PORT_PROPERTY, DEFAULT_SECURE_LISTEN_PORT);
       this.outputBufferSize = init.getIntProperty(OUTPUT_BUFFER_SIZE_PROPERTY, DEFAULT_OUTPUT_BUFFER_SIZE);
       this.requestHeaderSize = init.getIntProperty(MAX_REQUEST_HEADER_PROPERTY, DEFAULT_MAX_REQUEST_HEADER_SIZE);
       this.responseHeaderSize = init.getIntProperty(MAX_RESPONSE_HEADER_PROPERTY, DEFAULT_MAX_RESPONSE_HEADER_SIZE);
@@ -63,6 +125,32 @@ public class ServerConfiguration {
       this.idleTimeout = InitUtil.millisFromTime(init.getProperty(IDLE_TIMEOUT_PROPERTY, DEFAULT_IDLE_TIMEOUT));
       this.maxFormContentSize = init.getIntProperty(MAX_FORM_CONTENT_SIZE_PROPERTY, DEFAULT_MAX_RESPONSE_HEADER_SIZE);
       this.debug = init.getProperty(DEBUG_PROPERTY, Boolean.toString(DEFAULT_DEBUG_MODE)).equalsIgnoreCase("true");
+      this.keyStorePath = init.getProperty(KEYSTORE_FILE_PROPERTY, "").trim();
+      String keystorePassword = init.getProperty(KEYSTORE_PASSWORD_PROPERTY, "").trim();
+      this.keyStorePasswordWasSpecified = !keystorePassword.isEmpty();
+      this.trustStorePath = init.getProperty(TRUSTSTORE_FILE_PROPERTY, "").trim();
+      String truststorePassword = init.getProperty(TRUSTSTORE_PASSWORD_PROPERTY, "").trim();
+      this.trustStorePasswordWasSpecified = !truststorePassword.isEmpty();
+      if(!keyStorePath.isEmpty()) {
+         SslContextFactory contextFactory = new SslContextFactory(keyStorePath);
+         if(!keystorePassword.isEmpty()) {
+            contextFactory.setKeyStorePassword(keystorePassword);
+         }
+         if(!trustStorePath.isEmpty()) {
+            contextFactory.setTrustStorePath(trustStorePath);
+         }
+         if(!truststorePassword.isEmpty()) {
+            contextFactory.setTrustStorePassword(truststorePassword);
+         }
+         this.sslContextFactory = Optional.of(contextFactory);
+      } else {
+         this.sslContextFactory = Optional.empty();
+      }
+
+      this.connectionSecurity = ConnectionSecurity.fromString(init.getProperty(CONNECTION_SECURITY_PROPERTY, DEFAULT_CONNECTION_SECURITY));
+      if(connectionSecurity != ConnectionSecurity.NONE && !sslContextFactory.isPresent()) {
+         throw new InitializationException(String.format("A 'keystore.File' must be specified for 'connectionSecurity', %s", connectionSecurity));
+      }
    }
 
    /**
@@ -84,6 +172,16 @@ public class ServerConfiguration {
     * The default listen port {@value}.
     */
    public static final int DEFAULT_LISTEN_PORT = 8081;
+
+   /**
+    * The listen port for secure connections property name ({@value}).
+    */
+   public static final String SECURE_LISTEN_PORT_PROPERTY = "httpsPort";
+
+   /**
+    * The default listen port for secure connections {@value}.
+    */
+   public static final int DEFAULT_SECURE_LISTEN_PORT = 8443;
 
    /**
     * The listen output buffer size property name ({@value}).
@@ -161,9 +259,39 @@ public class ServerConfiguration {
    public static final String DEBUG_PROPERTY = "debug";
 
    /**
+    * The connection security property name ({@value}).
+    */
+   public static final String CONNECTION_SECURITY_PROPERTY = "connectionSecurity";
+
+   /**
+    * The default value for connection security ({@value}).
+    */
+   public static final String DEFAULT_CONNECTION_SECURITY = "none";
+
+   /**
     * The default "debug" mode ({@value}).
     */
    public static final boolean DEFAULT_DEBUG_MODE = false;
+
+   /**
+    * The property name for the path to the keystore ({@value}).
+    */
+   public static final String KEYSTORE_FILE_PROPERTY = "keystore.File";
+
+   /**
+    * The property name for the keystore password ({@value}).
+    */
+   public static final String KEYSTORE_PASSWORD_PROPERTY = "keystorePassword";
+
+   /**
+    * The property name for the path to the truststore ({@value}).
+    */
+   public static final String TRUSTSTORE_FILE_PROPERTY = "truststore.File";
+
+   /**
+    * The property name for the truststore password ({@value}).
+    */
+   public static final String TRUSTSTORE_PASSWORD_PROPERTY = "truststorePassword";
 
    /**
     * The IP this server is listening on.
@@ -174,6 +302,11 @@ public class ServerConfiguration {
     * The port this server is listening on.
     */
    public final int httpPort;
+
+   /**
+    * The port this server is listening on for secure connections.
+    */
+   public final int httpsPort;
 
    /**
     * The size of the buffer into which httpResponse content is aggregated before being sent to the client.
@@ -214,4 +347,56 @@ public class ServerConfiguration {
     * Is "debug" mode configured?
     */
    public final boolean debug;
+
+   /**
+    * The configured connection security.
+    */
+   public final ConnectionSecurity connectionSecurity;
+
+   /**
+    * The path to the key store.
+    */
+   public final String keyStorePath;
+
+   /**
+    * Identifies if a password was specified for the key store.
+    */
+   public final boolean keyStorePasswordWasSpecified;
+
+   /**
+    * The path to the trust store.
+    */
+   public final String trustStorePath;
+
+   /**
+    * Identifies if a password was specified for the trust store.
+    */
+   public final boolean trustStorePasswordWasSpecified;
+
+   /**
+    * The SSL context factory, if any.
+    */
+   final Optional<SslContextFactory> sslContextFactory;
+
+   @Override
+   public String toString() {
+      return MoreObjects.toStringHelper(this)
+              .add("listenIP", listenIP)
+              .add("httpPort", httpPort)
+              .add("httpsPort", httpsPort)
+              .add("outputBufferSize", outputBufferSize)
+              .add("requestHeaderSize", requestHeaderSize)
+              .add("responseHeaderSize", responseHeaderSize)
+              .add("sendServerVersion", sendServerVersion)
+              .add("sendDateHeader", sendDateHeader)
+              .add("idleTimeout", idleTimeout)
+              .add("maxFormContentSize", maxFormContentSize)
+              .add("debug", debug)
+              .add("connectionSecurity", connectionSecurity)
+              .add("keyStorePath", keyStorePath)
+              .add("keyStorePasswordWasSpecified", keyStorePasswordWasSpecified)
+              .add("trustStorePath", trustStorePath)
+              .add("trustStorePasswordWasSpecified", trustStorePasswordWasSpecified)
+              .toString();
+   }
 }
