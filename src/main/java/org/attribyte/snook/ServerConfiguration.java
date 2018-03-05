@@ -22,8 +22,10 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import org.attribyte.api.InitializationException;
 import org.attribyte.util.InitUtil;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -100,8 +102,10 @@ public class ServerConfiguration {
       this.debug = false;
       this.connectionSecurity = ConnectionSecurity.fromString(DEFAULT_CONNECTION_SECURITY);
       this.keyStorePath = "";
+      this.keyStoreProvider = "";
       this.keyStorePasswordWasSpecified = false;
       this.trustStorePath = "";
+      this.trustStoreResource = "";
       this.trustStorePasswordWasSpecified = false;
       this.sslContextFactory = Optional.empty();
    }
@@ -126,9 +130,11 @@ public class ServerConfiguration {
       this.maxFormContentSize = init.getIntProperty(MAX_FORM_CONTENT_SIZE_PROPERTY, DEFAULT_MAX_RESPONSE_HEADER_SIZE);
       this.debug = init.getProperty(DEBUG_PROPERTY, Boolean.toString(DEFAULT_DEBUG_MODE)).equalsIgnoreCase("true");
       this.keyStorePath = init.getProperty(KEYSTORE_FILE_PROPERTY, "").trim();
+      this.keyStoreProvider = init.getProperty(KEYSTORE_PROVIDER_PROPERTY, "").trim();
       String keystorePassword = init.getProperty(KEYSTORE_PASSWORD_PROPERTY, "").trim();
       this.keyStorePasswordWasSpecified = !keystorePassword.isEmpty();
       this.trustStorePath = init.getProperty(TRUSTSTORE_FILE_PROPERTY, "").trim();
+      this.trustStoreResource = init.getProperty(TRUSTSTORE_RESOURCE_PROPERTY, "").trim();
       String truststorePassword = init.getProperty(TRUSTSTORE_PASSWORD_PROPERTY, "").trim();
       this.trustStorePasswordWasSpecified = !truststorePassword.isEmpty();
       if(!keyStorePath.isEmpty()) {
@@ -139,9 +145,21 @@ public class ServerConfiguration {
          if(!trustStorePath.isEmpty()) {
             contextFactory.setTrustStorePath(trustStorePath);
          }
+         if(!trustStoreResource.isEmpty()) {
+            try {
+               contextFactory.setTrustStoreResource(Resource.newResource(trustStoreResource, true));
+            } catch(IOException ioe) {
+               throw new InitializationException(String.format("Problem loading 'trustStoreResource' (%s)", trustStoreResource), ioe);
+            }
+         }
          if(!truststorePassword.isEmpty()) {
             contextFactory.setTrustStorePassword(truststorePassword);
          }
+         if(!keyStoreProvider.isEmpty()) {
+            contextFactory.setKeyStoreProvider(keyStoreProvider);
+         }
+
+
          this.sslContextFactory = Optional.of(contextFactory);
       } else {
          this.sslContextFactory = Optional.empty();
@@ -284,9 +302,19 @@ public class ServerConfiguration {
    public static final String KEYSTORE_PASSWORD_PROPERTY = "keystorePassword";
 
    /**
+    * The property name for the keystore provider, e.g. {@code PKCS12} ({@value}).
+    */
+   public static final String KEYSTORE_PROVIDER_PROPERTY = "keystoreProvider";
+
+   /**
     * The property name for the path to the truststore ({@value}).
     */
    public static final String TRUSTSTORE_FILE_PROPERTY = "truststore.File";
+
+   /**
+    * The property name for a truststore resource URL ({@value}).
+    */
+   public static final String TRUSTSTORE_RESOURCE_PROPERTY = "truststoreResource";
 
    /**
     * The property name for the truststore password ({@value}).
@@ -359,6 +387,11 @@ public class ServerConfiguration {
    public final String keyStorePath;
 
    /**
+    * The key store provider.
+    */
+   public final String keyStoreProvider;
+
+   /**
     * Identifies if a password was specified for the key store.
     */
    public final boolean keyStorePasswordWasSpecified;
@@ -367,6 +400,11 @@ public class ServerConfiguration {
     * The path to the trust store.
     */
    public final String trustStorePath;
+
+   /**
+    * The URL for a trust store resource.
+    */
+   public final String trustStoreResource;
 
    /**
     * Identifies if a password was specified for the trust store.
@@ -394,8 +432,10 @@ public class ServerConfiguration {
               .add("debug", debug)
               .add("connectionSecurity", connectionSecurity)
               .add("keyStorePath", keyStorePath)
+              .add("keyStoreProvider", keyStoreProvider)
               .add("keyStorePasswordWasSpecified", keyStorePasswordWasSpecified)
               .add("trustStorePath", trustStorePath)
+              .add("trustStoreResource", trustStoreResource)
               .add("trustStorePasswordWasSpecified", trustStorePasswordWasSpecified)
               .toString();
    }
