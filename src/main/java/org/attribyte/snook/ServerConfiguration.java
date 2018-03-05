@@ -103,6 +103,8 @@ public class ServerConfiguration {
       this.connectionSecurity = ConnectionSecurity.fromString(DEFAULT_CONNECTION_SECURITY);
       this.keyStorePath = "";
       this.keyStoreProvider = "";
+      this.keyStoreCheckInterval = "";
+      this.keyStoreCheckIntervalMillis = 0L;
       this.keyStorePasswordWasSpecified = false;
       this.trustStorePath = "";
       this.trustStoreResource = "";
@@ -131,6 +133,8 @@ public class ServerConfiguration {
       this.debug = init.getProperty(DEBUG_PROPERTY, Boolean.toString(DEFAULT_DEBUG_MODE)).equalsIgnoreCase("true");
       this.keyStorePath = init.getProperty(KEYSTORE_FILE_PROPERTY, "").trim();
       this.keyStoreProvider = init.getProperty(KEYSTORE_PROVIDER_PROPERTY, "").trim();
+      this.keyStoreCheckInterval = init.getProperty(KEYSTORE_CHECK_PROPERTY, "").trim();
+      this.keyStoreCheckIntervalMillis = InitUtil.millisFromTime(this.keyStoreCheckInterval);
       String keystorePassword = init.getProperty(KEYSTORE_PASSWORD_PROPERTY, "").trim();
       this.keyStorePasswordWasSpecified = !keystorePassword.isEmpty();
       this.trustStorePath = init.getProperty(TRUSTSTORE_FILE_PROPERTY, "").trim();
@@ -307,6 +311,11 @@ public class ServerConfiguration {
    public static final String KEYSTORE_PROVIDER_PROPERTY = "keystoreProvider";
 
    /**
+    * The property name for the keystore check interval ({@value}).
+    */
+   public static final String KEYSTORE_CHECK_PROPERTY = "keystoreCheckInterval";
+
+   /**
     * The property name for the path to the truststore ({@value}).
     */
    public static final String TRUSTSTORE_FILE_PROPERTY = "truststore.File";
@@ -397,6 +406,16 @@ public class ServerConfiguration {
    public final boolean keyStorePasswordWasSpecified;
 
    /**
+    * The time between checks for a key store change.
+    */
+   public final String keyStoreCheckInterval;
+
+   /**
+    * The keystore check interval in milliseconds.
+    */
+   public final long keyStoreCheckIntervalMillis;
+
+   /**
     * The path to the trust store.
     */
    public final String trustStorePath;
@@ -433,6 +452,7 @@ public class ServerConfiguration {
               .add("connectionSecurity", connectionSecurity)
               .add("keyStorePath", keyStorePath)
               .add("keyStoreProvider", keyStoreProvider)
+              .add("keyStoreCheckInterval", keyStoreCheckInterval)
               .add("keyStorePasswordWasSpecified", keyStorePasswordWasSpecified)
               .add("trustStorePath", trustStorePath)
               .add("trustStoreResource", trustStoreResource)

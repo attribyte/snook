@@ -24,6 +24,7 @@ import com.codahale.metrics.servlets.HealthCheckServlet;
 import com.codahale.metrics.servlets.MetricsServlet;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
@@ -52,7 +53,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.attribyte.snook.Util.commandLineParameters;
 
@@ -292,6 +296,9 @@ public abstract class Server {
          public void lifeCycleStopping(LifeCycle event) {
             logInfo("Stopping...");
             shutdown();
+            if(scheduledExecutorService != null) {
+               scheduledExecutorService.shutdownNow();
+            }
          }
       });
 
@@ -325,6 +332,24 @@ public abstract class Server {
             default:
                httpServer.addConnector(httpsConnector);
                break;
+         }
+
+         if(serverConfiguration.keyStoreCheckIntervalMillis > 0L) {
+            this.scheduledExecutorService = MoreExecutors.getExitingScheduledExecutorService(new ScheduledThreadPoolExecutor(1));
+            final File checkFile = new File(serverConfiguration.keyStorePath);
+            this.lastKeystoreModTime.set(checkFile.exists() ? checkFile.lastModified() : 0L);
+            this.scheduledExecutorService.schedule(() -> {
+               long lastModTimestamp = checkFile.exists() ? checkFile.lastModified() : 0L;
+               if(lastModTimestamp > lastKeystoreModTime.get()) {
+                  try {
+                     serverConfiguration.sslContextFactory.get().reload(scf -> logInfo("Reloading ssl context..."));
+                     this.lastKeystoreModTime.set(lastModTimestamp);
+                  } catch(Exception e) {
+                     logError("Keystore reload failed", e);
+                  }
+               }
+
+            }, serverConfiguration.keyStoreCheckIntervalMillis, TimeUnit.MILLISECONDS);
          }
       } else {
          httpServer.addConnector(httpConnector);
@@ -515,4 +540,14 @@ public abstract class Server {
     * Is the server running in "debug" mode?
     */
    protected final boolean debug;
+
+   /**
+    * The last time the keystore was modified.
+    */
+   private AtomicLong lastKeystoreModTime = new AtomicLong(0L);
+
+   /**
+    * Executor service for scheduled tasks.
+    */
+   private ScheduledExecutorService scheduledExecutorService = null;
 }
