@@ -100,6 +100,7 @@ public class ServerConfiguration {
       this.idleTimeout = InitUtil.millisFromTime(DEFAULT_IDLE_TIMEOUT);
       this.maxFormContentSize = DEFAULT_MAX_FORM_CONTENT_SIZE;
       this.debug = false;
+      this.allowSymlinks = DEFAULT_ALLOW_SYMLINKS;
       this.connectionSecurity = ConnectionSecurity.fromString(DEFAULT_CONNECTION_SECURITY);
       this.keyStorePath = "";
       this.keyStoreProvider = "";
@@ -131,6 +132,7 @@ public class ServerConfiguration {
       this.idleTimeout = InitUtil.millisFromTime(init.getProperty(IDLE_TIMEOUT_PROPERTY, DEFAULT_IDLE_TIMEOUT));
       this.maxFormContentSize = init.getIntProperty(MAX_FORM_CONTENT_SIZE_PROPERTY, DEFAULT_MAX_RESPONSE_HEADER_SIZE);
       this.debug = init.getProperty(DEBUG_PROPERTY, Boolean.toString(DEFAULT_DEBUG_MODE)).equalsIgnoreCase("true");
+      this.allowSymlinks = init.getProperty(ALLOW_SYMLINKS_PROPERTY, Boolean.toString(DEFAULT_ALLOW_SYMLINKS)).equalsIgnoreCase("true");
       this.keyStorePath = init.getProperty(KEYSTORE_FILE_PROPERTY, "").trim();
       this.keyStoreProvider = init.getProperty(KEYSTORE_PROVIDER_PROPERTY, "").trim();
       this.keyStoreCheckInterval = init.getProperty(KEYSTORE_CHECK_PROPERTY, "").trim();
@@ -284,6 +286,16 @@ public class ServerConfiguration {
    public static final String CONNECTION_SECURITY_PROPERTY = "connectionSecurity";
 
    /**
+    * The property to allow symlinks when searching for static assets ({@value}).
+    */
+   public static final String ALLOW_SYMLINKS_PROPERTY = "allowSymlinks";
+
+   /**
+    * The default value for allowing symlinks ({@value}).
+    */
+   public static final boolean DEFAULT_ALLOW_SYMLINKS = false;
+
+   /**
     * The default value for connection security ({@value}).
     */
    public static final String DEFAULT_CONNECTION_SECURITY = "none";
@@ -433,6 +445,11 @@ public class ServerConfiguration {
     */
    final Optional<SslContextFactory> sslContextFactory;
 
+   /**
+    * Allow the use of symlinks when resolving static assets.
+    */
+   public final boolean allowSymlinks;
+
    @Override
    public String toString() {
       return MoreObjects.toStringHelper(this)
@@ -447,6 +464,7 @@ public class ServerConfiguration {
               .add("idleTimeout", idleTimeout)
               .add("maxFormContentSize", maxFormContentSize)
               .add("debug", debug)
+              .add("allowSymlinks", allowSymlinks)
               .add("connectionSecurity", connectionSecurity)
               .add("keyStorePath", keyStorePath)
               .add("keyStoreProvider", keyStoreProvider)

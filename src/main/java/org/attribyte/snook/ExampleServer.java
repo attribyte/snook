@@ -27,7 +27,7 @@ public class ExampleServer extends Server {
 
    public static void main(String[] args) throws Exception {
       ExampleServer server = new ExampleServer(args);
-      server.rootContext.addServlet(new ServletHolder(new UptimeServlet()), "/*");
+      server.rootContext.addServlet(new ServletHolder(new UptimeServlet()), "/uptime/*");
       server.httpServer.start();
       server.httpServer.join();
    }

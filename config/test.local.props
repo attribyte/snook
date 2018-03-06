@@ -3,3 +3,9 @@ server.truststorePassword=changeit
 server.keystore.File=keystore/test.p12
 server.keystorePassword=test1234
 server.connectionSecurity=both
+
+assets.default.resource.Dir=htdocs
+assets.default.paths=/test.html,/x/*
+assets.default.etags=true
+assets.default.gzip=true
+assets.default.directoryAllowed=false

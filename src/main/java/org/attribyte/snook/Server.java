@@ -22,12 +22,15 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheckRegistry;
 import com.codahale.metrics.servlets.HealthCheckServlet;
 import com.codahale.metrics.servlets.MetricsServlet;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
+import org.attribyte.api.InitializationException;
 import org.attribyte.api.Logger;
 import org.attribyte.util.InitUtil;
 import org.eclipse.jetty.http.HttpVersion;
@@ -40,16 +43,21 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.Resource;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
@@ -117,6 +125,11 @@ public abstract class Server {
       }
       this.httpServer = httpServer();
       this.rootContext = rootContext(withGzip);
+      if(this.serverConfiguration.allowSymlinks) {
+         this.rootContext.addAliasCheck(new AllowSymLinkAliasChecker());
+      }
+
+      initAssets();
    }
 
    /**
@@ -367,9 +380,11 @@ public abstract class Server {
       return httpServer;
    }
 
-   private ServletContextHandler rootContext(boolean withGzip) {
+   private ServletContextHandler rootContext(boolean withGzip) throws IOException {
       ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SECURITY);
       rootContext.setContextPath("/");
+      rootContext.setBaseResource(Resource.newResource("/"));
+      rootContext.addAliasCheck(new ContextHandler.ApproveAliases());
       rootContext.setMaxFormContentSize(serverConfiguration.maxFormContentSize);
       boolean withSecureRedirect = serverConfiguration.connectionSecurity == ServerConfiguration.ConnectionSecurity.REDIRECT;
       if(withGzip) {
@@ -424,6 +439,34 @@ public abstract class Server {
       requestLog.setLogCookies(false);
       requestLog.setPreferProxiedForAddress(true);
       return requestLog;
+   }
+
+   private void initAssets() throws InitializationException {
+      InitUtil init = new InitUtil("assets.", props, false);
+      Map<String, Properties> configProps = init.split();
+      for(Map.Entry<String, Properties> entry : configProps.entrySet()) {
+
+         System.out.println(entry.getValue().toString());
+
+         String resourceDir = entry.getValue().getProperty("resource.Dir", "").trim();
+         if(resourceDir.isEmpty()) {
+            throw new InitializationException(String.format("A 'resource.Dir' must be specified for asset config, '%s'", entry.getKey()));
+         }
+         entry.getValue().setProperty(StaticAssetsConfig.RESOURCE_DIRECTORY_PROPERTY, resourceDir);
+
+         String paths = entry.getValue().getProperty("paths", "").trim();
+         if(paths.isEmpty()) {
+            throw new InitializationException(String.format("The 'paths' must be specified for asset config, '%s'", entry.getKey()));
+         }
+
+         List<String> pathExpressionList = Splitter.on(',').omitEmptyStrings().trimResults().splitToList(paths);
+         if(pathExpressionList.isEmpty()) {
+            throw new InitializationException(String.format("The 'paths' must be specified for asset config, '%s'", entry.getKey()));
+         }
+
+         StaticAssetsConfig config = new StaticAssetsConfig("", entry.getValue());
+         addStaticAssets(config, pathExpressionList);
+      }
    }
 
    /**
@@ -508,6 +551,39 @@ public abstract class Server {
    protected Server addHealthCheckServlet(final HealthCheckRegistry registry, final String path) {
       HealthCheckServlet healthCheckServlet = new HealthCheckServlet(registry);
       rootContext.addServlet(new ServletHolder(healthCheckServlet), path);
+      return this;
+   }
+
+   /**
+    * Adds configuration to serve static assets for a path.
+    * @param config  The configuration.
+    * @param path The path.
+    * @return A self-reference.
+    */
+   protected Server addStaticAssets(final StaticAssetsConfig config, final String path) {
+      return addStaticAssets(config, ImmutableList.of(path));
+   }
+
+   /**
+    * Adds configuration to serve static assets for a list of paths.
+    * @param config  The configuration.
+    * @param paths The path list.
+    * @return A self-reference.
+    */
+   protected Server addStaticAssets(final StaticAssetsConfig config, final List<String> paths) {
+      ServletHolder holder = new ServletHolder();
+      holder.setInitParameter("resourceBase", config.resourceDirectory);
+      holder.setInitParameter("dirAllowed", config.directoryAllowed ? "true" : "false");
+      holder.setInitParameter("gzip", config.gzip ? "true" : "false");
+      holder.setInitParameter("etags", config.etags ? "true" : "false");
+      holder.setInitParameter("precompressed", "true");
+      if(!config.cacheControl.isEmpty()) {
+         holder.setInitParameter("cacheControl", config.cacheControl);
+      }
+      holder.setServlet(new DefaultServlet());
+      paths.forEach(path -> {
+         rootContext.addServlet(holder, path);
+      });
       return this;
    }
 
