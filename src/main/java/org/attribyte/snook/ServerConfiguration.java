@@ -20,14 +20,25 @@ package org.attribyte.snook;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.attribyte.api.InitializationException;
 import org.attribyte.util.InitUtil;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * HTTP server configuration.
@@ -474,5 +485,48 @@ public class ServerConfiguration {
               .add("trustStoreResource", trustStoreResource)
               .add("trustStorePasswordWasSpecified", trustStorePasswordWasSpecified)
               .toString();
+   }
+
+   /**
+    * Builds a server instance form this configuration.
+    * @return The server.
+    */
+   public org.eclipse.jetty.server.Server buildServer() {
+      org.eclipse.jetty.server.Server httpServer = new org.eclipse.jetty.server.Server();
+      HttpConfiguration httpConfig = new HttpConfiguration();
+      httpConfig.setOutputBufferSize(outputBufferSize);
+      httpConfig.setRequestHeaderSize(requestHeaderSize);
+      httpConfig.setResponseHeaderSize(responseHeaderSize);
+      httpConfig.setSendServerVersion(sendServerVersion);
+      httpConfig.setSendDateHeader(sendDateHeader);
+
+      ServerConnector httpConnector = new ServerConnector(httpServer, new HttpConnectionFactory(httpConfig));
+      httpConnector.setHost(listenIP);
+      httpConnector.setPort(httpPort);
+      httpConnector.setIdleTimeout(idleTimeout);
+
+      if(sslContextFactory.isPresent()) {
+         httpConfig.setSecureScheme("https");
+         httpConfig.setSecurePort(httpsPort);
+         HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
+         httpsConfig.addCustomizer(new SecureRequestCustomizer());
+
+         ServerConnector httpsConnector = new ServerConnector(httpServer,
+                 new SslConnectionFactory(sslContextFactory.get(), HttpVersion.HTTP_1_1.asString()),
+                 new HttpConnectionFactory(httpsConfig));
+         httpsConnector.setPort(httpsPort);
+         switch(connectionSecurity) {
+            case BOTH:
+            case REDIRECT:
+               httpServer.setConnectors(new Connector[] {httpConnector, httpsConnector});
+               break;
+            default:
+               httpServer.addConnector(httpsConnector);
+               break;
+         }
+      } else {
+         httpServer.addConnector(httpConnector);
+      }
+      return httpServer;
    }
 }

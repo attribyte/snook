@@ -26,23 +26,15 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.attribyte.api.InitializationException;
 import org.attribyte.api.Logger;
 import org.attribyte.util.InitUtil;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -61,8 +53,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -287,7 +277,7 @@ public abstract class Server {
     */
    private org.eclipse.jetty.server.Server httpServer() {
 
-      org.eclipse.jetty.server.Server httpServer = new org.eclipse.jetty.server.Server();
+      org.eclipse.jetty.server.Server httpServer = serverConfiguration.buildServer();
 
       httpServer.addLifeCycleListener(new LifeCycle.Listener() {
          public void lifeCycleFailure(LifeCycle event, Throwable cause) {
@@ -308,65 +298,12 @@ public abstract class Server {
 
          public void lifeCycleStopping(LifeCycle event) {
             logInfo("Stopping...");
+            keyStoreMonitor.shutdown();
             shutdown();
-            if(scheduledExecutorService != null) {
-               scheduledExecutorService.shutdownNow();
-            }
          }
       });
 
-      HttpConfiguration httpConfig = new HttpConfiguration();
-      httpConfig.setOutputBufferSize(serverConfiguration.outputBufferSize);
-      httpConfig.setRequestHeaderSize(serverConfiguration.requestHeaderSize);
-      httpConfig.setResponseHeaderSize(serverConfiguration.responseHeaderSize);
-      httpConfig.setSendServerVersion(serverConfiguration.sendServerVersion);
-      httpConfig.setSendDateHeader(serverConfiguration.sendDateHeader);
-
-      ServerConnector httpConnector = new ServerConnector(httpServer, new HttpConnectionFactory(httpConfig));
-      httpConnector.setHost(serverConfiguration.listenIP);
-      httpConnector.setPort(serverConfiguration.httpPort);
-      httpConnector.setIdleTimeout(serverConfiguration.idleTimeout);
-
-      if(serverConfiguration.sslContextFactory.isPresent()) {
-         httpConfig.setSecureScheme("https");
-         httpConfig.setSecurePort(serverConfiguration.httpsPort);
-         HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
-         httpsConfig.addCustomizer(new SecureRequestCustomizer());
-
-         ServerConnector httpsConnector = new ServerConnector(httpServer,
-                 new SslConnectionFactory(serverConfiguration.sslContextFactory.get(), HttpVersion.HTTP_1_1.asString()),
-                 new HttpConnectionFactory(httpsConfig));
-         httpsConnector.setPort(serverConfiguration.httpsPort);
-         switch(serverConfiguration.connectionSecurity) {
-            case BOTH:
-            case REDIRECT:
-               httpServer.setConnectors(new Connector[] {httpConnector, httpsConnector});
-               break;
-            default:
-               httpServer.addConnector(httpsConnector);
-               break;
-         }
-
-         if(serverConfiguration.keyStoreCheckIntervalMillis > 0L) {
-            this.scheduledExecutorService = MoreExecutors.getExitingScheduledExecutorService(new ScheduledThreadPoolExecutor(1));
-            final File checkFile = new File(serverConfiguration.keyStorePath);
-            this.lastKeystoreModTime.set(checkFile.exists() ? checkFile.lastModified() : 0L);
-            this.scheduledExecutorService.schedule(() -> {
-               long lastModTimestamp = checkFile.exists() ? checkFile.lastModified() : 0L;
-               if(lastModTimestamp > lastKeystoreModTime.get()) {
-                  try {
-                     serverConfiguration.sslContextFactory.get().reload(scf -> logInfo("Reloading ssl context..."));
-                     this.lastKeystoreModTime.set(lastModTimestamp);
-                  } catch(Exception e) {
-                     logError("Keystore reload failed", e);
-                  }
-               }
-
-            }, serverConfiguration.keyStoreCheckIntervalMillis, TimeUnit.MILLISECONDS);
-         }
-      } else {
-         httpServer.addConnector(httpConnector);
-      }
+      this.keyStoreMonitor.start(serverConfiguration, logger);
 
       RequestLog requestLog = initRequestLog();
       if(requestLog != null) {
@@ -623,7 +560,7 @@ public abstract class Server {
    private AtomicLong lastKeystoreModTime = new AtomicLong(0L);
 
    /**
-    * Executor service for scheduled tasks.
+    * The key store monitor.
     */
-   private ScheduledExecutorService scheduledExecutorService = null;
+   private KeyStoreMonitor keyStoreMonitor = new KeyStoreMonitor();
 }
