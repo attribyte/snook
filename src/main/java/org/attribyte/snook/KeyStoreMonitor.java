@@ -19,12 +19,14 @@
 package org.attribyte.snook;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.attribyte.api.Logger;
 
 import java.io.File;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -38,9 +40,14 @@ public class KeyStoreMonitor {
     * @param logger The logger.
     */
    public void start(final ServerConfiguration serverConfiguration, final Logger logger) throws UnsupportedOperationException {
-      if(serverConfiguration.keyStoreCheckIntervalMillis > 0L && serverConfiguration.sslContextFactory.isPresent()) {
-         final File checkFile = new File(serverConfiguration.keyStorePath);
-         if(checkFile.exists()) {
+      if(started.compareAndSet(false, true)) {
+         if(serverConfiguration.keyStoreCheckIntervalMillis > 0L && serverConfiguration.sslContextFactory.isPresent()) {
+            this.scheduledExecutorService =
+                    MoreExecutors.getExitingScheduledExecutorService(
+                            new ScheduledThreadPoolExecutor(1,
+                                    new ThreadFactoryBuilder().setNameFormat("KeyStoreMonitor-Thread-%d").build())
+                    );
+            final File checkFile = new File(serverConfiguration.keyStorePath);
             this.lastKeystoreModTime.set(checkFile.exists() ? checkFile.lastModified() : 0L);
             this.scheduledExecutorService.schedule(() -> {
                long lastModTimestamp = checkFile.exists() ? checkFile.lastModified() : 0L;
@@ -62,14 +69,21 @@ public class KeyStoreMonitor {
     * Shutdown the key store monitor.
     */
    public void shutdown() {
-      this.scheduledExecutorService.shutdownNow();
+      if(this.scheduledExecutorService != null) {
+         this.scheduledExecutorService.shutdownNow();
+      }
+      this.started.set(false);
    }
 
    /**
     * Executor service for scheduled tasks.
     */
-   private final ScheduledExecutorService scheduledExecutorService =
-           MoreExecutors.getExitingScheduledExecutorService(new ScheduledThreadPoolExecutor(1));
+   private ScheduledExecutorService scheduledExecutorService;
+
+   /**
+    * Was the monitor started?
+    */
+   private final AtomicBoolean started = new AtomicBoolean(false);
 
 
    /**
