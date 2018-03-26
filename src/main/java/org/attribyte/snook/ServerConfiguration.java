@@ -182,7 +182,7 @@ public class ServerConfiguration {
 
       this.connectionSecurity = ConnectionSecurity.fromString(init.getProperty(CONNECTION_SECURITY_PROPERTY, DEFAULT_CONNECTION_SECURITY));
       if(connectionSecurity != ConnectionSecurity.NONE && !sslContextFactory.isPresent()) {
-         throw new InitializationException(String.format("A 'keystore.File' must be specified with 'connectionSecurity', %s", connectionSecurity));
+         throw new InitializationException(String.format("A '%s' must be specified with 'connectionSecurity', %s", KEYSTORE_FILE_PROPERTY, connectionSecurity));
       }
    }
 
