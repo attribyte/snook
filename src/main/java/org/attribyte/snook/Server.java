@@ -171,6 +171,7 @@ public abstract class Server {
       }
 
       props.putAll(parameterMap);
+      props = resolveEnvironmentVariables(props);
       return resolveRelativeFiles(props);
    }
 
@@ -199,6 +200,31 @@ public abstract class Server {
             filteredProps.put(key, props.getProperty(key));
          }
       }
+      return filteredProps;
+   }
+
+   /**
+    * Examines configuration values for possible environment variables.
+    * If a value starts with {@code $} and there is a matching variable
+    * with that name in the environment, the value will be replaced by
+    * the value from the environment.
+    * @param props The properties.
+    * @return The properties with modified values.
+    * @throws IOException on filesystem error.
+    */
+   private Properties resolveEnvironmentVariables(final Properties props) throws IOException {
+      Map<String, String> envVariables = System.getenv();
+      Properties filteredProps = new Properties();
+      props.forEach((key, origVal) -> {
+         if(origVal.toString().startsWith("$")) {
+            String envName = origVal.toString().substring(1).trim();
+            String val = envVariables.getOrDefault(envName, origVal.toString());
+            filteredProps.setProperty(key.toString(), val);
+         } else {
+            filteredProps.setProperty(key.toString(), origVal.toString());
+         }
+      });
+
       return filteredProps;
    }
 
