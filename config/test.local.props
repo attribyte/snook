@@ -4,7 +4,8 @@ server.keystore.File=keystore/test.p12
 server.keystorePassword=test1234
 server.connectionSecurity=both
 
-assets.default.resource.Dir=htdocs
+# Values that start wtih '$' are resolved from the environment, if possible.
+assets.default.resource.Dir=$HTDOCS
 assets.default.paths=/test.html,/x/*
 assets.default.etags=true
 assets.default.gzip=true
