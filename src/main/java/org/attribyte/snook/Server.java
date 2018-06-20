@@ -397,7 +397,7 @@ public abstract class Server {
       //Implementation of NCSARequestLog where output is sent as a SLF4J
       //INFO Log message on the named logger "org.eclipse.jetty.server.RequestLog"
 
-      if(requestLogPath.equalsIgnoreCase("slf4j")) {
+      if(props.getProperty(REQUEST_LOG_OUTPUT_PROPERTY, "").trim().equalsIgnoreCase("slf4j")) {
          Slf4jRequestLog requestLog = new Slf4jRequestLog();
          requestLog.setExtended(requestLogExtendedFormat);
          requestLog.setLogTimeZone(requestLogTimeZone);
@@ -451,6 +451,11 @@ public abstract class Server {
          addStaticAssets(config, pathExpressionList);
       }
    }
+
+   /**
+    * The request output format property name ({@value}).
+    */
+   public static final String REQUEST_LOG_OUTPUT_PROPERTY = "requestLogOutput";
 
    /**
     * The request log directory property name ({@value}).
