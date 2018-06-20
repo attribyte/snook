@@ -219,8 +219,13 @@ public abstract class Server {
       props.forEach((key, origVal) -> {
          if(origVal.toString().startsWith("$")) {
             String envName = origVal.toString().substring(1).trim();
+            String defaultValue = origVal.toString().trim();
             List<String> envNameDefault = ENV_DEFAULT_VALUE_SPLITTER.splitToList(envName);
-            String defaultValue = envNameDefault.size() > 1 ? envNameDefault.get(1) : origVal.toString();
+            if(envNameDefault.size() > 1) {
+               envName = envNameDefault.get(0);
+               defaultValue = envNameDefault.get(1);
+            }
+
             String val = envVariables.getOrDefault(envName, defaultValue);
             filteredProps.setProperty(key.toString(), val);
          } else {
