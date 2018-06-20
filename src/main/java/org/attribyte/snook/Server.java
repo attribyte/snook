@@ -35,6 +35,7 @@ import org.attribyte.util.InitUtil;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Slf4jRequestLog;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -207,18 +208,20 @@ public abstract class Server {
     * Examines configuration values for possible environment variables.
     * If a value starts with {@code $} and there is a matching variable
     * with that name in the environment, the value will be replaced by
-    * the value from the environment.
+    * the value from the environment. A default value to be used if
+    * the environment variable is not set, e.g. {@code $DB_HOST||127.0.0.1}.
     * @param props The properties.
     * @return The properties with modified values.
-    * @throws IOException on filesystem error.
     */
-   private Properties resolveEnvironmentVariables(final Properties props) throws IOException {
+   private Properties resolveEnvironmentVariables(final Properties props) {
       Map<String, String> envVariables = System.getenv();
       Properties filteredProps = new Properties();
       props.forEach((key, origVal) -> {
          if(origVal.toString().startsWith("$")) {
             String envName = origVal.toString().substring(1).trim();
-            String val = envVariables.getOrDefault(envName, origVal.toString());
+            List<String> envNameDefault = ENV_DEFAULT_VALUE_SPLITTER.splitToList(envName);
+            String defaultValue = envNameDefault.size() > 1 ? envNameDefault.get(1) : origVal.toString();
+            String val = envVariables.getOrDefault(envName, defaultValue);
             filteredProps.setProperty(key.toString(), val);
          } else {
             filteredProps.setProperty(key.toString(), origVal.toString());
@@ -227,6 +230,11 @@ public abstract class Server {
 
       return filteredProps;
    }
+
+   /**
+    * Split default values specified with environment variables.
+    */
+   static final Splitter ENV_DEFAULT_VALUE_SPLITTER = Splitter.on("||").trimResults().limit(2);
 
    /**
     * The system property name that holds the install directory ({@value}).
@@ -383,6 +391,10 @@ public abstract class Server {
          return null;
       }
 
+      if(requestLogPath.equalsIgnoreCase("slf4j")) {
+         return new Slf4jRequestLog();
+      }
+
       if(!requestLogPath.endsWith("/")) {
          requestLogPath = requestLogPath + "/";
       }
@@ -467,7 +479,6 @@ public abstract class Server {
     */
    public static final boolean REQUEST_LOG_EXTENDED_DEFAULT = true;
 
-
    /**
     * The request log time zone property ({@value}).
     * <p>
@@ -544,9 +555,7 @@ public abstract class Server {
          holder.setInitParameter("cacheControl", config.cacheControl);
       }
       holder.setServlet(new DefaultServlet());
-      paths.forEach(path -> {
-         rootContext.addServlet(holder, path);
-      });
+      paths.forEach(path -> rootContext.addServlet(holder, path));
       return this;
    }
 
