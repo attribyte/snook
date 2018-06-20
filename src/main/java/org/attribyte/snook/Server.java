@@ -391,11 +391,19 @@ public abstract class Server {
          return null;
       }
 
+      boolean requestLogExtendedFormat = props.getProperty(REQUEST_LOG_EXTENDED_PROPERTY, Boolean.toString(REQUEST_LOG_EXTENDED_DEFAULT)).equalsIgnoreCase("true");
+      String requestLogTimeZone = props.getProperty(REQUEST_LOG_TIMEZONE_PROPERTY, TimeZone.getDefault().getID());
+
       //Implementation of NCSARequestLog where output is sent as a SLF4J
       //INFO Log message on the named logger "org.eclipse.jetty.server.RequestLog"
 
       if(requestLogPath.equalsIgnoreCase("slf4j")) {
-         return new Slf4jRequestLog();
+         Slf4jRequestLog requestLog = new Slf4jRequestLog();
+         requestLog.setExtended(requestLogExtendedFormat);
+         requestLog.setLogTimeZone(requestLogTimeZone);
+         requestLog.setPreferProxiedForAddress(true);
+         requestLog.setLogCookies(false);
+         return requestLog;
       }
 
       if(!requestLogPath.endsWith("/")) {
@@ -403,11 +411,8 @@ public abstract class Server {
       }
 
       String requestLogBase = props.getProperty(REQUEST_LOG_BASE_PROPERTY, REQUEST_LOG_BASE_DEFAULT);
-
       int requestLogRetainDays = Integer.parseInt(props.getProperty(REQUEST_LOG_RETAIN_DAYS_PROPERTY, Integer.toString(REQUEST_LOG_RETAIN_DAYS_DEFAULT)));
-      boolean requestLogExtendedFormat = props.getProperty(REQUEST_LOG_EXTENDED_PROPERTY, Boolean.toString(REQUEST_LOG_EXTENDED_DEFAULT)).equalsIgnoreCase("true");
 
-      String requestLogTimeZone = props.getProperty(REQUEST_LOG_TIMEZONE_PROPERTY, TimeZone.getDefault().getID());
 
       NCSARequestLog requestLog = new NCSARequestLog(requestLogPath + requestLogBase + "-yyyy_mm_dd.request.log");
       requestLog.setRetainDays(requestLogRetainDays);
