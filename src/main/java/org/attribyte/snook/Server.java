@@ -391,6 +391,9 @@ public abstract class Server {
          return null;
       }
 
+      //Implementation of NCSARequestLog where output is sent as a SLF4J
+      //INFO Log message on the named logger "org.eclipse.jetty.server.RequestLog"
+
       if(requestLogPath.equalsIgnoreCase("slf4j")) {
          return new Slf4jRequestLog();
       }
