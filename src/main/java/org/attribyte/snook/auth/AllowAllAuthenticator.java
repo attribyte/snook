@@ -25,13 +25,31 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class AllowAllAuthenticator extends Authenticator {
 
+   /**
+    * Creates an authenticator that allows all requests.
+    * @param username The username associated with all requests.
+    */
+   public AllowAllAuthenticator(final String username) {
+      this.username = username;
+   }
+
    @Override
    public boolean authorized(final HttpServletRequest request) {
       return true;
    }
 
    @Override
+   public String authorizedUsername(final HttpServletRequest request) {
+      return username;
+   }
+
+   @Override
    public String scheme() {
       return "Allow";
    }
+
+   /**
+    * The username of the valid user to return.
+    */
+   private final String username;
 }

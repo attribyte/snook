@@ -18,8 +18,7 @@
 
 package org.attribyte.snook.auth;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableMap;
 import org.attribyte.snook.TestHttpServletRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Test;
@@ -32,9 +31,9 @@ public class BearerAuthenticatorTest {
 
    @Test
    public void testAuthorized() {
-      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableSet.of(
-              Authenticator.hashCredentials("test12345")
-      ), s -> Boolean.FALSE);
+      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableMap.of(
+              Authenticator.hashCredentials("test12345"), "test_user_0"
+      ), s -> null);
 
       HttpServletRequest request = new TestHttpServletRequest() {
          @Override
@@ -45,12 +44,29 @@ public class BearerAuthenticatorTest {
       };
 
       assertTrue(bearerAuthenticator.authorized(request));
+   }
+
+   @Test
+   public void testAuthorizedUsername() {
+      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableMap.of(
+              Authenticator.hashCredentials("test12345"), "test_user_0"
+      ), s -> null);
+
+      HttpServletRequest request = new TestHttpServletRequest() {
+         @Override
+         public String getHeader(final String s) {
+            return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
+                    "Bearer test12345" : null;
+         }
+      };
+
+      assertEquals("test_user_0", bearerAuthenticator.authorizedUsername(request));
    }
 
    @Test
    public void testAuthorizedFunction() {
-      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableSet.of(),
-       s -> s.equals(Authenticator.hashCredentials("test12345")));
+      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableMap.of(),
+       s -> s.equals(Authenticator.hashCredentials("test12345")) ? "test_user_0" : null);
 
       HttpServletRequest request = new TestHttpServletRequest() {
          @Override
@@ -61,13 +77,14 @@ public class BearerAuthenticatorTest {
       };
 
       assertTrue(bearerAuthenticator.authorized(request));
+      assertEquals("test_user_0", bearerAuthenticator.authorizedUsername(request));
    }
 
    @Test
    public void testUnauthorized() {
-      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableSet.of(
-              Authenticator.hashCredentials("test12344")
-      ), s -> Boolean.FALSE);
+      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableMap.of(
+              Authenticator.hashCredentials("test12344"), "test_user_0"
+      ), s -> null);
 
       HttpServletRequest request = new TestHttpServletRequest() {
          @Override
@@ -78,12 +95,13 @@ public class BearerAuthenticatorTest {
       };
 
       assertFalse(bearerAuthenticator.authorized(request));
+      assertNull(bearerAuthenticator.authorizedUsername(request));
    }
 
    @Test
    public void testUnauthorizedFunction() {
-      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableSet.of(),
-              s -> s.equals(Authenticator.hashCredentials("test12344")));
+      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableMap.of(),
+              s -> s.equals(Authenticator.hashCredentials("test12344")) ? "test_user_0" : null);
 
       HttpServletRequest request = new TestHttpServletRequest() {
          @Override
@@ -94,6 +112,6 @@ public class BearerAuthenticatorTest {
       };
 
       assertFalse(bearerAuthenticator.authorized(request));
+      assertNull(bearerAuthenticator.authorizedUsername(request));
    }
-
 }

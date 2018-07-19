@@ -18,11 +18,12 @@
 
 package org.attribyte.snook.auth;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -32,13 +33,24 @@ public class BearerAuthenticator extends Authenticator {
 
    /**
     * Creates the authenticator.
-    * @param validCredentials A set containing valid (securely hashed) credentials.
+    * @param validCredentials A map containing username vs valid (securely hashed) credentials.
     * @param credentialsValidator A function that indicates if securely hashed credentials are valid.
     */
-   public BearerAuthenticator(final ImmutableSet<HashCode> validCredentials,
-                              final Function<HashCode, Boolean> credentialsValidator) {
-      this.validCredentials = validCredentials;
+   public BearerAuthenticator(final Map<HashCode, String> validCredentials,
+                              final Function<HashCode, String> credentialsValidator) {
+      this.validCredentials = validCredentials != null ? ImmutableMap.copyOf(validCredentials) : ImmutableMap.of();
       this.credentialsValidator = credentialsValidator;
+   }
+
+   @Override
+   public String authorizedUsername(final HttpServletRequest request) {
+      String credentials = credentials(request);
+      if(credentials == null) {
+         return null;
+      }
+      HashCode hashedCredentials = hashCredentials(credentials);
+      String username = validCredentials.get(hashedCredentials);
+      return username != null ? username : credentialsValidator.apply(hashedCredentials);
    }
 
    @Override
@@ -47,13 +59,8 @@ public class BearerAuthenticator extends Authenticator {
       if(credentials == null) {
          return false;
       }
-
-      HashCode hashedCredentials = credentialHasher.hashString(credentials, Charsets.US_ASCII);
-      if(validCredentials.contains(hashedCredentials)) {
-         return true;
-      } else {
-         return credentialsValidator.apply(hashedCredentials);
-      }
+      HashCode hashedCredentials = hashCredentials(credentials);
+      return validCredentials.containsKey(hashedCredentials) || !Strings.isNullOrEmpty(credentialsValidator.apply(hashedCredentials));
    }
 
    @Override
@@ -62,12 +69,12 @@ public class BearerAuthenticator extends Authenticator {
    }
 
    /**
-    * An immutable set containing hashes of valid credentials.
+    * An immutable map of username vs hashed credentials.
     */
-   private final ImmutableSet<HashCode> validCredentials;
+   private final ImmutableMap<HashCode, String> validCredentials;
 
    /**
-    * A function that gets hashed credentials for a username.
+    * A function that gets a username from hashed credentials.
     */
-   private final Function<HashCode, Boolean> credentialsValidator;
+   private final Function<HashCode, String> credentialsValidator;
 }

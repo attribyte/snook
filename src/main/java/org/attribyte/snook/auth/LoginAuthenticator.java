@@ -23,17 +23,10 @@ import com.google.common.hash.HashCode;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * Authenticate HTTP requests with a username and password.
+ * Authenticate HTTP requests with a password where the username
+ * is sent with the request.
  */
 public abstract class LoginAuthenticator extends Authenticator {
-
-   /**
-    * Gets the authorized username.
-    * @param request The request.
-    * @return The authorized username or {@code null} if none.
-    */
-   public abstract String authorizedUsername(final HttpServletRequest request);
-
 
    /**
     * Gets the username from the request.
@@ -49,12 +42,4 @@ public abstract class LoginAuthenticator extends Authenticator {
     * @return The hash code.
     */
    public abstract HashCode hashCredentials(final String username, final String password);
-
-   /**
-    * Merge a username and password into a single credentials string.
-    * @param username The username.
-    * @param password The password.
-    * @return The credentials.
-    */
-   public abstract String credentials(final String username, final String password);
 }

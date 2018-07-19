@@ -22,11 +22,9 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
-import com.google.common.io.BaseEncoding;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -39,9 +37,9 @@ public class BasicAuthenticator extends LoginAuthenticator {
     * @param validCredentials A set containing valid (securely hashed) credentials.
     * @param usernameCredentials A function that returns securely hashed credentials for a username.
     */
-   public BasicAuthenticator(final ImmutableSet<HashCode> validCredentials,
+   public BasicAuthenticator(final Set<HashCode> validCredentials,
                              final Function<String, HashCode> usernameCredentials) {
-      this.validCredentials = validCredentials;
+      this.validCredentials = validCredentials != null ? ImmutableSet.copyOf(validCredentials) : ImmutableSet.of();
       this.usernameCredentials = usernameCredentials;
    }
 
@@ -101,12 +99,7 @@ public class BasicAuthenticator extends LoginAuthenticator {
 
    @Override
    public HashCode hashCredentials(final String username, final String password) {
-      return hashCredentials(credentials(username, password));
-   }
-
-   @Override
-   public String credentials(final String username, final String password) {
-      return buildCredentials(username, password);
+      return hashCredentials(buildCredentials(username, password));
    }
 
    /**
@@ -118,7 +111,6 @@ public class BasicAuthenticator extends LoginAuthenticator {
    public static String buildCredentials(final String username, final String password) {
       return base64Encoding.encode((Strings.nullToEmpty(username) + ":" + Strings.nullToEmpty(password)).getBytes(Charsets.UTF_8));
    }
-
 
    @Override
    public String scheme() {
@@ -134,14 +126,4 @@ public class BasicAuthenticator extends LoginAuthenticator {
     * A function that gets hashed credentials for a username.
     */
    private final Function<String, HashCode> usernameCredentials;
-
-   /**
-    * The hash function for credentials.
-    */
-   private static final HashFunction credentialHasher = Hashing.sha256();
-
-   /**
-    * The Base64 endocing.
-    */
-   private static final BaseEncoding base64Encoding = BaseEncoding.base64();
 }

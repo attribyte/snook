@@ -31,6 +31,11 @@ public class DenyAllAuthenticator extends Authenticator {
    }
 
    @Override
+   public String authorizedUsername(final HttpServletRequest request) {
+      return null;
+   }
+
+   @Override
    public String scheme() {
       return "Deny";
    }

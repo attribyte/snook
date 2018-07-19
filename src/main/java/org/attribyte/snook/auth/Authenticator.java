@@ -82,6 +82,13 @@ public abstract class Authenticator {
    public abstract boolean authorized(final HttpServletRequest request);
 
    /**
+    * Gets the authorized username.
+    * @param request The request.
+    * @return The authorized username or {@code null} if not authorized.
+    */
+   public abstract String authorizedUsername(final HttpServletRequest request);
+
+   /**
     * The hash function for credentials.
     */
    protected static final HashFunction credentialHasher = Hashing.sha256();
