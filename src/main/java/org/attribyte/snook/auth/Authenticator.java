@@ -65,7 +65,7 @@ public abstract class Authenticator {
     * @return The hash code.
     */
    public static HashCode hashCredentials(final String credentials) {
-      return credentialHasher.hashString(credentials, Charsets.US_ASCII);
+      return credentialHasher.hashString(credentials, Charsets.UTF_8);
    }
 
    /**
@@ -73,7 +73,6 @@ public abstract class Authenticator {
     * @return The scheme.
     */
    public abstract String scheme();
-
 
    /**
     * Determine if a request is authorized.
