@@ -251,12 +251,12 @@ public class Cookies {
    }
 
    /**
-    * Gets the first named cookie sent with the request.
+    * Gets the first named cookie.
     * @param cookieName The name.
     * @param req The HTTP request.
     * @return The cookie, or {@code null} if not found.
     */
-   public static final Cookie getCookie(final String cookieName, final HttpServletRequest req) {
+   public static final Cookie cookie(final String cookieName, final HttpServletRequest req) {
       Cookie[] cookies = req.getCookies();
       if(cookies == null) {
          return null;
@@ -268,5 +268,16 @@ public class Cookies {
          }
       }
       return null;
+   }
+
+   /**
+    * Gets the value of the first named cookie.
+    * @param cookieName The name.
+    * @param req The request.
+    * @return The value or {@code null} if not found.
+    */
+   public static final String cookieValue(final String cookieName, final HttpServletRequest req) {
+      Cookie cookie = cookie(cookieName, req);
+      return cookie != null ? cookie.getValue() : null;
    }
 }
