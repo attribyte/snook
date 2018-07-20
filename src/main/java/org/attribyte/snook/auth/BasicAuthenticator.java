@@ -30,7 +30,7 @@ import java.util.function.Function;
 /**
  * Authenticator for 'Basic' auth.
  */
-public class BasicAuthenticator extends LoginAuthenticator {
+public class BasicAuthenticator extends Authenticator {
 
    /**
     * Creates the authenticator.
@@ -85,7 +85,6 @@ public class BasicAuthenticator extends LoginAuthenticator {
       return checkCredentials != null && checkCredentials.equals(hashedCredentials) ? username : null;
    }
 
-   @Override
    public String username(final HttpServletRequest request) {
       String credentials = credentials(request);
       if(credentials == null) {
@@ -95,11 +94,6 @@ public class BasicAuthenticator extends LoginAuthenticator {
       String upass = new String(base64Encoding.decode(credentials));
       int userIndex = upass.indexOf(':');
       return userIndex < 1 ? null : upass.substring(0, userIndex);
-   }
-
-   @Override
-   public HashCode hashCredentials(final String username, final String password) {
-      return hashCredentials(buildCredentials(username, password));
    }
 
    /**
