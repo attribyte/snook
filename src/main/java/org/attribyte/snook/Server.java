@@ -178,7 +178,7 @@ public abstract class Server {
 
    /**
     * Examines configuration keys for those that represent files/directories to add
-    * system install path if not absolute. Keys that end with {@code .File} or {@code .Dir}
+    * system install path if not absolute. Keys that end with {@code .file} or {@code .dir}
     * are treated as files/directories for this purpose.
     * @param props The properties.
     * @return The properties with modified values.
@@ -190,7 +190,7 @@ public abstract class Server {
       File systemInstallDir = systemInstallDir();
 
       for(String key : props.stringPropertyNames()) {
-         if(key.endsWith(".File") || key.endsWith(".Dir")) {
+         if(key.toLowerCase().endsWith(".file") || key.toLowerCase().endsWith(".dir")) {
             String filename = props.getProperty(key).trim();
             if(filename.isEmpty() || filename.startsWith("/")) {
                filteredProps.put(key, filename);
