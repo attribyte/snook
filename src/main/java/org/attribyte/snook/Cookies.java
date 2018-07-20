@@ -18,6 +18,8 @@
 
 package org.attribyte.snook;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 
 import javax.servlet.http.Cookie;
@@ -43,33 +45,111 @@ public class Cookies {
       /**
        * Cookie is not accessible to browser scripts.
        */
-      HTTP_ONLY;
+      HTTP_ONLY
+   }
+
+   /**
+    * A key that uniquely identifies a cookie.
+    */
+   public static class CookieKey {
+
+      /**
+       * Creates a key.
+       * @param name The cookie name. Must not be {@code null} or empty.
+       * @param domain The domain.
+       * @param path The path.
+       * @throws IllegalArgumentException if name is null or empty.
+       */
+      public CookieKey(final String name, final String domain, final String path) {
+
+         if(Strings.isNullOrEmpty(name)) {
+            throw new IllegalArgumentException("Name must not be null or empty");
+         }
+
+         this.name = name;
+         this.domain = domain;
+         this.path = path;
+      }
+
+      /**
+       * Creates a key that applies to any path for the current domain.
+       * @param name The cookie name.
+       */
+      public CookieKey(final String name) {
+         this(name, null, "/");
+      }
+
+      @Override
+      public String toString() {
+         return MoreObjects.toStringHelper(this)
+                 .add("name", name)
+                 .add("domain", domain)
+                 .add("path", path)
+                 .toString();
+      }
+
+      @Override
+      public boolean equals(final Object o) {
+         if(this == o) return true;
+         if(o == null || getClass() != o.getClass()) return false;
+         final CookieKey cookieKey = (CookieKey)o;
+         return Objects.equal(name, cookieKey.name) &&
+                 Objects.equal(domain, cookieKey.domain) &&
+                 Objects.equal(path, cookieKey.path);
+      }
+
+      @Override
+      public int hashCode() {
+         return Objects.hashCode(name, domain, path);
+      }
+
+      /**
+       * Creates a (mutable) cookie with this key.
+       * @param value The value.
+       * @return The cookie.
+       */
+      public Cookie cookie(final String value) {
+         Cookie cookie = new Cookie(name, value);
+
+         if(!Strings.isNullOrEmpty(domain)) {
+            cookie.setDomain(domain);
+         }
+
+         if(!Strings.isNullOrEmpty(path)) {
+            cookie.setPath(path);
+         }
+         return cookie;
+      }
+
+      /**
+       * The cookie name.
+       */
+      public final String name;
+
+      /**
+       * The domain.
+       */
+      public final String domain;
+
+      /**
+       * The path.
+       */
+      public final String path;
    }
 
    /**
     * Creates a cookie.
-    * @param cookieName The name.
+    * @param cookieKey The key.
     * @param cookieValue The value.
-    * @param domain The domain.
-    * @param path The path.
     * @param maxAgeSeconds The maximum age in seconds. If {@code < 0}, cookie is temporary.
     *   If {@code 0}, cookie is deleted, if it exists.
     * @param options The cookie options.
     * @return The cookie.
     */
-   public static Cookie createCookie(final String cookieName, final String cookieValue,
-                                     final String domain, final String path,
+   public static Cookie createCookie(final CookieKey cookieKey, final String cookieValue,
                                      final int maxAgeSeconds, final EnumSet<Option> options) {
-      Cookie cookie = new Cookie(cookieName, cookieValue);
+      Cookie cookie = cookieKey.cookie(cookieValue);
       cookie.setMaxAge(maxAgeSeconds);
-
-      if(!Strings.isNullOrEmpty(domain)) {
-         cookie.setDomain(domain);
-      }
-
-      if(!Strings.isNullOrEmpty(path)) {
-         cookie.setPath(path);
-      }
 
       if(options.contains(Option.SECURE_ONLY)) {
          cookie.setSecure(true);
@@ -83,64 +163,58 @@ public class Cookies {
    }
 
    /**
+    * Creates a session (temporary) cookie.
+    * @param cookieKey The key.
+    * @param cookieValue The value.
+    * @param options The cookie options.
+    * @return The cookie.
+    */
+   public static Cookie createSessionCookie(final CookieKey cookieKey, final String cookieValue,
+                                            final EnumSet<Option> options) {
+      return createCookie(cookieKey, cookieValue, -1, options);
+   }
+
+   /**
     * Sets a cookie.
+    * @param cookieKey The key.
+    * @param cookieValue The value.
+    * @param maxAgeSeconds The maximum age in seconds. If {@code < 0}, cookie is temporary.
+    *   If {@code 0}, cookie is deleted, if it exists.
+    * @param options The cookie options.
+    * @param resp The response.
+    */
+   public static void setCookie(final CookieKey cookieKey, final String cookieValue,
+                                final int maxAgeSeconds, final EnumSet<Option> options,
+                                final HttpServletResponse resp) {
+      resp.addCookie(createCookie(cookieKey, cookieValue, maxAgeSeconds, options));
+   }
+
+   /**
+    * Sets a cookie that applies to the current domain and any path.
     * @param cookieName The name.
     * @param cookieValue The value.
-    * @param domain The domain.
-    * @param path The path.
     * @param maxAgeSeconds The maximum age in seconds. If {@code < 0}, cookie is temporary.
     *   If {@code 0}, cookie is deleted, if it exists.
     * @param options The cookie options.
     * @param resp The response.
     */
    public static void setCookie(final String cookieName, final String cookieValue,
-                                final String domain, final String path,
                                 final int maxAgeSeconds, final EnumSet<Option> options,
                                 final HttpServletResponse resp) {
-      resp.addCookie(createCookie(cookieName, cookieValue, domain, path, maxAgeSeconds, options));
-   }
-
-   /**
-    * Creates a session (temporary) cookie.
-    * @param cookieName The name.
-    * @param cookieValue The value.
-    * @param domain The domain.
-    * @param path The path.
-    * @param options The cookie options.
-    * @return The cookie.
-    */
-   public static Cookie createSessionCookie(final String cookieName, final String cookieValue,
-                                            final String domain, final String path,
-                                            final EnumSet<Option> options) {
-      return createCookie(cookieName, cookieValue, domain, path, -1, options);
+      setCookie(new CookieKey(cookieName), cookieValue, maxAgeSeconds, options, resp);
    }
 
    /**
     * Sets a session (temporary) cookie.
-    * @param cookieName The name.
+    * @param cookieKey The key.
     * @param cookieValue The value.
-    * @param domain The domain.
-    * @param path The path.
     * @param options The cookie options.
     * @param resp The response.
     */
-   public static void setSessionCookie(final String cookieName, final String cookieValue,
-                                       final String domain, final String path,
+   public static void setSessionCookie(final CookieKey cookieKey, final String cookieValue,
                                        final EnumSet<Option> options,
                                        final HttpServletResponse resp) {
-      resp.addCookie(createSessionCookie(cookieName, cookieValue, domain, path, options));
-   }
-
-   /**
-    * Creates a session (temporary) cookie that applies to the current domain and any path.
-    * @param cookieName The name.
-    * @param cookieValue The value.
-    * @param options The cookie options.
-    * @return The cookie.
-    */
-   public static Cookie createSessionCookie(final String cookieName, final String cookieValue,
-                                            final EnumSet<Option> options) {
-      return createSessionCookie(cookieName, cookieValue, null, "/", options);
+      resp.addCookie(createSessionCookie(cookieKey, cookieValue, options));
    }
 
    /**
@@ -152,32 +226,19 @@ public class Cookies {
     */
    public static void setSessionCookie(final String cookieName, final String cookieValue,
                                        final EnumSet<Option> options, final HttpServletResponse resp) {
-      resp.addCookie(createSessionCookie(cookieName, cookieValue, options));
+      setSessionCookie(new CookieKey(cookieName), cookieValue, options, resp);
    }
 
    /**
-    * Creates a persistent cookie that applies to the current domain and any path.
-    * @param cookieName The name.
-    * @param cookieValue The value.
-    * @param options The cookie options.
-    * @return The cookie.
+    * Removes a previously set cookie.
+    * @param cookieKey The key.
+    * @param resp The HTTP response.
     */
-   public static Cookie createCookie(final String cookieName, final String cookieValue,
-                                     final int maxAgeSeconds, final EnumSet<Option> options) {
-      return createCookie(cookieName, cookieValue, null, "/", maxAgeSeconds, options);
-   }
-
-   /**
-    * Sets a persistent cookie that applies to the current domain and any path.
-    * @param cookieName The name.
-    * @param cookieValue The value.
-    * @param options The cookie options.
-    * @param resp The response.
-    */
-   public static void createCookie(final String cookieName, final String cookieValue,
-                                   final int maxAgeSeconds, final EnumSet<Option> options,
-                                   final HttpServletResponse resp) {
-      resp.addCookie(createCookie(cookieName, cookieValue, maxAgeSeconds, options));
+   public static final void removeCookie(final CookieKey cookieKey,
+                                         final HttpServletResponse resp) {
+      Cookie cookie = cookieKey.cookie("false");
+      cookie.setMaxAge(0);
+      resp.addCookie(cookie);
    }
 
    /**
@@ -186,30 +247,8 @@ public class Cookies {
     * @param resp The HTTP response.
     */
    public static final void removeCookie(final String cookieName, final HttpServletResponse resp) {
-      removeCookie(cookieName, null, "/", resp);
+      removeCookie(new CookieKey(cookieName), resp);
    }
-
-   /**
-    * Removes a previously set cookie that applies to the current domain and any path.
-    * @param cookieName The name.
-    * @param domain The cookie domain.
-    * @param path The cookie path.
-    * @param resp The HTTP response.
-    */
-   public static final void removeCookie(final String cookieName,
-                                         final String domain, final String path,
-                                         final HttpServletResponse resp) {
-      Cookie cookie = new Cookie(cookieName, "false");
-      cookie.setMaxAge(0);
-      if(!Strings.isNullOrEmpty(domain)) {
-         cookie.setDomain(domain);
-      }
-      if(!Strings.isNullOrEmpty(path)) {
-         cookie.setPath(path);
-      }
-      resp.addCookie(cookie);
-   }
-
 
    /**
     * Gets the first named cookie sent with the request.
@@ -218,7 +257,6 @@ public class Cookies {
     * @return The cookie, or {@code null} if not found.
     */
    public static final Cookie getCookie(final String cookieName, final HttpServletRequest req) {
-
       Cookie[] cookies = req.getCookies();
       if(cookies == null) {
          return null;
@@ -229,7 +267,6 @@ public class Cookies {
             return curr;
          }
       }
-
       return null;
    }
 }
