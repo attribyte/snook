@@ -433,9 +433,6 @@ public abstract class Server {
       InitUtil init = new InitUtil("assets.", props, false);
       Map<String, Properties> configProps = init.split();
       for(Map.Entry<String, Properties> entry : configProps.entrySet()) {
-
-         System.out.println(entry.getValue().toString());
-
          String resourceDir = entry.getValue().getProperty("resource.Dir", "").trim();
          if(resourceDir.isEmpty()) {
             throw new InitializationException(String.format("A 'resource.Dir' must be specified for asset config, '%s'", entry.getKey()));
