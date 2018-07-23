@@ -18,7 +18,10 @@
 
 package org.attribyte.snook.auth;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
 import com.google.common.base.Strings;
+import com.google.common.hash.HashCode;
 import org.eclipse.jetty.http.HttpHeader;
 
 import javax.servlet.http.HttpServletRequest;
@@ -60,11 +63,41 @@ public class Credentials {
    /**
     * Creates credentials.
     * @param scheme The scheme.
-    * @param value The value.
+    * @param value The value. If {@code} null, converted to an empty string.
     */
    public Credentials(final String scheme, final String value) {
       this.scheme = scheme;
-      this.value = value;
+      this.value = Strings.nullToEmpty(value);
+   }
+
+   @Override
+   public String toString() {
+      return MoreObjects.toStringHelper(this)
+              .add("scheme", scheme)
+              .add("value", value)
+              .toString();
+   }
+
+   @Override
+   public boolean equals(final Object o) {
+      if(this == o) return true;
+      if(o == null || getClass() != o.getClass()) return false;
+      final Credentials that = (Credentials)o;
+      return Objects.equal(scheme, that.scheme) &&
+              Objects.equal(value, that.value);
+   }
+
+   @Override
+   public int hashCode() {
+      return Objects.hashCode(scheme, value);
+   }
+
+   /**
+    * Returns a secure hash of the credentials (value - hash excludes the scheme).
+    * @return The hash code.
+    */
+   public HashCode hashCredentials() {
+      return Authenticator.hashCredentials(value);
    }
 
    /**
