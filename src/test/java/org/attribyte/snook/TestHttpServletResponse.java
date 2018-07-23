@@ -57,11 +57,13 @@ public class TestHttpServletResponse implements HttpServletResponse {
    }
 
    @Override
+   @SuppressWarnings("deprecation")
    public String encodeUrl(final String s) {
       return null;
    }
 
    @Override
+   @SuppressWarnings("deprecation")
    public String encodeRedirectUrl(final String s) {
       return null;
    }
@@ -117,6 +119,7 @@ public class TestHttpServletResponse implements HttpServletResponse {
    }
 
    @Override
+   @SuppressWarnings("deprecation")
    public void setStatus(final int i, final String s) {
 
    }
