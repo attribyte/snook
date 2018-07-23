@@ -54,6 +54,14 @@ public class Cookies {
    public static class CookieKey {
 
       /**
+       * Creates a cookie key from an existing cookie.
+       * @param cookie The cookie.
+       */
+      public CookieKey(final Cookie cookie) {
+         this(cookie.getName(), cookie.getDomain(), cookie.getPath());
+      }
+
+      /**
        * Creates a key.
        * @param name The cookie name. Must not be {@code null} or empty.
        * @param domain The domain.
@@ -246,8 +254,23 @@ public class Cookies {
     * @param cookieName The name.
     * @param resp The HTTP response.
     */
-   public static final void removeCookie(final String cookieName, final HttpServletResponse resp) {
+   public static final void removeCookie(final String cookieName,
+                                         final HttpServletResponse resp) {
       removeCookie(new CookieKey(cookieName), resp);
+   }
+
+   /**
+    * Removes all cookies sent with a request.
+    * @param req The HTTP request.
+    * @param resp The HTTP response.
+    */
+   public static final void removeAllCookies(final HttpServletRequest req, final HttpServletResponse resp) {
+      Cookie[] cookies = req.getCookies();
+      if(cookies != null) {
+         for(Cookie cookie : cookies) {
+            removeCookie(new CookieKey(cookie), resp);
+         }
+      }
    }
 
    /**
