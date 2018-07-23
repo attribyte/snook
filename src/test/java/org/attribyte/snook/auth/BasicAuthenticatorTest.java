@@ -21,6 +21,7 @@ package org.attribyte.snook.auth;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import org.attribyte.snook.TestHttpServletRequest;
+import org.attribyte.util.Pair;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Test;
 
@@ -56,6 +57,44 @@ public class BasicAuthenticatorTest {
       String checkUser = basicAuthenticator.username(request);
       assertNotNull(checkUser);
       assertEquals("test_user", checkUser);
+   }
+
+   @Test
+   public void testUsernamePassword() {
+
+      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> null);
+
+      HttpServletRequest request = new TestHttpServletRequest() {
+         @Override
+         public String getHeader(final String s) {
+            return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
+                    "Basic " + Authenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
+                    : null;
+         }
+      };
+
+      Pair<String, String> upass = basicAuthenticator.usernamePassword(request);
+      assertEquals("test_user", upass.getKey());
+      assertEquals("test_password", upass.getValue());
+   }
+
+   @Test
+   public void testUsernameEmptyPassword() {
+
+      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> null);
+
+      HttpServletRequest request = new TestHttpServletRequest() {
+         @Override
+         public String getHeader(final String s) {
+            return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
+                    "Basic " + Authenticator.base64Encoding.encode("test_user:".getBytes(Charsets.UTF_8))
+                    : null;
+         }
+      };
+
+      Pair<String, String> upass = basicAuthenticator.usernamePassword(request);
+      assertEquals("test_user", upass.getKey());
+      assertTrue(upass.getValue().isEmpty());
    }
 
    @Test

@@ -22,6 +22,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
+import org.attribyte.util.Pair;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Set;
@@ -83,6 +84,28 @@ public class BasicAuthenticator extends Authenticator {
 
       HashCode checkCredentials = usernameCredentials.apply(username);
       return checkCredentials != null && checkCredentials.equals(hashedCredentials) ? username : null;
+   }
+
+   /**
+    * Gets a pair containing the username and password sent with the request or {@code null} if none.
+    * @param request The request.
+    * @return The username/password pair.
+    */
+   public Pair<String, String> usernamePassword(final HttpServletRequest request) {
+      String credentials = credentials(request);
+      if(credentials == null) {
+         return null;
+      }
+
+      String upass = new String(base64Encoding.decode(credentials));
+      int userIndex = upass.indexOf(':');
+      if(userIndex < 1) {
+         return null;
+      } else if(userIndex < upass.length() -1 ){
+         return new Pair<>(upass.substring(0, userIndex), upass.substring(userIndex + 1));
+      } else {
+         return new Pair<>(upass.substring(0, userIndex), "");
+      }
    }
 
    public String username(final HttpServletRequest request) {
