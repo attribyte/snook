@@ -93,7 +93,7 @@ public class AuthenticationToken {
    public final HashCode token;
 
    /**
-    * The number of bytes in a token.
+    * The number of bytes in a token ({@value}).
     */
    public static final int TOKEN_BYTES = 16;
 

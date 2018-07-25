@@ -20,7 +20,6 @@ package org.attribyte.snook;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.attribyte.api.InitializationException;
 import org.attribyte.util.InitUtil;
 import org.eclipse.jetty.http.HttpVersion;
@@ -33,12 +32,9 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * HTTP server configuration.
