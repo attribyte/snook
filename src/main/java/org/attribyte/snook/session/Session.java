@@ -18,6 +18,7 @@
 
 package org.attribyte.snook.session;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Maps;
 import com.google.common.hash.HashCode;
 
@@ -102,6 +103,15 @@ public class Session {
     */
    public void clear() {
       data.clear();;
+   }
+
+   @Override
+   public String toString() {
+      return MoreObjects.toStringHelper(this)
+              .add("token", token)
+              .add("createdMillis", createdMillis)
+              .add("data", data)
+              .toString();
    }
 
    /**
