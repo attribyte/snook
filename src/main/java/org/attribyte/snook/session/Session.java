@@ -41,6 +41,7 @@ public class Session {
 
    /**
     * Creates a session a random token and data.
+    * @param data The session data.
     */
    public Session(final Map<String, Object> data) {
       this(Session.randomToken(), data);
@@ -48,6 +49,8 @@ public class Session {
 
    /**
     * Creates a session with a previously generated token and data.
+    * @param token The token.
+    * @param data The session data.
     */
    public Session(final HashCode token, final Map<String, Object> data) {
       this.token = token;
@@ -82,6 +85,7 @@ public class Session {
     * Puts a session value, replacing the existing, if any.
     * @param key The key.
     * @param value The value.
+    * @param <T> The expected return type.
     * @return The previous value or {@code null} if none.
     */
    public <T> T put(final String key, Object value) {

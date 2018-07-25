@@ -81,6 +81,7 @@ public class BCryptAuthenticator extends CookieAuthenticator {
     * </p>
     * @param username The username.
     * @param password The password.
+    * @param tokenLifetimeSeconds The authentication token lifetime in seconds.
     * @param resp The response.
     * @return Was the password valid and token saved and set as a cookie?
     * @throws IOException if credentials save failed.

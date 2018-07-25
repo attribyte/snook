@@ -38,7 +38,7 @@ public class InMemorySessions extends Sessions {
     * @param cookieKey The key for the session cookie.
     * @param cookieOptions The cookie options when setting the session cookie.
     * @param maxAgeSeconds The maximum cookie age in seconds.
-    * @param cleanIntervalSeconds The cookie clean interval in seconds. If < 1, no cleaning is scheduled.
+    * @param cleanIntervalSeconds The cookie clean interval in seconds. If &lt; 1, no cleaning is scheduled.
     */
    public InMemorySessions(final Cookies.CookieKey cookieKey,
                            final EnumSet<Cookies.Option> cookieOptions,

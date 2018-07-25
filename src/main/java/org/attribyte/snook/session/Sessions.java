@@ -49,7 +49,7 @@ public abstract class Sessions implements MetricSet {
     * @param cookieKey The key for the session cookie.
     * @param cookieOptions The cookie options when setting the session cookie.
     * @param maxAgeSeconds The maximum cookie age in seconds.
-    * @param cleanIntervalSeconds The cookie clean interval in seconds. If < 1, no cleaning is scheduled.
+    * @param cleanIntervalSeconds The cookie clean interval in seconds. If &lt; 1, no cleaning is scheduled.
     */
    protected Sessions(final Cookies.CookieKey cookieKey,
                       final EnumSet<Cookies.Option> cookieOptions,
@@ -94,6 +94,7 @@ public abstract class Sessions implements MetricSet {
     * Gets the session for a request. If none, creates a new session with data and sets a
     * response cookie for the session.
     * @param req The request.
+    * @param data Session data.
     * @param resp The response.
     * @return The existing or new session.
     */

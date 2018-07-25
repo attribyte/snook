@@ -40,6 +40,7 @@ public class Credentials {
 
    /**
     * Creates credentials from a header value of the format [scheme] [credentials].
+    * @param header The header value.
     * @return The credentials or {@code empty} if none.
     */
    public static final Optional<Credentials> credentials(final String header) {
