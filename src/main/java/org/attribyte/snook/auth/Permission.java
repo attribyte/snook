@@ -18,8 +18,12 @@
 
 package org.attribyte.snook.auth;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.sun.org.apache.regexp.internal.RE;
+
+import java.util.Optional;
 
 /**
  * A CRUD permission.
@@ -45,6 +49,26 @@ public enum Permission {
     * Permission to delete.
     */
    DELETE;
+
+   /**
+    * Converts a string to a permission.
+    * @param str The string.
+    * @return The permission or {@code empty} if unknown.
+    */
+   public static Optional<Permission> fromString(final String str) {
+      switch(Strings.nullToEmpty(str).toLowerCase()) {
+         case "create":
+            return Optional.of(CREATE);
+         case "read":
+            return Optional.of(READ);
+         case "update":
+            return Optional.of(UPDATE);
+         case "delete":
+            return Optional.of(DELETE);
+         default:
+            return Optional.empty();
+      }
+   }
 
    /**
     * No permissions.
