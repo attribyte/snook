@@ -21,7 +21,6 @@ package org.attribyte.snook.auth;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.sun.org.apache.regexp.internal.RE;
 
 import java.util.Optional;
 
