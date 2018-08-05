@@ -139,7 +139,7 @@ public abstract class Server {
          }
 
          try {
-            props.load(getClass().getResourceAsStream(resourceName));
+            props.load(is);
          } finally {
             is.close();
          }
