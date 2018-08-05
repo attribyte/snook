@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -132,7 +133,16 @@ public abstract class Server {
    private Properties loadDefaultProperties(final String resourceName) throws IOException {
       Properties props = new Properties();
       if(!Strings.isNullOrEmpty(resourceName)) {
-         props.load(getClass().getResourceAsStream(resourceName));
+         InputStream is = getClass().getResourceAsStream(resourceName);
+         if(is == null) {
+            throw new IOException(String.format("The resource, '%s' (%s) does not exist", resourceName, getClass().getName()));
+         }
+
+         try {
+            props.load(getClass().getResourceAsStream(resourceName));
+         } finally {
+            is.close();
+         }
       }
       return props;
    }
