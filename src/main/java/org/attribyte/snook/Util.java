@@ -18,10 +18,14 @@
 
 package org.attribyte.snook;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 public class Util {
 
@@ -87,4 +91,83 @@ public class Util {
 
       return argList.toArray(new String[argList.size()]);
    }
+
+   /**
+    * Examines configuration keys for those that represent files/directories to add
+    * system install path if not absolute. Keys that end with {@code .file} or {@code .dir}
+    * are treated as files/directories for this purpose.
+    * @param props The properties.
+    * @return The properties with modified values.
+    * @throws IOException on filesystem error.
+    */
+   public static Properties resolveRelativeFiles(final Properties props) throws IOException {
+
+      Properties filteredProps = new Properties();
+      File systemInstallDir = systemInstallDir();
+
+      for(String key : props.stringPropertyNames()) {
+         if(key.toLowerCase().endsWith(".file") || key.toLowerCase().endsWith(".dir")) {
+            String filename = props.getProperty(key).trim();
+            if(filename.isEmpty() || filename.startsWith("/")) {
+               filteredProps.put(key, filename);
+            } else {
+               filteredProps.put(key, new File(systemInstallDir, filename).getCanonicalPath());
+            }
+         } else {
+            filteredProps.put(key, props.getProperty(key));
+         }
+      }
+      return filteredProps;
+   }
+
+   /**
+    * The system property name that holds the install directory ({@value}).
+    */
+   public static final String INSTALL_DIR_SYSTEM_PROP = "server.install.dir";
+
+   /**
+    * Gets the system install directory.
+    * @return The directory.
+    */
+   public static File systemInstallDir() {
+      String systemInstallDir = System.getProperty(INSTALL_DIR_SYSTEM_PROP, "../config").trim();
+      return new File(systemInstallDir);
+   }
+
+   /**
+    * Examines configuration values for possible environment variables.
+    * If a value starts with {@code $} and there is a matching variable
+    * with that name in the environment, the value will be replaced by
+    * the value from the environment. A default value to be used if
+    * the environment variable is not set, e.g. {@code $DB_HOST||127.0.0.1}.
+    * @param props The properties.
+    * @return The properties with modified values.
+    */
+   public static Properties resolveEnvironmentVariables(final Properties props) {
+      Map<String, String> envVariables = System.getenv();
+      Properties filteredProps = new Properties();
+      props.forEach((key, origVal) -> {
+         if(origVal.toString().startsWith("$")) {
+            String envName = origVal.toString().substring(1).trim();
+            String defaultValue = origVal.toString().trim();
+            List<String> envNameDefault = ENV_DEFAULT_VALUE_SPLITTER.splitToList(envName);
+            if(envNameDefault.size() > 1) {
+               envName = envNameDefault.get(0);
+               defaultValue = envNameDefault.get(1);
+            }
+
+            String val = envVariables.getOrDefault(envName, defaultValue);
+            filteredProps.setProperty(key.toString(), val);
+         } else {
+            filteredProps.setProperty(key.toString(), origVal.toString());
+         }
+      });
+
+      return filteredProps;
+   }
+
+   /**
+    * Split default values specified with environment variables.
+    */
+   static final Splitter ENV_DEFAULT_VALUE_SPLITTER = Splitter.on("||").trimResults().limit(2);
 }
