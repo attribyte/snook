@@ -19,10 +19,14 @@
 package org.attribyte.snook;
 
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.net.InternetDomainName;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -170,4 +174,52 @@ public class Util {
     * Split default values specified with environment variables.
     */
    static final Splitter ENV_DEFAULT_VALUE_SPLITTER = Splitter.on("||").trimResults().limit(2);
+
+   /**
+    * Gets the host for a link.
+    * @param link The link.
+    * @return The host or {@code null} if link is an invalid URL.
+    */
+   public static String host(String link) {
+
+      if(Strings.isNullOrEmpty(link)) {
+         return null;
+      }
+
+      if(!link.contains("://")) {
+         link = "http://" + link;
+      }
+
+      try {
+         return new URL(link).getHost();
+      } catch(MalformedURLException mue) {
+         return null;
+      }
+   }
+
+   /**
+    * Gets the (top, private) domain for the link.
+    * <p>
+    *    For example: {@code test.attribyte.com -> attribyte.com, test.blogspot.com -> test.blogspot.com}.
+    * </p>
+    * @param link The link.
+    * @return The domain or {@code null} if invalid.
+    */
+   public static String domain(final String link) {
+      final String host = host(link);
+      if(host == null) {
+         return null;
+      }
+
+      try {
+         InternetDomainName idn = InternetDomainName.from(host);
+         if(idn.isPublicSuffix()) {
+            return idn.toString();
+         } else {
+            return idn.topPrivateDomain().toString();
+         }
+      } catch(IllegalArgumentException ie) {
+         return null;
+      }
+   }
 }
