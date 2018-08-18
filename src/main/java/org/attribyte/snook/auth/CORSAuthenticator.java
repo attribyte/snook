@@ -6,9 +6,11 @@ import com.google.common.collect.ImmutableSet;
 import org.eclipse.jetty.http.HttpHeader;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 
 import static org.attribyte.snook.Util.domain;
 import static org.attribyte.snook.Util.host;
@@ -18,6 +20,22 @@ import static org.attribyte.snook.Util.host;
  * that returns the authorized host as the username, if authorized.
  */
 public class CORSAuthenticator extends Authenticator {
+
+   /**
+    * CORS options.
+    */
+   public enum Option {
+
+      /**
+       * Is any origin allowed?
+       */
+      ALLOW_ANY_ORGIN,
+
+      /**
+       * Are credentials allowed?
+       */
+      ALLOW_CREDENTIALS;
+   }
 
    /**
     * A property name that for a comma-separated list of hosts to allow ({@value}).
@@ -43,6 +61,16 @@ public class CORSAuthenticator extends Authenticator {
     * A property name that indicates if a secure origin is required ({@value}).
     */
    public static final String REQUIRE_SECURE_ORIGIN = "requireSecureOrigin";
+
+   /**
+    * The access control allow origin header ({@value}).
+    */
+   public static final String ACCESS_CONTROL_ALLOW_ORIGIN_HEADER = "Access-Control-Allow-Origin";
+
+   /**
+    * The access control allow credentials header ({@value}).
+    */
+   public static final String ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER = "Access-Control-Allow-Credentials";
 
    /**
     * Creates an authenticator from properties, if configured.
@@ -150,6 +178,34 @@ public class CORSAuthenticator extends Authenticator {
    @Override
    public String authorizedUsername(final HttpServletRequest request) {
       return allowed(origin(request));
+   }
+
+   /**
+    * Determine if a simple CORS request is allowed, set the response
+    * headers and return the authorized host.
+    * @param request The request.
+    * @param response The response.
+    * @param options The CORS options.
+    * @return The authorized host or {@code null} if not authorized.
+    */
+   public String authorizeSimpleRequest(final HttpServletRequest request,
+                                        final HttpServletResponse response,
+                                        final Set<Option> options) {
+      String authorizedUsername = authorizedUsername(request);
+      if(authorizedUsername == null) {
+         return null;
+      } else {
+         if(options.contains(Option.ALLOW_CREDENTIALS)) {
+            response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin(request));
+            response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, "true");
+         } else if(options.contains(Option.ALLOW_ANY_ORGIN)){
+            response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, "*");
+         } else {
+            response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin(request));
+         }
+
+         return authorizedUsername;
+      }
    }
 
    /**
