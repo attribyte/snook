@@ -211,6 +211,10 @@ public class Util {
          return null;
       }
 
+      if(host.equalsIgnoreCase("localhost") || host.equalsIgnoreCase("localhost.localdomain")) {
+         return host;
+      }
+
       try {
          InternetDomainName idn = InternetDomainName.from(host);
          if(idn.isPublicSuffix()) {
