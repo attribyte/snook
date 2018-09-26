@@ -18,7 +18,11 @@
 
 package org.attribyte.snook;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -28,13 +32,12 @@ import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * A test servlet response.
  */
 public class TestHttpServletResponse implements HttpServletResponse {
-
-   public List<Cookie> cookies = Lists.newArrayList();
 
    @Override
    public void addCookie(final Cookie cookie) {
@@ -43,7 +46,7 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public boolean containsHeader(final String s) {
-      return false;
+      return headers.containsKey(s);
    }
 
    @Override
@@ -90,27 +93,27 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public void addDateHeader(final String s, final long l) {
-
+      headers.put(s, Long.toString(l));
    }
 
    @Override
    public void setHeader(final String s, final String s1) {
-
+      headers.put(s, Strings.nullToEmpty(s1));
    }
 
    @Override
    public void addHeader(final String s, final String s1) {
-
+      headers.put(s, Strings.nullToEmpty(s1));
    }
 
    @Override
    public void setIntHeader(final String s, final int i) {
-
+      headers.put(s, Long.toString(i));
    }
 
    @Override
    public void addIntHeader(final String s, final int i) {
-
+      headers.put(s, Long.toString(i));
    }
 
    @Override
@@ -121,27 +124,27 @@ public class TestHttpServletResponse implements HttpServletResponse {
    @Override
    @SuppressWarnings("deprecation")
    public void setStatus(final int i, final String s) {
-
+      this.status = i;
    }
 
    @Override
    public int getStatus() {
-      return 0;
+      return status;
    }
 
    @Override
    public String getHeader(final String s) {
-      return null;
+      return headers.get(s);
    }
 
    @Override
    public Collection<String> getHeaders(final String s) {
-      return null;
+      return headers.containsKey(s) ? ImmutableList.of(headers.get(s)) : ImmutableList.of();
    }
 
    @Override
    public Collection<String> getHeaderNames() {
-      return null;
+      return headers.keySet();
    }
 
    @Override
@@ -151,7 +154,7 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public String getContentType() {
-      return null;
+      return headers.getOrDefault("Content-Type", null);
    }
 
    @Override
@@ -218,4 +221,26 @@ public class TestHttpServletResponse implements HttpServletResponse {
    public Locale getLocale() {
       return null;
    }
+
+   @Override
+   public String toString() {
+      return MoreObjects.toStringHelper(this)
+              .add("status", status)
+              .add("headers", headers)
+              .add("cookies", cookies)
+              .toString();
+   }
+
+   public int status = 0;
+
+   /**
+    * A map of headers.
+    */
+   public Map<String, String> headers = Maps.newHashMap();
+
+   /**
+    * A list of added cookies.
+    */
+   public List<Cookie> cookies = Lists.newArrayList();
+
 }

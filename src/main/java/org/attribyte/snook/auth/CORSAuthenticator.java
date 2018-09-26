@@ -3,6 +3,7 @@ package org.attribyte.snook.auth;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.primitives.Ints;
 import org.eclipse.jetty.http.HttpHeader;
 
 import javax.servlet.http.HttpServletRequest;
@@ -34,38 +35,53 @@ public class CORSAuthenticator extends Authenticator {
       /**
        * Are credentials allowed?
        */
-      ALLOW_CREDENTIALS;
+      ALLOW_CREDENTIALS
    }
 
    /**
-    * A property name that for a comma-separated list of hosts to allow ({@value}).
+    * A property with a comma-separated list of hosts to allow ({@value}).
     */
    public static final String ALLOW_ORIGIN_HOST_PROP = "allowOriginHost";
 
    /**
-    * A property name that for a comma-separated list of domains to allow ({@value}).
+    * A property with a comma-separated list of domains to allow ({@value}).
     */
    public static final String ALLOW_ORIGIN_DOMAIN_PROP = "allowOriginDomain";
 
    /**
-    * A property name that for a comma-separated list of hosts to deny ({@value}).
+    * A property with a comma-separated list of hosts to deny ({@value}).
     */
    public static final String DENY_ORIGIN_HOST_PROP = "denyOriginHost";
 
    /**
-    * A property name that for a comma-separated list of domains to deny ({@value}).
+    * A property with a comma-separated list of domains to deny ({@value}).
     */
    public static final String DENY_ORIGIN_DOMAIN_PROP = "denyOriginDomain";
 
    /**
-    * A property name that indicates if a secure origin is required ({@value}).
+    * A property that indicates if a secure origin is required ({@value}).
     */
    public static final String REQUIRE_SECURE_ORIGIN_PROP = "requireSecureOrigin";
 
    /**
-    * A property name that for a comma-separated list of hosts to allow ({@value}).
+    * A property with a comma-separated list of hosts to allow ({@value}).
     */
    public static final String ALLOW_HEADERS_PROP = "allowHeaders";
+
+   /**
+    * A property with a comma-separated list of hosts to expose ({@value}).
+    */
+   public static final String EXPOSE_HEADERS_PROP = "exposeHeaders";
+
+   /**
+    * A property with a comma-separated list of methods to allow ({@value}). Default {@code OPTIONS, GET, POST}.
+    */
+   public static final String ALLOW_METHODS_PROP = "allowMethods";
+
+   /**
+    * A property that sets the maximum age of a pre-flight request in seconds. Default 86400. ({@value}).
+    */
+   public static final String MAX_AGE_PROP = "maxAge";
 
    /**
     * The access control allow origin header ({@value}).
@@ -78,9 +94,24 @@ public class CORSAuthenticator extends Authenticator {
    public static final String ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER = "Access-Control-Allow-Credentials";
 
    /**
-    * The access control allow origin header ({@value}).
+    * The access control allow headers header ({@value}).
     */
-   public static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
+   public static final String ACCESS_CONTROL_ALLOW_HEADERS_HEADER = "Access-Control-Allow-Headers";
+
+   /**
+    * The access control expose headers header ({@value}).
+    */
+   public static final String ACCESS_CONTROL_EXPOSE_HEADERS_HEADER = "Access-Control-Expose-Headers";
+
+   /**
+    * The access control allow methods header ({@value}).
+    */
+   public static final String ACCESS_CONTROL_ALLOW_METHODS_HEADER = "Access-Control-Allow-Methods";
+
+   /**
+    * The access control max age header.
+    */
+   public static final String ACCESS_CONTROL_MAX_AGE = "Access-Control-Max-Age";
 
    /**
     * Creates an authenticator from properties, if configured.
@@ -93,7 +124,9 @@ public class CORSAuthenticator extends Authenticator {
               props.containsKey(DENY_ORIGIN_HOST_PROP) ||
               props.containsKey(DENY_ORIGIN_DOMAIN_PROP) ||
               props.containsKey(REQUIRE_SECURE_ORIGIN_PROP) ||
-              props.containsKey(ALLOW_HEADERS_PROP)) {
+              props.containsKey(ALLOW_HEADERS_PROP) ||
+              props.containsKey(ALLOW_METHODS_PROP) ||
+              props.containsKey(MAX_AGE_PROP)) {
          return Optional.of(new CORSAuthenticator(props));
       } else {
          return Optional.empty();
@@ -111,7 +144,10 @@ public class CORSAuthenticator extends Authenticator {
               ImmutableSet.copyOf(recordSplitter.split(props.getProperty(ALLOW_ORIGIN_DOMAIN_PROP, ""))),
               ImmutableSet.copyOf(recordSplitter.split(props.getProperty(ALLOW_ORIGIN_HOST_PROP, ""))),
               Strings.nullToEmpty(props.getProperty(REQUIRE_SECURE_ORIGIN_PROP)).trim().equalsIgnoreCase("true"),
-              props.getProperty(ALLOW_HEADERS_PROP, "")
+              props.getProperty(ALLOW_HEADERS_PROP, ""),
+              props.getProperty(ALLOW_METHODS_PROP, "OPTIONS, GET, POST"),
+              props.getProperty(MAX_AGE_PROP, "86400"),
+              props.getProperty(EXPOSE_HEADERS_PROP, "")
       );
    }
 
@@ -123,18 +159,28 @@ public class CORSAuthenticator extends Authenticator {
     * @param allowHost A set of hosts to allow.
     * @param secureOriginRequired Must the origin be secure?
     * @param allowHeaders A comma-separated list of headers to allow.
+    * @param allowMethods A comma-separated list of methods to allow.
+    * @param maxAgeSeconds The maximum age in seconds for pre-flight requests.
+    * @param exposeHeaders A comma-separated list of headers to expose.
     */
    public CORSAuthenticator(final Collection<String> denyDomain, final Collection<String> denyHost,
                             final Collection<String> allowDomain, final Collection<String> allowHost,
                             final boolean secureOriginRequired,
-                            final String allowHeaders) {
+                            final String allowHeaders,
+                            final String allowMethods,
+                            final String maxAgeSeconds,
+                            final String exposeHeaders) {
       this.denyDomain = denyDomain == null ? ImmutableSet.of() : ImmutableSet.copyOf(denyDomain);
       this.denyHost = denyHost == null ? ImmutableSet.of() : ImmutableSet.copyOf(denyHost);
       this.allowDomain = allowDomain == null ? ImmutableSet.of() : ImmutableSet.copyOf(allowDomain);
       this.allowHost = allowHost == null ? ImmutableSet.of() : ImmutableSet.copyOf(allowHost);
       this.allowAll = this.allowHost.contains("*") || this.allowDomain.contains("*");
       this.secureOriginRequired = secureOriginRequired;
-      this.allowHeaders = Strings.nullToEmpty(allowHeaders);
+      this.allowHeaders = Strings.nullToEmpty(allowHeaders).trim();
+      this.allowMethods = Strings.nullToEmpty(allowMethods).trim();
+      Integer checkMaxAgeSeconds = Ints.tryParse(maxAgeSeconds);
+      this.maxAgeSeconds = checkMaxAgeSeconds == null || checkMaxAgeSeconds < 1 ? "-1" : maxAgeSeconds;
+      this.exposeHeaders = Strings.nullToEmpty(exposeHeaders).trim();
    }
 
    /**
@@ -196,16 +242,51 @@ public class CORSAuthenticator extends Authenticator {
    }
 
    /**
-    * Determine if a simple CORS request is allowed, set the response
-    * headers and return the authorized host.
+    * Authorize (or not) a CORS request. May be a "simple" request
+    * or the response to a pre-flight request.
     * @param request The request.
     * @param response The response.
     * @param options The CORS options.
     * @return The authorized host or {@code null} if not authorized.
     */
-   public String authorizeSimpleRequest(final HttpServletRequest request,
-                                        final HttpServletResponse response,
-                                        final Set<Option> options) {
+   public String authorizeRequest(final HttpServletRequest request,
+                                  final HttpServletResponse response,
+                                  final Set<Option> options) {
+      return authorize(request, response, options);
+   }
+
+   /**
+    * Authorize (or not) a pre-flight request.
+    * @param request The request.
+    * @param response The response.
+    * @param options The CORS options.
+    * @return The authorized host or {@code null} if not authorized.
+    */
+   public String authorizePreFlightRequest(final HttpServletRequest request,
+                                           final HttpServletResponse response,
+                                           final Set<Option> options) {
+
+      String authorizedUsername = authorize(request, response, options);
+      if(authorizedUsername == null) {
+         return null;
+      }
+
+      if(!allowMethods.isEmpty()) {
+         response.setHeader(ACCESS_CONTROL_ALLOW_METHODS_HEADER, allowMethods);
+      }
+
+      if(!allowHeaders.isEmpty()) {
+         response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS_HEADER, allowHeaders);
+      }
+
+      response.setHeader(ACCESS_CONTROL_MAX_AGE, maxAgeSeconds);
+
+      return authorizedUsername;
+   }
+
+   private String authorize(final HttpServletRequest request,
+                            final HttpServletResponse response,
+                            final Set<Option> options) {
       String authorizedUsername = authorizedUsername(request);
       if(authorizedUsername == null) {
          return null;
@@ -219,8 +300,8 @@ public class CORSAuthenticator extends Authenticator {
             response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin(request));
          }
 
-         if(!allowHeaders.isEmpty()) {
-            response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders);
+         if(!exposeHeaders.isEmpty()) {
+            response.setHeader(ACCESS_CONTROL_EXPOSE_HEADERS_HEADER, exposeHeaders);
          }
 
          return authorizedUsername;
@@ -243,5 +324,8 @@ public class CORSAuthenticator extends Authenticator {
    private final boolean allowAll;
    private final boolean secureOriginRequired;
    private final String allowHeaders;
+   private final String exposeHeaders;
+   private final String allowMethods;
+   private final String maxAgeSeconds;
    private static Splitter recordSplitter = Splitter.on(',').trimResults().omitEmptyStrings();
 }
