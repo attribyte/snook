@@ -1,5 +1,6 @@
 package org.attribyte.snook.auth;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
@@ -313,8 +314,24 @@ public class CORSAuthenticator extends Authenticator {
     * @param request The request.
     * @return The origin header value.
     */
-   private String origin(final HttpServletRequest request) {
+   public String origin(final HttpServletRequest request) {
       return request.getHeader(HttpHeader.ORIGIN.name());
+   }
+
+   @Override
+   public String toString() {
+      return MoreObjects.toStringHelper(this)
+              .add("denyDomain", denyDomain)
+              .add("denyHost", denyHost)
+              .add("allowDomain", allowDomain)
+              .add("allowHost", allowHost)
+              .add("allowAll", allowAll)
+              .add("secureOriginRequired", secureOriginRequired)
+              .add("allowHeaders", allowHeaders)
+              .add("exposeHeaders", exposeHeaders)
+              .add("allowMethods", allowMethods)
+              .add("maxAgeSeconds", maxAgeSeconds)
+              .toString();
    }
 
    private final ImmutableSet<String> denyDomain;
