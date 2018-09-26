@@ -60,7 +60,12 @@ public class CORSAuthenticator extends Authenticator {
    /**
     * A property name that indicates if a secure origin is required ({@value}).
     */
-   public static final String REQUIRE_SECURE_ORIGIN = "requireSecureOrigin";
+   public static final String REQUIRE_SECURE_ORIGIN_PROP = "requireSecureOrigin";
+
+   /**
+    * A property name that for a comma-separated list of hosts to allow ({@value}).
+    */
+   public static final String ALLOW_HEADERS_PROP = "allowHeaders";
 
    /**
     * The access control allow origin header ({@value}).
@@ -73,6 +78,11 @@ public class CORSAuthenticator extends Authenticator {
    public static final String ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER = "Access-Control-Allow-Credentials";
 
    /**
+    * The access control allow origin header ({@value}).
+    */
+   public static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
+
+   /**
     * Creates an authenticator from properties, if configured.
     * @param props The properties.
     * @return The optional authenticator.
@@ -82,7 +92,8 @@ public class CORSAuthenticator extends Authenticator {
               props.containsKey(ALLOW_ORIGIN_DOMAIN_PROP) ||
               props.containsKey(DENY_ORIGIN_HOST_PROP) ||
               props.containsKey(DENY_ORIGIN_DOMAIN_PROP) ||
-              props.containsKey(REQUIRE_SECURE_ORIGIN)) {
+              props.containsKey(REQUIRE_SECURE_ORIGIN_PROP) ||
+              props.containsKey(ALLOW_HEADERS_PROP)) {
          return Optional.of(new CORSAuthenticator(props));
       } else {
          return Optional.empty();
@@ -99,7 +110,8 @@ public class CORSAuthenticator extends Authenticator {
               ImmutableSet.copyOf(recordSplitter.split(props.getProperty(DENY_ORIGIN_HOST_PROP, ""))),
               ImmutableSet.copyOf(recordSplitter.split(props.getProperty(ALLOW_ORIGIN_DOMAIN_PROP, ""))),
               ImmutableSet.copyOf(recordSplitter.split(props.getProperty(ALLOW_ORIGIN_HOST_PROP, ""))),
-              Strings.nullToEmpty(props.getProperty(REQUIRE_SECURE_ORIGIN)).trim().equalsIgnoreCase("true")
+              Strings.nullToEmpty(props.getProperty(REQUIRE_SECURE_ORIGIN_PROP)).trim().equalsIgnoreCase("true"),
+              props.getProperty(ALLOW_HEADERS_PROP, "")
       );
    }
 
@@ -110,16 +122,19 @@ public class CORSAuthenticator extends Authenticator {
     * @param allowDomain A set of domains to allow.
     * @param allowHost A set of hosts to allow.
     * @param secureOriginRequired Must the origin be secure?
+    * @param allowHeaders A comma-separated list of headers to allow.
     */
    public CORSAuthenticator(final Collection<String> denyDomain, final Collection<String> denyHost,
                             final Collection<String> allowDomain, final Collection<String> allowHost,
-                            final boolean secureOriginRequired) {
+                            final boolean secureOriginRequired,
+                            final String allowHeaders) {
       this.denyDomain = denyDomain == null ? ImmutableSet.of() : ImmutableSet.copyOf(denyDomain);
       this.denyHost = denyHost == null ? ImmutableSet.of() : ImmutableSet.copyOf(denyHost);
       this.allowDomain = allowDomain == null ? ImmutableSet.of() : ImmutableSet.copyOf(allowDomain);
       this.allowHost = allowHost == null ? ImmutableSet.of() : ImmutableSet.copyOf(allowHost);
       this.allowAll = this.allowHost.contains("*") || this.allowDomain.contains("*");
       this.secureOriginRequired = secureOriginRequired;
+      this.allowHeaders = Strings.nullToEmpty(allowHeaders);
    }
 
    /**
@@ -204,6 +219,10 @@ public class CORSAuthenticator extends Authenticator {
             response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin(request));
          }
 
+         if(!allowHeaders.isEmpty()) {
+            response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders);
+         }
+
          return authorizedUsername;
       }
    }
@@ -223,5 +242,6 @@ public class CORSAuthenticator extends Authenticator {
    private final ImmutableSet<String> allowHost;
    private final boolean allowAll;
    private final boolean secureOriginRequired;
+   private final String allowHeaders;
    private static Splitter recordSplitter = Splitter.on(',').trimResults().omitEmptyStrings();
 }
