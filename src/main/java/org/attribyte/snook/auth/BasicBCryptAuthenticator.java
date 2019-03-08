@@ -54,6 +54,33 @@ public class BasicBCryptAuthenticator extends Authenticator {
       return authorizedUsername(request) != null;
    }
 
+   /**
+    * Clears any cached credentials.
+    * @param request The request.
+    * @return Were the credentials cleared?
+    */
+   public boolean clearCachedCredentials(final HttpServletRequest request) {
+
+      Optional<Credentials> maybeCredentials = Credentials.credentials(request);
+      if(!maybeCredentials.isPresent()) {
+         return false;
+      }
+
+      Credentials credentials = maybeCredentials.get();
+      if(!credentials.scheme.equalsIgnoreCase("basic")) {
+         return false;
+      }
+
+      Pair<String, String> upass = BasicAuthenticator.usernamePassword(credentials);
+      if(upass == null) {
+         return false;
+      }
+
+      HashCode hashedCredentials = credentials.hashCredentials();
+      validCredentials.invalidate(hashedCredentials);
+      return true;
+   }
+
    @Override
    public String authorizedUsername(final HttpServletRequest request) {
       Optional<Credentials> maybeCredentials = Credentials.credentials(request);
