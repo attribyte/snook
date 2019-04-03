@@ -10,7 +10,7 @@
     <name>Snook HTTP Server Utilities</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jettyVersion>9.4.11.v20180605</jettyVersion>
+        <jettyVersion>9.4.12.v20180830</jettyVersion>
     </properties>
     <description>
         Utilities and framework for creating and deploying HTTP servers.
