@@ -65,7 +65,7 @@ import static org.attribyte.snook.Util.resolveRelativeFiles;
 public abstract class Server {
 
    /**
-    * Creates the server.
+    * Creates the server with properties from a resource and a named logger.
     * @param args The command line arguments.
     * @param propsResourceName The name of a resource that contains default properties.
     * @param loggerName The name of a logger.
@@ -76,14 +76,66 @@ public abstract class Server {
                     final String propsResourceName,
                     final String loggerName,
                     final boolean withGzip) throws Exception {
+      this.props = props(propsResourceName, args);
+      this.logger = log4jLogger(props, loggerName);
+      this.serverConfiguration = new ServerConfiguration("server.", props);
+      this.debug = debug(this.serverConfiguration.debug);
+      if(this.debug) {
+         System.out.println("Configuration...");
+         System.out.println(this.serverConfiguration.toString());
+      }
+      this.httpServer = httpServer();
+      this.rootContext = rootContext(withGzip);
+      if(this.serverConfiguration.allowSymlinks) {
+         this.rootContext.addAliasCheck(new AllowSymLinkAliasChecker());
+      }
+      initAssets();
+   }
 
+   /**
+    * Creates the server with properties from a resource and a specified logger.
+    * @param args The command line arguments.
+    * @param propsResourceName The name of a resource that contains default properties.
+    * @param logger The logger.
+    * @param withGzip Should auto-gzip handling be configured?
+    * @throws Exception on configuration error.
+    */
+   protected Server(String[] args,
+                    final String propsResourceName,
+                    final Logger logger,
+                    final boolean withGzip) throws Exception {
+      this.props = props(propsResourceName, args);
+      this.logger = logger;
+      this.serverConfiguration = new ServerConfiguration("server.", props);
+      this.debug = debug(this.serverConfiguration.debug);
+      if(this.debug) {
+         System.out.println("Configuration...");
+         System.out.println(this.serverConfiguration.toString());
+      }
+      this.httpServer = httpServer();
+      this.rootContext = rootContext(withGzip);
+      if(this.serverConfiguration.allowSymlinks) {
+         this.rootContext.addAliasCheck(new AllowSymLinkAliasChecker());
+      }
+      initAssets();
+   }
+
+   private final Properties props(final String propsResourceName, final String[] args) throws IOException {
       Map<String, String> parameterMap = Maps.newHashMap();
-      args = commandLineParameters(args, parameterMap);
-      this.props = loadProperties(propsResourceName, args, parameterMap);
-      PropertyConfigurator.configure(new InitUtil("log.", this.props).getProperties());
-      final org.apache.log4j.Logger log4jLogger = org.apache.log4j.Logger.getLogger(loggerName);
+      commandLineParameters(args, parameterMap);
+      return loadProperties(propsResourceName, args, parameterMap);
+   }
 
-      this.logger = new Logger() {
+   private static Logger log4jLogger(final Properties props, final String loggerName) {
+      PropertyConfigurator.configure(new InitUtil("log.", props).getProperties());
+      final org.apache.log4j.Logger log4jLogger = org.apache.log4j.Logger.getLogger(loggerName);
+      if(props.getProperty("server." + ServerConfiguration.DEBUG_PROPERTY, Boolean.toString(ServerConfiguration.DEFAULT_DEBUG_MODE))
+              .equalsIgnoreCase("true")) {
+         LogManager.getRootLogger().setLevel(Level.DEBUG);
+         log4jLogger.setLevel(Level.DEBUG);
+      }
+
+      return new Logger() {
 
          public void debug(String msg) {
             log4jLogger.debug(msg);
@@ -109,11 +161,23 @@ public abstract class Server {
             log4jLogger.error(msg, t);
          }
       };
+   }
+
+   /**
+    * Creates the server from properties and a logger.
+    * @param props The properties.
+    * @param logger The logger.
+    * @param withGzip Should auto-gzip handling be configured?
+    * @throws Exception on configuration error.
+    */
+   protected Server(final Properties props,
+                    final Logger logger,
+                    final boolean withGzip) throws Exception {
+      this.props = props;
+      this.logger = logger;
       this.serverConfiguration = new ServerConfiguration("server.", props);
       this.debug = debug(this.serverConfiguration.debug);
       if(this.debug) {
-         LogManager.getRootLogger().setLevel(Level.DEBUG);
-         log4jLogger.setLevel(Level.DEBUG);
          System.out.println("Configuration...");
          System.out.println(this.serverConfiguration.toString());
       }
@@ -122,7 +186,6 @@ public abstract class Server {
       if(this.serverConfiguration.allowSymlinks) {
          this.rootContext.addAliasCheck(new AllowSymLinkAliasChecker());
       }
-
       initAssets();
    }
 
