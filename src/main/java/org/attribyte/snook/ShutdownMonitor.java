@@ -23,6 +23,7 @@ import org.attribyte.api.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
@@ -40,9 +41,10 @@ public abstract class ShutdownMonitor extends Thread {
    /**
     * Sends the shutdown signal to the default address and port.
     * @throws IOException on signal error.
+    * @return The elapsed time in milliseconds for shutdown to be acknowledged.
     */
-   public static void sendShutdownSignal() throws IOException {
-      sendShutdownSignal(DEFAULT_ADDRESS, DEFAULT_PORT);
+   public static long sendShutdownSignal() throws IOException {
+      return sendShutdownSignal(DEFAULT_ADDRESS, DEFAULT_PORT);
    }
 
    /**
@@ -50,13 +52,18 @@ public abstract class ShutdownMonitor extends Thread {
     * @param mgmtAddress The management listen address.
     * @param mgmtPort The management port.
     * @throws IOException on signal error.
+    * @return The elapsed time in milliseconds for shutdown to be acknowledged.
     */
-   public static void sendShutdownSignal(final InetAddress mgmtAddress, final int mgmtPort) throws IOException {
+   public static long sendShutdownSignal(final InetAddress mgmtAddress, final int mgmtPort) throws IOException {
       Socket s = new Socket(mgmtAddress, mgmtPort);
       OutputStream out = s.getOutputStream();
       out.write(("\r\n").getBytes());
       out.flush();
+      InputStream is = s.getInputStream();
+      long start = System.currentTimeMillis();
+      is.read(); //Wait for one byte to be sent...
       s.close();
+      return System.currentTimeMillis() - start;
    }
 
    /**
@@ -110,6 +117,7 @@ public abstract class ShutdownMonitor extends Thread {
             logger.info(String.format("Shutdown accepted on %s, Port:%d", socket.getInetAddress().getHostAddress(), socket.getLocalPort()));
          }
          shutdown();
+         accept.getOutputStream().write(0);
          accept.close();
          socket.close();
       } catch(Error e) {
