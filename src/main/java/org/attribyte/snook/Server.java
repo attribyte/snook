@@ -388,12 +388,22 @@ public abstract class Server {
     */
    private RequestLog initRequestLog() {
 
+      boolean requestLogExtendedFormat = props.getProperty(REQUEST_LOG_EXTENDED_PROPERTY, Boolean.toString(REQUEST_LOG_EXTENDED_DEFAULT)).equalsIgnoreCase("true");
+
+      if(props.getProperty(REQUEST_LOG_OUTPUT_PROPERTY, "").trim().equalsIgnoreCase("console")) {
+         return new CustomRequestLog(System.out::println, requestLogExtendedFormat ?
+                 CustomRequestLog.EXTENDED_NCSA_FORMAT : CustomRequestLog.NCSA_FORMAT);
+      } else if(props.getProperty(REQUEST_LOG_OUTPUT_PROPERTY, "").trim().equalsIgnoreCase("slf4j")) {
+         Slf4jRequestLogWriter logWriter = new Slf4jRequestLogWriter();
+         return new CustomRequestLog(logWriter, requestLogExtendedFormat ? CustomRequestLog.EXTENDED_NCSA_FORMAT
+                 : CustomRequestLog.NCSA_FORMAT);
+      }
+
       String requestLogPath = props.getProperty(REQUEST_LOG_DIRECTORY_PROPERTY, "").trim();
       if(requestLogPath.isEmpty()) {
          return null;
       }
 
-      boolean requestLogExtendedFormat = props.getProperty(REQUEST_LOG_EXTENDED_PROPERTY, Boolean.toString(REQUEST_LOG_EXTENDED_DEFAULT)).equalsIgnoreCase("true");
       String requestLogTimeZone = props.getProperty(REQUEST_LOG_TIMEZONE_PROPERTY, TimeZone.getDefault().getID());
 
 
@@ -404,17 +414,13 @@ public abstract class Server {
       String requestLogBase = props.getProperty(REQUEST_LOG_BASE_PROPERTY, REQUEST_LOG_BASE_DEFAULT);
       int requestLogRetainDays = Integer.parseInt(props.getProperty(REQUEST_LOG_RETAIN_DAYS_PROPERTY, Integer.toString(REQUEST_LOG_RETAIN_DAYS_DEFAULT)));
 
-      if(props.getProperty(REQUEST_LOG_OUTPUT_PROPERTY, "").trim().equalsIgnoreCase("slf4j")) {
-         Slf4jRequestLogWriter logWriter = new Slf4jRequestLogWriter();
-         return new CustomRequestLog(logWriter, CustomRequestLog.EXTENDED_NCSA_FORMAT);
-      } else {
-         RequestLogWriter logWriter = new RequestLogWriter();
-         logWriter.setRetainDays(requestLogRetainDays);
-         logWriter.setAppend(true);
-         logWriter.setTimeZone(requestLogTimeZone);
-         logWriter.setFilename(requestLogPath + requestLogBase + "-yyyy_mm_dd.request.log");
-         return new CustomRequestLog(logWriter, CustomRequestLog.EXTENDED_NCSA_FORMAT);
-      }
+      RequestLogWriter logWriter = new RequestLogWriter();
+      logWriter.setRetainDays(requestLogRetainDays);
+      logWriter.setAppend(true);
+      logWriter.setTimeZone(requestLogTimeZone);
+      logWriter.setFilename(requestLogPath + requestLogBase + "-yyyy_mm_dd.request.log");
+      return new CustomRequestLog(logWriter, requestLogExtendedFormat ?
+              CustomRequestLog.EXTENDED_NCSA_FORMAT : CustomRequestLog.NCSA_FORMAT);
    }
 
    private void initAssets() throws InitializationException {
