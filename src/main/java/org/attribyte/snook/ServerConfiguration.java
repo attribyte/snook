@@ -151,7 +151,8 @@ public class ServerConfiguration {
       String truststorePassword = init.getProperty(TRUSTSTORE_PASSWORD_PROPERTY, "").trim();
       this.trustStorePasswordWasSpecified = !truststorePassword.isEmpty();
       if(!keyStorePath.isEmpty()) {
-         SslContextFactory contextFactory = new SslContextFactory(keyStorePath);
+         SslContextFactory contextFactory = new SslContextFactory.Server();
+         contextFactory.setKeyStorePath(keyStorePath);
          if(!keystorePassword.isEmpty()) {
             contextFactory.setKeyStorePassword(keystorePassword);
          }

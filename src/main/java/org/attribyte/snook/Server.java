@@ -32,10 +32,11 @@ import org.apache.log4j.PropertyConfigurator;
 import org.attribyte.api.InitializationException;
 import org.attribyte.api.Logger;
 import org.attribyte.util.InitUtil;
+import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Slf4jRequestLog;
+import org.eclipse.jetty.server.RequestLogWriter;
+import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -395,17 +396,6 @@ public abstract class Server {
       boolean requestLogExtendedFormat = props.getProperty(REQUEST_LOG_EXTENDED_PROPERTY, Boolean.toString(REQUEST_LOG_EXTENDED_DEFAULT)).equalsIgnoreCase("true");
       String requestLogTimeZone = props.getProperty(REQUEST_LOG_TIMEZONE_PROPERTY, TimeZone.getDefault().getID());
 
-      //Implementation of NCSARequestLog where output is sent as a SLF4J
-      //INFO Log message on the named logger "org.eclipse.jetty.server.RequestLog"
-
-      if(props.getProperty(REQUEST_LOG_OUTPUT_PROPERTY, "").trim().equalsIgnoreCase("slf4j")) {
-         Slf4jRequestLog requestLog = new Slf4jRequestLog();
-         requestLog.setExtended(requestLogExtendedFormat);
-         requestLog.setLogTimeZone(requestLogTimeZone);
-         requestLog.setPreferProxiedForAddress(true);
-         requestLog.setLogCookies(false);
-         return requestLog;
-      }
 
       if(!requestLogPath.endsWith("/")) {
          requestLogPath = requestLogPath + "/";
@@ -414,15 +404,17 @@ public abstract class Server {
       String requestLogBase = props.getProperty(REQUEST_LOG_BASE_PROPERTY, REQUEST_LOG_BASE_DEFAULT);
       int requestLogRetainDays = Integer.parseInt(props.getProperty(REQUEST_LOG_RETAIN_DAYS_PROPERTY, Integer.toString(REQUEST_LOG_RETAIN_DAYS_DEFAULT)));
 
-
-      NCSARequestLog requestLog = new NCSARequestLog(requestLogPath + requestLogBase + "-yyyy_mm_dd.request.log");
-      requestLog.setRetainDays(requestLogRetainDays);
-      requestLog.setAppend(true);
-      requestLog.setExtended(requestLogExtendedFormat);
-      requestLog.setLogTimeZone(requestLogTimeZone);
-      requestLog.setLogCookies(false);
-      requestLog.setPreferProxiedForAddress(true);
-      return requestLog;
+      if(props.getProperty(REQUEST_LOG_OUTPUT_PROPERTY, "").trim().equalsIgnoreCase("slf4j")) {
+         Slf4jRequestLogWriter logWriter = new Slf4jRequestLogWriter();
+         return new CustomRequestLog(logWriter, CustomRequestLog.EXTENDED_NCSA_FORMAT);
+      } else {
+         RequestLogWriter logWriter = new RequestLogWriter();
+         logWriter.setRetainDays(requestLogRetainDays);
+         logWriter.setAppend(true);
+         logWriter.setTimeZone(requestLogTimeZone);
+         logWriter.setFilename(requestLogPath + requestLogBase + "-yyyy_mm_dd.request.log");
+         return new CustomRequestLog(logWriter, CustomRequestLog.EXTENDED_NCSA_FORMAT);
+      }
    }
 
    private void initAssets() throws InitializationException {
