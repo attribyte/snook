@@ -197,6 +197,34 @@ public class Util {
       }
    }
 
+
+   /**
+    * Gets the path for a link, excluding the query string, if any.
+    * @param link The link.
+    * @return The path, or empty string if none.
+    */
+   public static String path(String link) {
+
+      if(Strings.isNullOrEmpty(link)) {
+         return "";
+      }
+
+      boolean relative = false;
+      if(!link.contains("://")) {
+         if(!link.startsWith("/")) {
+            link = "/" + link;
+            relative = true;
+         }
+         link = "https://broken.com" + link;
+      }
+
+      try {
+         return !relative ? new URL(link).getPath() : new URL(link).getPath().substring(1);
+      } catch(MalformedURLException mue) {
+         return "";
+      }
+   }
+
    /**
     * Gets the (top, private) domain for the link.
     * <p>
