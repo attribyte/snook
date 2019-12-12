@@ -93,7 +93,7 @@ public class Util {
          }
       }
 
-      return argList.toArray(new String[argList.size()]);
+      return argList.toArray(new String[0]);
    }
 
    /**
