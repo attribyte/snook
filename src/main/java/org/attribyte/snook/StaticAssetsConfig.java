@@ -1,3 +1,21 @@
+/*
+ * Copyright 2018 Attribyte, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.
+ *
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
+
 package org.attribyte.snook;
 
 import org.attribyte.api.InitializationException;
@@ -38,6 +56,52 @@ public class StaticAssetsConfig {
       this.gzip = init.getProperty(GZIP_PROPERTY, "true").equalsIgnoreCase("true");
       this.etags = init.getProperty(ETAGS_PROPERTY, "false").equalsIgnoreCase("true");
       this.cacheControl = init.getProperty(CACHE_CONTROL_HEADER_PROPERTY, "");
+   }
+
+   private StaticAssetsConfig(final String resourceDirectory, final boolean directoryAllowed,
+                              final boolean gzip, final boolean etags,
+                              final String cacheControl) {
+      this.resourceDirectory = resourceDirectory;
+      this.directoryAllowed = directoryAllowed;
+      this.gzip = gzip;
+      this.etags = etags;
+      this.cacheControl = cacheControl;
+   }
+
+   /**
+    * Create a new config with a new directory allowed setting.
+    * @param directoryAllowed Is directory listing allowed?
+    * @return Config with directory allowed changed.
+    */
+   public StaticAssetsConfig withDirectoryAllowed(boolean directoryAllowed) {
+      return new StaticAssetsConfig(resourceDirectory, directoryAllowed, gzip, etags, cacheControl);
+   }
+
+   /**
+    * Create a new config with a new gzip setting.
+    * @param gzip Is gzip enabled?
+    * @return Config with gzip changed.
+    */
+   public StaticAssetsConfig withGzip(boolean gzip) {
+      return new StaticAssetsConfig(resourceDirectory, directoryAllowed, gzip, etags, cacheControl);
+   }
+
+   /**
+    * Create a new config with a new etags setting.
+    * @param etags Are etags enabled?
+    * @return Config with etags changed.
+    */
+   public StaticAssetsConfig withETags(boolean etags) {
+      return new StaticAssetsConfig(resourceDirectory, directoryAllowed, gzip, etags, cacheControl);
+   }
+
+   /**
+    * Create a new config with a cache control header value.
+    * @param cacheControl The cache control header value.
+    * @return Config with cache control header changed.
+    */
+   public StaticAssetsConfig withCacheControl(String cacheControl) {
+      return new StaticAssetsConfig(resourceDirectory, directoryAllowed, gzip, etags, cacheControl);
    }
 
    /**
@@ -86,7 +150,7 @@ public class StaticAssetsConfig {
    public final boolean etags;
 
    /**
-    * If non-empty, this {@code Cache-Control} header added to every response.
+    * If non-empty, this {@code Cache-Control} header is added to every response.
     */
    public final String cacheControl;
 }
