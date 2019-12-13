@@ -105,6 +105,11 @@ public class StaticAssetsConfig {
    }
 
    /**
+    * The property name for a comma-separated list of resource paths ({@value}).
+    */
+   public static final String PATHS_PROPERTY = "paths";
+
+   /**
     * The property name for the directory containing static resources ({@value}).
     */
    public static final String RESOURCE_DIRECTORY_PROPERTY = "resourceDirectory";

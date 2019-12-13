@@ -98,7 +98,7 @@ public class Util {
 
    /**
     * Examines configuration keys for those that represent files/directories to add
-    * system install path if not absolute. Keys that end with {@code .file} or {@code .dir}
+    * system install path if not absolute. Keys that end with {@code .file}, {@code .dir} or {@code .path}
     * are treated as files/directories for this purpose.
     * @param props The properties.
     * @return The properties with modified values.
@@ -110,7 +110,9 @@ public class Util {
       File systemInstallDir = systemInstallDir();
 
       for(String key : props.stringPropertyNames()) {
-         if(key.toLowerCase().endsWith(".file") || key.toLowerCase().endsWith(".dir")) {
+         if(key.toLowerCase().endsWith(".file") ||
+            key.toLowerCase().endsWith(".dir") ||
+            key.toLowerCase().endsWith(".path")) {
             String filename = props.getProperty(key).trim();
             if(filename.isEmpty() || filename.startsWith("/")) {
                filteredProps.put(key, filename);

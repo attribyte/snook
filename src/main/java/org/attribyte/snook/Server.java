@@ -433,7 +433,7 @@ public abstract class Server {
          }
          entry.getValue().setProperty(StaticAssetsConfig.RESOURCE_DIRECTORY_PROPERTY, resourceDir);
 
-         String paths = entry.getValue().getProperty("paths", "").trim();
+         String paths = entry.getValue().getProperty(StaticAssetsConfig.PATHS_PROPERTY, "").trim();
          if(paths.isEmpty()) {
             throw new InitializationException(String.format("The 'paths' must be specified for asset config, '%s'", entry.getKey()));
          }
