@@ -113,6 +113,11 @@ public class BCryptAuthenticator extends CookieAuthenticator {
       }
    }
 
+   @Override
+   public String schemeName() {
+      return "Cookie (BCrypt)";
+   }
+
    /**
     * Performs a logout by deleting the remote cookie.
     * @param resp The response.

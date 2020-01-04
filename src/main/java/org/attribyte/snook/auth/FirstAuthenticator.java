@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Attribyte, LLC
+ * Copyright 2020 Attribyte, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,30 +18,40 @@
 
 package org.attribyte.snook.auth;
 
+import com.google.common.base.Strings;
+
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
- * An authenticator that excludes all requests.
+ * Use the first authenticator in a sequence where credentials are present.
  */
-public class DenyAllAuthenticator extends Authenticator {
+public class FirstAuthenticator extends MultiAuthenticator {
+
+   public FirstAuthenticator(final List<Authenticator> authenticators) {
+      super(authenticators, "First");
+   }
 
    @Override
    public boolean authorized(final HttpServletRequest request) {
+      for(Authenticator authenticator : authenticators) {
+         String credentials = Strings.emptyToNull(authenticator.credentials(request));
+         if(credentials != null) {
+            return authenticator.authorized(request);
+         }
+      }
       return false;
    }
 
    @Override
    public String authorizedUsername(final HttpServletRequest request) {
-      return null;
-   }
+      for(Authenticator authenticator : authenticators) {
+         String credentials = Strings.emptyToNull(authenticator.credentials(request));
+         if(credentials != null) {
+            return authenticator.authorizedUsername(request);
+         }
+      }
 
-   @Override
-   protected String scheme() {
       return null;
-   }
-
-   @Override
-   public String schemeName() {
-      return "Deny All";
    }
 }

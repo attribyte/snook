@@ -228,8 +228,13 @@ public class CORSAuthenticator extends Authenticator {
    }
 
    @Override
-   public String scheme() {
-      return "Origin";
+   protected String scheme() {
+      return null;
+   }
+
+   @Override
+   public String schemeName() {
+      return "CORS";
    }
 
    @Override

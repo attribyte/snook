@@ -142,8 +142,13 @@ public class BasicAuthenticator extends Authenticator {
    }
 
    @Override
-   public String scheme() {
+   protected String scheme() {
       return "Basic";
+   }
+
+   @Override
+   public String schemeName() {
+      return scheme();
    }
 
    /**

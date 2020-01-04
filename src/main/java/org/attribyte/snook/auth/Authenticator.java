@@ -81,7 +81,13 @@ public abstract class Authenticator {
     * </p>
     * @return The scheme.
     */
-   public abstract String scheme();
+   protected abstract String scheme();
+
+   /**
+    * The authentication scheme name.
+    * @return The scheme name.
+    */
+   public abstract String schemeName();
 
    /**
     * The header (name) that contains credentials.

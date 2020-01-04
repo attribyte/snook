@@ -65,8 +65,13 @@ public class BearerAuthenticator extends Authenticator {
    }
 
    @Override
-   public String scheme() {
+   protected String scheme() {
       return "Bearer";
+   }
+
+   @Override
+   public String schemeName() {
+      return scheme();
    }
 
    /**

@@ -51,7 +51,12 @@ public class CookieAuthenticator extends BearerAuthenticator {
    }
 
    @Override
-   public String scheme() {
+   protected String scheme() {
+      return null;
+   }
+
+   @Override
+   public String schemeName() {
       return "Cookie";
    }
 

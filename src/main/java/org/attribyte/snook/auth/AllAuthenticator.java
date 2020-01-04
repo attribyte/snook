@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Attribyte, LLC
+ * Copyright 2020 Attribyte, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,43 +18,42 @@
 
 package org.attribyte.snook.auth;
 
+import com.google.common.base.Strings;
+
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
- * An authenticator that allows all requests.
+ * Verify all authenticators in a sequence.
+ * <p>
+ *    The {@code authorizedUsername} returned is the last authorized.
+ * </p>
  */
-public class AllowAllAuthenticator extends Authenticator {
+public class AllAuthenticator extends MultiAuthenticator {
 
-   /**
-    * Creates an authenticator that allows all requests.
-    * @param username The username associated with all requests.
-    */
-   public AllowAllAuthenticator(final String username) {
-      this.username = username;
+   public AllAuthenticator(final List<Authenticator> authenticators) {
+      super(authenticators, "All");
    }
 
    @Override
    public boolean authorized(final HttpServletRequest request) {
+      for(Authenticator authenticator : authenticators) {
+         if(!authenticator.authorized(request)) {
+            return false;
+         }
+      }
       return true;
    }
 
    @Override
    public String authorizedUsername(final HttpServletRequest request) {
-      return username;
+      String lastCredentials = null;
+      for(Authenticator authenticator : authenticators) {
+         lastCredentials = Strings.emptyToNull(authenticator.credentials(request));
+         if(lastCredentials == null) {
+            return null;
+         }
+      }
+      return lastCredentials;
    }
-
-   @Override
-   protected String scheme() {
-      return "Allow";
-   }
-
-   @Override
-   public String schemeName() {
-      return scheme();
-   }
-
-   /**
-    * The username of the valid user to return.
-    */
-   private final String username;
 }
