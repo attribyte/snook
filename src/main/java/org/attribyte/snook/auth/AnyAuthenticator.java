@@ -48,9 +48,9 @@ public class AnyAuthenticator extends MultiAuthenticator {
    @Override
    public String authorizedUsername(final HttpServletRequest request) {
       for(Authenticator authenticator : authenticators) {
-         String credentials = Strings.emptyToNull(authenticator.credentials(request));
-         if(credentials != null) {
-            return credentials;
+         String username = Strings.emptyToNull(authenticator.authorizedUsername(request));
+         if(username != null) {
+            return username;
          }
       }
 

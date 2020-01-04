@@ -47,13 +47,13 @@ public class AllAuthenticator extends MultiAuthenticator {
 
    @Override
    public String authorizedUsername(final HttpServletRequest request) {
-      String lastCredentials = null;
+      String lastUsername = null;
       for(Authenticator authenticator : authenticators) {
-         lastCredentials = Strings.emptyToNull(authenticator.credentials(request));
-         if(lastCredentials == null) {
+         lastUsername = Strings.emptyToNull(authenticator.authorizedUsername(request));
+         if(lastUsername == null) {
             return null;
          }
       }
-      return lastCredentials;
+      return lastUsername;
    }
 }
