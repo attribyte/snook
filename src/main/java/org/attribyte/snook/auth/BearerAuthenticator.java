@@ -34,7 +34,8 @@ public class BearerAuthenticator extends Authenticator {
    /**
     * Creates the authenticator.
     * @param validCredentials A map containing username vs valid (securely hashed) credentials.
-    * @param credentialsValidator A function that indicates if securely hashed credentials are valid.
+    * @param credentialsValidator A function that indicates if securely hashed credentials are valid
+    *                             by returning the username or {@code null}.
     */
    public BearerAuthenticator(final Map<HashCode, String> validCredentials,
                               final Function<HashCode, String> credentialsValidator) {

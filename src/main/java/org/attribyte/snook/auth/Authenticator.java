@@ -39,23 +39,29 @@ public abstract class Authenticator {
     * @return The credentials, or {@code null} if none.
     */
    public String credentials(final HttpServletRequest request) {
-      String header = Strings.nullToEmpty(request.getHeader(HttpHeader.AUTHORIZATION.asString()));
-      if(header.length() < scheme().length() + 2) {
-         return null;
+      final String header = Strings.nullToEmpty(request.getHeader(credentialsHeader()));
+      final String expectedScheme = Strings.emptyToNull(scheme());
+
+      if(expectedScheme == null) {
+         return Strings.emptyToNull(header);
+      } else {
+         if(header.length() < expectedScheme.length() + 2) {
+            return null;
+         }
+
+         int schemeIndex = header.indexOf(' ');
+
+         if(schemeIndex != expectedScheme.length()) {
+            return null;
+         }
+
+         String checkScheme = header.substring(0, schemeIndex);
+         if(!checkScheme.equalsIgnoreCase(expectedScheme)) {
+            return null;
+         }
+
+         return header.substring(schemeIndex + 1);
       }
-
-      int schemeIndex = header.indexOf(' ');
-
-      if(schemeIndex != scheme().length()) {
-         return null;
-      }
-
-      String checkScheme = header.substring(0, schemeIndex);
-      if(!checkScheme.equalsIgnoreCase(scheme())) {
-         return null;
-      }
-
-      return header.substring(schemeIndex + 1);
    }
 
    /**
@@ -70,9 +76,20 @@ public abstract class Authenticator {
 
    /**
     * The authentication scheme.
+    * <p>
+    *    If {@code null} or empty, no scheme is expected.
+    * </p>
     * @return The scheme.
     */
    public abstract String scheme();
+
+   /**
+    * The header (name) that contains credentials.
+    * @return The name or {@code null} if none.
+    */
+   public String credentialsHeader() {
+      return HttpHeader.AUTHORIZATION.asString();
+   }
 
    /**
     * Determine if a request is authorized.
