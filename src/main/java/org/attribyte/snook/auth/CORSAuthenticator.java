@@ -5,6 +5,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.net.HttpHeaders;
 import com.google.common.primitives.Ints;
 import org.eclipse.jetty.http.HttpHeader;
 
@@ -403,10 +404,12 @@ public class CORSAuthenticator extends Authenticator {
              */
             response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin(request));
             response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, "true");
+            response.setHeader(HttpHeaders.VARY, HttpHeaders.ORIGIN);
          } else if(options.contains(Option.ALLOW_ANY_ORGIN)){
             response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, "*");
          } else {
             response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin(request));
+            response.setHeader(HttpHeaders.VARY, HttpHeaders.ORIGIN);
          }
 
          if(!exposeHeaders.isEmpty()) {
