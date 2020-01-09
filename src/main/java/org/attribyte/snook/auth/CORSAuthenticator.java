@@ -106,6 +106,11 @@ public class CORSAuthenticator extends Authenticator {
    public static final String ACCESS_CONTROL_EXPOSE_HEADERS_HEADER = "Access-Control-Expose-Headers";
 
    /**
+    * The access control request headers header ({@value}).
+    */
+   public static final String ACCESS_CONTROL_REQUEST_HEADERS_HEADER = "Access-Control-Request-Headers";
+
+   /**
     * The access control allow methods header ({@value}).
     */
    public static final String ACCESS_CONTROL_ALLOW_METHODS_HEADER = "Access-Control-Allow-Methods";
