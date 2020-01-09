@@ -1,5 +1,6 @@
 package org.attribyte.snook.auth;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
@@ -185,6 +186,64 @@ public class CORSAuthenticator extends Authenticator {
    }
 
    /**
+    * Adds a collection of exposed headers.
+    * @param exposeHeaders The collection of headers.
+    * @return A new authenticator.
+    */
+   public CORSAuthenticator withExposeHeaders(final Collection<String> exposeHeaders) {
+      return withExposeHeaders(recordJoiner.join(exposeHeaders));
+   }
+
+   /**
+    * Adds a comma-separated list of exposed headers.
+    * @param exposeHeaders The list of headers.
+    * @return A new authenticator.
+    */
+   public CORSAuthenticator withExposeHeaders(final String exposeHeaders) {
+      return new CORSAuthenticator(denyDomain, denyHost, allowDomain, allowHost, secureOriginRequired,
+              allowHeaders, allowMethods, maxAgeSeconds, exposeHeaders);
+   }
+
+
+   /**
+    * Adds a collection of allow headers.
+    * @param allowHeaders The collection of headers.
+    * @return A new authenticator.
+    */
+   public CORSAuthenticator withAllowHeaders(final Collection<String> allowHeaders) {
+      return withAllowHeaders(recordJoiner.join(allowHeaders));
+   }
+
+   /**
+    * Adds a comma-separated list of allow headers.
+    * @param allowHeaders The list of headers.
+    * @return A new authenticator.
+    */
+   public CORSAuthenticator withAllowHeaders(final String allowHeaders) {
+      return new CORSAuthenticator(denyDomain, denyHost, allowDomain, allowHost, secureOriginRequired,
+              allowHeaders, allowMethods, maxAgeSeconds, exposeHeaders);
+   }
+
+   /**
+    * Adds a collection of allow headers.
+    * @param allowMethods The collection of headers.
+    * @return A new authenticator.
+    */
+   public CORSAuthenticator withAllowMethods(final Collection<String> allowMethods) {
+      return withAllowMethods(recordJoiner.join(allowMethods));
+   }
+
+   /**
+    * Adds a comma-separated list of allow headers.
+    * @param allowMethods The list of headers.
+    * @return A new authenticator.
+    */
+   public CORSAuthenticator withAllowMethods(final String allowMethods) {
+      return new CORSAuthenticator(denyDomain, denyHost, allowDomain, allowHost, secureOriginRequired,
+              allowHeaders, allowMethods, maxAgeSeconds, exposeHeaders);
+   }
+
+   /**
     * Determine if an origin is allowed.
     * @param origin The origin.
     * @return The host of the allowed origin or {@code null} if not allowed.
@@ -350,4 +409,5 @@ public class CORSAuthenticator extends Authenticator {
    private final String allowMethods;
    private final String maxAgeSeconds;
    private static Splitter recordSplitter = Splitter.on(',').trimResults().omitEmptyStrings();
+   private static Joiner recordJoiner = Joiner.on(',').skipNulls();
 }
