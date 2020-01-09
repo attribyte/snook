@@ -397,6 +397,10 @@ public class CORSAuthenticator extends Authenticator {
          return null;
       } else {
          if(options.contains(Option.ALLOW_CREDENTIALS)) {
+            /*
+               When responding to a credentialed request, the server must specify an origin in the value of the
+               Access-Control-Allow-Origin header, instead of specifying the "*" wildcard.
+             */
             response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin(request));
             response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, "true");
          } else if(options.contains(Option.ALLOW_ANY_ORGIN)){
