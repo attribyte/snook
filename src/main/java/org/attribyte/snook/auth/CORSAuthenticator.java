@@ -145,7 +145,7 @@ public class CORSAuthenticator extends Authenticator {
               ImmutableSet.copyOf(recordSplitter.split(props.getProperty(DENY_ORIGIN_HOST_PROP, ""))),
               ImmutableSet.copyOf(recordSplitter.split(props.getProperty(ALLOW_ORIGIN_DOMAIN_PROP, ""))),
               ImmutableSet.copyOf(recordSplitter.split(props.getProperty(ALLOW_ORIGIN_HOST_PROP, ""))),
-              Strings.nullToEmpty(props.getProperty(REQUIRE_SECURE_ORIGIN_PROP)).trim().equalsIgnoreCase("true"),
+              props.getProperty(REQUIRE_SECURE_ORIGIN_PROP, "").trim().equalsIgnoreCase("true"),
               props.getProperty(ALLOW_HEADERS_PROP, ""),
               props.getProperty(ALLOW_METHODS_PROP, "OPTIONS, GET, POST"),
               props.getProperty(MAX_AGE_PROP, "86400"),
@@ -186,6 +186,40 @@ public class CORSAuthenticator extends Authenticator {
    }
 
    /**
+    * Creates the origin auth.
+    * @param denyDomain A set of domains to deny.
+    * @param denyHost A set of hosts to deny.
+    * @param allowDomain A set of domains to allow.
+    * @param allowHost A set of hosts to allow.
+    * @param allowAll Are all origins allowed?
+    * @param secureOriginRequired Must the origin be secure?
+    * @param allowHeaders A comma-separated list of headers to allow.
+    * @param allowMethods A comma-separated list of methods to allow.
+    * @param maxAgeSeconds The maximum age in seconds for pre-flight requests.
+    * @param exposeHeaders A comma-separated list of headers to expose.
+    */
+   private CORSAuthenticator(final Collection<String> denyDomain, final Collection<String> denyHost,
+                             final Collection<String> allowDomain, final Collection<String> allowHost,
+                             final boolean allowAll,
+                             final boolean secureOriginRequired,
+                             final String allowHeaders,
+                             final String allowMethods,
+                             final String maxAgeSeconds,
+                             final String exposeHeaders) {
+      this.denyDomain = denyDomain == null ? ImmutableSet.of() : ImmutableSet.copyOf(denyDomain);
+      this.denyHost = denyHost == null ? ImmutableSet.of() : ImmutableSet.copyOf(denyHost);
+      this.allowDomain = allowDomain == null ? ImmutableSet.of() : ImmutableSet.copyOf(allowDomain);
+      this.allowHost = allowHost == null ? ImmutableSet.of() : ImmutableSet.copyOf(allowHost);
+      this.allowAll = allowAll;
+      this.secureOriginRequired = secureOriginRequired;
+      this.allowHeaders = Strings.nullToEmpty(allowHeaders).trim();
+      this.allowMethods = Strings.nullToEmpty(allowMethods).trim();
+      Integer checkMaxAgeSeconds = Ints.tryParse(maxAgeSeconds);
+      this.maxAgeSeconds = checkMaxAgeSeconds == null || checkMaxAgeSeconds < 1 ? "-1" : maxAgeSeconds;
+      this.exposeHeaders = Strings.nullToEmpty(exposeHeaders).trim();
+   }
+
+   /**
     * Adds a collection of exposed headers.
     * @param exposeHeaders The collection of headers.
     * @return A new authenticator.
@@ -200,7 +234,8 @@ public class CORSAuthenticator extends Authenticator {
     * @return A new authenticator.
     */
    public CORSAuthenticator withExposeHeaders(final String exposeHeaders) {
-      return new CORSAuthenticator(denyDomain, denyHost, allowDomain, allowHost, secureOriginRequired,
+      return new CORSAuthenticator(denyDomain, denyHost, allowDomain, allowHost, allowAll,
+              secureOriginRequired,
               allowHeaders, allowMethods, maxAgeSeconds, exposeHeaders);
    }
 
@@ -220,7 +255,7 @@ public class CORSAuthenticator extends Authenticator {
     * @return A new authenticator.
     */
    public CORSAuthenticator withAllowHeaders(final String allowHeaders) {
-      return new CORSAuthenticator(denyDomain, denyHost, allowDomain, allowHost, secureOriginRequired,
+      return new CORSAuthenticator(denyDomain, denyHost, allowDomain, allowHost, allowAll, secureOriginRequired,
               allowHeaders, allowMethods, maxAgeSeconds, exposeHeaders);
    }
 
@@ -239,7 +274,7 @@ public class CORSAuthenticator extends Authenticator {
     * @return A new authenticator.
     */
    public CORSAuthenticator withAllowMethods(final String allowMethods) {
-      return new CORSAuthenticator(denyDomain, denyHost, allowDomain, allowHost, secureOriginRequired,
+      return new CORSAuthenticator(denyDomain, denyHost, allowDomain, allowHost, allowAll, secureOriginRequired,
               allowHeaders, allowMethods, maxAgeSeconds, exposeHeaders);
    }
 
