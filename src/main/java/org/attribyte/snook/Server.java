@@ -26,11 +26,10 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.logging.log4j.Level;
 import org.attribyte.api.InitializationException;
 import org.attribyte.api.Logger;
+import org.attribyte.snook.log.Log4jLogger;
 import org.attribyte.util.InitUtil;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
@@ -78,7 +77,11 @@ public abstract class Server {
                     final String loggerName,
                     final boolean withGzip) throws Exception {
       this.props = props(propsResourceName, args);
-      this.logger = log4jLogger(props, loggerName);
+
+      boolean debugMode = props.getProperty("server." + ServerConfiguration.DEBUG_PROPERTY,
+              Boolean.toString(ServerConfiguration.DEFAULT_DEBUG_MODE))
+              .equalsIgnoreCase("true");
+      this.logger = log4jLogger(loggerName, debugMode ? Level.DEBUG : Level.INFO);
       this.serverConfiguration = new ServerConfiguration("server.", props);
       this.debug = debug(this.serverConfiguration.debug);
       if(this.debug) {
@@ -127,41 +130,15 @@ public abstract class Server {
       return loadProperties(propsResourceName, args, parameterMap);
    }
 
-   private static Logger log4jLogger(final Properties props, final String loggerName) {
-      PropertyConfigurator.configure(new InitUtil("log.", props).getProperties());
-      final org.apache.log4j.Logger log4jLogger = org.apache.log4j.Logger.getLogger(loggerName);
-      if(props.getProperty("server." + ServerConfiguration.DEBUG_PROPERTY, Boolean.toString(ServerConfiguration.DEFAULT_DEBUG_MODE))
-              .equalsIgnoreCase("true")) {
-         LogManager.getRootLogger().setLevel(Level.DEBUG);
-         log4jLogger.setLevel(Level.DEBUG);
-      }
-
-      return new Logger() {
-
-         public void debug(String msg) {
-            log4jLogger.debug(msg);
-         }
-
-         public void info(String msg) {
-            log4jLogger.info(msg);
-         }
-
-         public void warn(String msg) {
-            log4jLogger.warn(msg);
-         }
-
-         public void warn(String msg, Throwable t) {
-            log4jLogger.warn(msg, t);
-         }
-
-         public void error(String msg) {
-            log4jLogger.error(msg);
-         }
-
-         public void error(String msg, Throwable t) {
-            log4jLogger.error(msg, t);
-         }
-      };
+   /**
+    * Create a log4j-based logger.
+    * @param loggerName The name of the log4j logger.
+    * @param minimumLevel The minimum level.
+    * @return The logger.
+    */
+   protected static Logger log4jLogger(final String loggerName,
+                                       final Level minimumLevel) {
+      return new Log4jLogger(loggerName, minimumLevel);
    }
 
    /**
