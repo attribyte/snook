@@ -24,6 +24,7 @@ import org.attribyte.api.InitializationException;
 import org.attribyte.util.InitUtil;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -118,6 +119,7 @@ public class ServerConfiguration {
       this.trustStoreResource = "";
       this.trustStorePasswordWasSpecified = false;
       this.sslContextFactory = Optional.empty();
+      this.enableForwardedRequestCustomizer = false;
    }
 
    /**
@@ -181,6 +183,8 @@ public class ServerConfiguration {
       if(connectionSecurity != ConnectionSecurity.NONE && !sslContextFactory.isPresent()) {
          throw new InitializationException(String.format("A '%s' must be specified with 'connectionSecurity', %s", KEYSTORE_FILE_PROPERTY, connectionSecurity));
       }
+      this.enableForwardedRequestCustomizer =
+              init.getProperty(ENABLE_FORWARDED_REQUEST_CUSTOMIZER_PROPERTY, "true").equalsIgnoreCase("false");
    }
 
    /**
@@ -349,6 +353,11 @@ public class ServerConfiguration {
    public static final String TRUSTSTORE_PASSWORD_PROPERTY = "truststorePassword";
 
    /**
+    * The property name for the enable forwarded request cusomizer flag ({@value}.
+    */
+   public static final String ENABLE_FORWARDED_REQUEST_CUSTOMIZER_PROPERTY = "enableForwardedRequestCustomizer";
+
+   /**
     * The IP this server is listening on.
     */
    public final String listenIP;
@@ -458,6 +467,15 @@ public class ServerConfiguration {
     */
    public final boolean allowSymlinks;
 
+   /**
+    * Is the forwarded request customizer enabled? Default {@code true}.
+    * <p>
+    *    Alters the request by using headers like {@code X-Forwarded-For} to
+    *    make the real endpoint visible.
+    * </p>
+    */
+   public final boolean enableForwardedRequestCustomizer;
+
    @Override
    public String toString() {
       return MoreObjects.toStringHelper(this)
@@ -481,6 +499,7 @@ public class ServerConfiguration {
               .add("trustStorePath", trustStorePath)
               .add("trustStoreResource", trustStoreResource)
               .add("trustStorePasswordWasSpecified", trustStorePasswordWasSpecified)
+              .add("enableForwardedRequestCustomizer", enableForwardedRequestCustomizer)
               .toString();
    }
 
@@ -496,6 +515,9 @@ public class ServerConfiguration {
       httpConfig.setResponseHeaderSize(responseHeaderSize);
       httpConfig.setSendServerVersion(sendServerVersion);
       httpConfig.setSendDateHeader(sendDateHeader);
+      if(enableForwardedRequestCustomizer) {
+         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
+      }
 
       ServerConnector httpConnector = new ServerConnector(httpServer, new HttpConnectionFactory(httpConfig));
       httpConnector.setHost(listenIP);
@@ -507,6 +529,9 @@ public class ServerConfiguration {
          httpConfig.setSecurePort(httpsPort);
          HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
          httpsConfig.addCustomizer(new SecureRequestCustomizer());
+         if(enableForwardedRequestCustomizer) {
+            httpsConfig.addCustomizer(new ForwardedRequestCustomizer());
+         }
 
          ServerConnector httpsConnector = new ServerConnector(httpServer,
                  new SslConnectionFactory(sslContextFactory.get(), HttpVersion.HTTP_1_1.asString()),
