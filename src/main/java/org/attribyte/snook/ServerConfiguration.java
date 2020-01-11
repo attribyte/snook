@@ -184,7 +184,7 @@ public class ServerConfiguration {
          throw new InitializationException(String.format("A '%s' must be specified with 'connectionSecurity', %s", KEYSTORE_FILE_PROPERTY, connectionSecurity));
       }
       this.enableForwardedRequestCustomizer =
-              init.getProperty(ENABLE_FORWARDED_REQUEST_CUSTOMIZER_PROPERTY, "true").equalsIgnoreCase("false");
+              init.getProperty(ENABLE_FORWARDED_REQUEST_CUSTOMIZER_PROPERTY, "false").equalsIgnoreCase("true");
    }
 
    /**
