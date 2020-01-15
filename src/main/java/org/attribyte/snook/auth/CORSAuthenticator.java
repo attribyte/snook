@@ -5,6 +5,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
 import com.google.common.primitives.Ints;
 import org.eclipse.jetty.http.HttpHeader;
@@ -185,6 +186,15 @@ public class CORSAuthenticator extends Authenticator {
       this.allowAll = this.allowHost.contains("*") || this.allowDomain.contains("*");
       this.secureOriginRequired = secureOriginRequired;
       this.allowHeaders = Strings.nullToEmpty(allowHeaders).trim();
+      if(this.allowHeaders.isEmpty()) {
+         this.allowHeadersSet = ImmutableSet.of();
+      } else {
+         Set<String> allowHeadersSet = Sets.newHashSet();
+         for(String headerName : recordSplitter.split(this.allowHeaders)) {
+            allowHeadersSet.add(headerName.toLowerCase());
+         }
+         this.allowHeadersSet = ImmutableSet.copyOf(allowHeadersSet);
+      }
       this.allowMethods = Strings.nullToEmpty(allowMethods).trim();
       Integer checkMaxAgeSeconds = Ints.tryParse(maxAgeSeconds);
       this.maxAgeSeconds = checkMaxAgeSeconds == null || checkMaxAgeSeconds < 1 ? "-1" : maxAgeSeconds;
@@ -200,6 +210,7 @@ public class CORSAuthenticator extends Authenticator {
     * @param allowAll Are all origins allowed?
     * @param secureOriginRequired Must the origin be secure?
     * @param allowHeaders A comma-separated list of headers to allow.
+    * @param allowHeadersSet A comma-sep
     * @param allowMethods A comma-separated list of methods to allow.
     * @param maxAgeSeconds The maximum age in seconds for pre-flight requests.
     * @param exposeHeaders A comma-separated list of headers to expose.
@@ -209,6 +220,7 @@ public class CORSAuthenticator extends Authenticator {
                              final boolean allowAll,
                              final boolean secureOriginRequired,
                              final String allowHeaders,
+                             final ImmutableSet<String> allowHeadersSet,
                              final String allowMethods,
                              final String maxAgeSeconds,
                              final String exposeHeaders) {
@@ -219,6 +231,7 @@ public class CORSAuthenticator extends Authenticator {
       this.allowAll = allowAll;
       this.secureOriginRequired = secureOriginRequired;
       this.allowHeaders = Strings.nullToEmpty(allowHeaders).trim();
+      this.allowHeadersSet = allowHeadersSet;
       this.allowMethods = Strings.nullToEmpty(allowMethods).trim();
       Integer checkMaxAgeSeconds = Ints.tryParse(maxAgeSeconds);
       this.maxAgeSeconds = checkMaxAgeSeconds == null || checkMaxAgeSeconds < 1 ? "-1" : maxAgeSeconds;
@@ -242,7 +255,7 @@ public class CORSAuthenticator extends Authenticator {
    public CORSAuthenticator withExposeHeaders(final String exposeHeaders) {
       return new CORSAuthenticator(denyDomain, denyHost, allowDomain, allowHost, allowAll,
               secureOriginRequired,
-              allowHeaders, allowMethods, maxAgeSeconds, exposeHeaders);
+              allowHeaders, allowHeadersSet, allowMethods, maxAgeSeconds, exposeHeaders);
    }
 
 
@@ -262,7 +275,7 @@ public class CORSAuthenticator extends Authenticator {
     */
    public CORSAuthenticator withAllowHeaders(final String allowHeaders) {
       return new CORSAuthenticator(denyDomain, denyHost, allowDomain, allowHost, allowAll, secureOriginRequired,
-              allowHeaders, allowMethods, maxAgeSeconds, exposeHeaders);
+              allowHeaders, allowHeadersSet, allowMethods, maxAgeSeconds, exposeHeaders);
    }
 
    /**
@@ -281,7 +294,7 @@ public class CORSAuthenticator extends Authenticator {
     */
    public CORSAuthenticator withAllowMethods(final String allowMethods) {
       return new CORSAuthenticator(denyDomain, denyHost, allowDomain, allowHost, allowAll, secureOriginRequired,
-              allowHeaders, allowMethods, maxAgeSeconds, exposeHeaders);
+              allowHeaders, allowHeadersSet, allowMethods, maxAgeSeconds, exposeHeaders);
    }
 
    /**
@@ -452,6 +465,7 @@ public class CORSAuthenticator extends Authenticator {
    private final boolean allowAll;
    private final boolean secureOriginRequired;
    private final String allowHeaders;
+   private final ImmutableSet<String> allowHeadersSet;
    private final String exposeHeaders;
    private final String allowMethods;
    private final String maxAgeSeconds;
