@@ -20,6 +20,7 @@ package org.attribyte.snook;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.net.HttpHeaders;
 import org.attribyte.api.http.Response;
 import org.eclipse.jetty.http.HttpHeader;
 
@@ -60,20 +61,20 @@ public class HTTPUtil {
    private static final String WWW_AUTHENTICATE_BASIC = "Basic realm=\"%s\"";
 
    /**
-    * Sends HTTP unauthorized.
+    * Sends HTTP unauthorized for {@code Basic} auth.
     * <p>
     *    If the client accepts {@code text/html}, the standard message will be returned via ({@code sendError}),
     *    otherwise no content (other than the status) will be sent with the response.
     * </p>
     * @param request The request.
     * @param response The response.
-    * @param basicAuthRealm The realm sent with the {@code WWW-Authenticate} response header.
+    * @param basicAuthRealm The (required) realm sent with the {@code WWW-Authenticate} response header.
     * @throws IOException on output error.
     */
    public static void sendHTTPUnauthorized(final HttpServletRequest request,
                                            final HttpServletResponse response,
                                            final String basicAuthRealm) throws IOException {
-      response.setHeader("WWW-Authenticate", String.format(WWW_AUTHENTICATE_BASIC, Strings.nullToEmpty(basicAuthRealm)));
+      response.setHeader(HttpHeaders.WWW_AUTHENTICATE, String.format(WWW_AUTHENTICATE_BASIC, Strings.nullToEmpty(basicAuthRealm)));
       if(clientAcceptsHTML(request)) {
          response.sendError(Response.Code.UNAUTHORIZED, "Authorization Required");
       } else {
@@ -84,20 +85,90 @@ public class HTTPUtil {
    }
 
    /**
-    * Sends HTTP unauthorized.
-    * @param request The request.
+    * Sets the status code and header value for failed {@code Basic} auth.
     * @param response The response.
-    * @param basicAuthRealm The realm sent with the 'WWW-Authenticate' response header.
-    * @param message The message to send with the response.
+    * @param authRealm The (required) realm sent with the 'WWW-Authenticate' response header.
+    */
+   public static void setBasicUnauthorized(final HttpServletResponse response,
+                                           final String authRealm) {
+      response.setHeader(HttpHeaders.WWW_AUTHENTICATE, String.format(WWW_AUTHENTICATE_BASIC, Strings.nullToEmpty(authRealm)));
+      response.setStatus(Response.Code.UNAUTHORIZED);
+   }
+
+   /**
+    * Sends HTTP unauthorized for {@code Basic} auth with a message.
+    * @param response The response.
+    * @param authRealm The (required) realm sent with the 'WWW-Authenticate' response header.
     * @throws IOException on output error.
     */
-   public static void sendHTTPUnauthorized(final HttpServletRequest request,
-                                           final HttpServletResponse response,
-                                           final String basicAuthRealm,
-                                           final String message) throws IOException {
-      response.setHeader("WWW-Authenticate", String.format(WWW_AUTHENTICATE_BASIC, Strings.nullToEmpty(basicAuthRealm)));
+   public static void sendBasicUnauthorized(final HttpServletResponse response,
+                                            final String authRealm) throws IOException {
+      sendBasicUnauthorized(response, authRealm, null);
+   }
+
+   /**
+    * Sends HTTP unauthorized for {@code Basic} auth with a message.
+    * @param response The response.
+    * @param authRealm The (required) realm sent with the 'WWW-Authenticate' response header.
+    * @param message The message to send with the response. May be {@code null}.
+    * @throws IOException on output error.
+    */
+   public static void sendBasicUnauthorized(final HttpServletResponse response,
+                                            final String authRealm,
+                                            final String message) throws IOException {
+      response.setHeader(HttpHeaders.WWW_AUTHENTICATE, String.format(WWW_AUTHENTICATE_BASIC, Strings.nullToEmpty(authRealm)));
       response.setStatus(Response.Code.UNAUTHORIZED);
-      response.getOutputStream().print(message);
+      if(!Strings.isNullOrEmpty(message)) {
+         response.getOutputStream().print(message);
+      } else {
+         response.setContentLength(0);
+      }
+      response.flushBuffer();
+   }
+
+   /**
+    * Template for WWW-Authenticate value when 'Bearer' auth is required.
+    */
+   private static final String WWW_AUTHENTICATE_BEARER = "Bearer realm=\"%s\"";
+
+   /**
+    * Sends HTTP unauthorized for {@code Basic} auth with a message.
+    * See: https://tools.ietf.org/html/rfc6750
+    * @param response The response.
+    * @param tokenPresent Was an invalid token present?
+    * @throws IOException on output error.
+    */
+   public static void sendBearerUnauthorized(final HttpServletResponse response,
+                                             final boolean tokenPresent) throws IOException {
+      sendBearerUnauthorized(response, null, tokenPresent);
+   }
+
+   /**
+    * Sends HTTP unauthorized for {@code Basic} auth with a message.
+    * See: https://tools.ietf.org/html/rfc6750
+    * @param response The response.
+    * @param authRealm The realm sent with the 'WWW-Authenticate' response header. May be null.
+    * @param tokenPresent Was an invalid token present?
+    * @throws IOException on output error.
+    */
+   public static void sendBearerUnauthorized(final HttpServletResponse response,
+                                             final String authRealm,
+                                             final boolean tokenPresent) throws IOException {
+
+      StringBuilder buf = new StringBuilder();
+      if(Strings.isNullOrEmpty(authRealm)) {
+         buf.append("Bearer");
+      } else {
+         buf.append(String.format(WWW_AUTHENTICATE_BEARER, authRealm));
+      }
+
+      if(tokenPresent) {
+         buf.append(", error=\"invalid_token\"");
+      }
+
+      response.setStatus(Response.Code.UNAUTHORIZED);
+      response.setHeader(HttpHeaders.WWW_AUTHENTICATE, buf.toString());
+      response.setContentLength(0);
       response.flushBuffer();
    }
 }
