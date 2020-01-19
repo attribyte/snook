@@ -1,9 +1,7 @@
 package org.attribyte.snook.auth.impl;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import org.junit.Test;
-import org.mindrot.jbcrypt.BCrypt;
 
 import java.io.IOException;
 import java.util.List;
