@@ -19,25 +19,33 @@
 package org.attribyte.snook.auth.impl;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashCode;
+import org.attribyte.snook.auth.AuthenticationToken;
 import org.attribyte.snook.auth.Authenticator;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import static com.google.common.base.Strings.nullToEmpty;
+import static org.attribyte.util.StringUtil.randomString;
+import static com.google.common.base.Strings.isNullOrEmpty;
+
 public class UsersFile {
 
-   public UsersFile(final File file) throws IOException {
-      this(parse(Files.readAllLines(file.toPath())));
+   public UsersFile(final File file, final boolean preserveFormatting) throws IOException {
+      this(parse(Files.readAllLines(file.toPath()), preserveFormatting));
    }
 
    private UsersFile(final List<Record> records) {
@@ -72,6 +80,11 @@ public class UsersFile {
        */
       SHA256,
 
+      /**
+       * No hash.
+       */
+      NONE
+
    }
 
    /**
@@ -82,9 +95,30 @@ public class UsersFile {
       public Record(final String username,
                     final HashType hashType,
                     final HashCode hashCode) {
+         this(username, hashType, hashCode, null);
+      }
+
+
+      public Record(final String value) {
+         this(null, HashType.NONE, null, value);
+      }
+
+      public Record(final String username,
+                    final HashType hashType,
+                    final HashCode hashCode,
+                    final String value) {
          this.username = username;
          this.hashType = hashType;
          this.hashCode = hashCode;
+         this.value = value;
+      }
+
+      /**
+       * Clears the value of a record.
+       * @return The record with value cleared.
+       */
+      public Record clearValue() {
+         return isNullOrEmpty(value) ? this : new Record(username, hashType, hashCode, null);
       }
 
       /**
@@ -102,29 +136,72 @@ public class UsersFile {
        */
       public final HashCode hashCode;
 
+      /**
+       * The hashed value, if available.
+       */
+      public final String value;
 
       @Override
       public String toString() {
+         return MoreObjects.toStringHelper(this)
+                 .add("username", username)
+                 .add("hashType", hashType)
+                 .add("hashCode", hashCode)
+                 .add("value", value)
+                 .toString();
+      }
+
+      public String toLine() {
+         if(hashType == HashType.NONE) {
+            return nullToEmpty(value);
+         }
+
          StringBuilder buf = new StringBuilder(username);
          buf.append(":");
          if(hashType == HashType.SHA256) {
-            buf.append("$sha256$");
-            buf.append(hashCode.toString());
+            if(isNullOrEmpty(value)) {
+               buf.append("$sha256$");
+               buf.append(hashCode.toString());
+            } else {
+               buf.append("$token$");
+               buf.append(nullToEmpty(value));
+            }
          } else {
-            buf.append(new String(hashCode.asBytes(), Charsets.US_ASCII));
+            if(isNullOrEmpty(value)) {
+               buf.append(new String(hashCode.asBytes(), Charsets.US_ASCII));
+            } else {
+               buf.append("$password$").append(nullToEmpty(value));
+            }
          }
          return buf.toString();
       }
    }
 
+   /**
+    * Transform a list of records to a list of secure records for output.
+    * @param records The input records.
+    * @return The secure records.
+    */
+   static List<Record> toSecure(final List<Record> records) {
+      List<Record> secureRecords = Lists.newArrayListWithExpectedSize(records.size());
+      records.forEach(record -> {
+         switch(record.hashType) {
+            case SHA256:
+            case BCRYPT:
+               secureRecords.add(record.clearValue());
+         }
+      });
+      return secureRecords;
+   }
 
    /**
     * Parse lines into a list of records.
     * @param lines The list of lines.
+    * @param preserveFormatting Preserve formatting (empty lines, comments) as records.
     * @return The list of records.
     * @throws IOException on invalid record.
     */
-   private static List<Record> parse(final List<String> lines) throws IOException {
+   static List<Record> parse(final List<String> lines, final boolean preserveFormatting) throws IOException {
       List<Record> records = Lists.newArrayListWithExpectedSize(Math.min(lines.size(), 1024));
       Set<HashCode> hashes = Sets.newHashSetWithExpectedSize(records.size());
       int lineNumber = 0;
@@ -132,6 +209,9 @@ public class UsersFile {
          lineNumber++;
          line = line.trim();
          if(line.isEmpty() || line.startsWith("#")) {
+            if(preserveFormatting) {
+               records.add(new Record(line));
+            }
             continue;
          }
 
@@ -147,26 +227,35 @@ public class UsersFile {
          if(hash.startsWith("$2a")) {
             record = new Record(username, HashType.BCRYPT, HashCode.fromBytes(hash.getBytes(Charsets.US_ASCII)));
          } else if(hash.startsWith("$sha256$")) {
-            record = new Record(username, HashType.SHA256, HashCode.fromString(hash.substring(8)));
+            String hashString = hash.substring(8);
+            if(hashString.length() != 64) {
+               throw new IOException(String.format("Hash is invalid for '%s' at line %d", hashString, lineNumber));
+            }
+            record = new Record(username, HashType.SHA256, HashCode.fromString(hashString));
          } else if(hash.startsWith("$token$")) {
             String token = hash.substring(7);
-            if(token.length() < MIN_TOKEN_LENGTH) {
+            if(token.isEmpty()) {
+               token = AuthenticationToken.randomToken().toString();
+            } else if(token.length() < MIN_TOKEN_LENGTH) {
                throw new IOException(String.format("Token is too short for '%s' at line %d", token, lineNumber));
             }
-            record = new Record(username, HashType.SHA256, Authenticator.hashCredentials(token));
+            record = new Record(username, HashType.SHA256, Authenticator.hashCredentials(token), token);
          } else if(hash.startsWith("$password$")) {
             String password = hash.substring(10);
-            if(password.length() < MIN_PASSWORD_LENGTH) {
+            if(password.isEmpty()) {
+               password = randomString(MIN_PASSWORD_LENGTH);
+            } else if(password.length() < MIN_PASSWORD_LENGTH) {
                throw new IOException(String.format("Password is too short for '%s' at line %d", password, lineNumber));
             }
             record = new Record(username, HashType.BCRYPT,
                     HashCode.fromBytes(BCrypt.hashpw(password, BCrypt.gensalt(DEFAULT_BCRYPT_ROUNDS))
-                            .getBytes(Charsets.US_ASCII)));
+                            .getBytes(Charsets.US_ASCII)), password);
          } else {
-            throw new IOException(String.format("Expecting '$2a', '$sha256$, '$token$' or '$password' at line %d", lineNumber));
+            throw new IOException(String.format("Expecting '$2a', '$sha256$, '$token$' or '$password$' at line %d", lineNumber));
          }
 
          if(!hashes.contains(record.hashCode)) {
+            hashes.add(record.hashCode);
             records.add(record);
          } else {
             throw new IOException(String.format("Duplicate hash at line %d", lineNumber));
@@ -175,7 +264,6 @@ public class UsersFile {
 
       return records;
    }
-
 
    /**
     * An immutable map of BCrypt hash vs username.
@@ -200,17 +288,12 @@ public class UsersFile {
    /**
     * The minimum password length.
     */
-   public static final int MIN_PASSWORD_LENGTH = 8;
+   public static final int MIN_PASSWORD_LENGTH = 12;
 
    /**
     * The minimum token length.
     */
    public static final int MIN_TOKEN_LENGTH = 16;
-
-   /**
-    * The generated password length.
-    */
-   public static final int GEN_PASSWORD_LENGTH = 12;
 
    /**
     * Splits lines for records.

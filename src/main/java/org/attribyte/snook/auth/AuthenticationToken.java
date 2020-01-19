@@ -35,9 +35,7 @@ public class AuthenticationToken {
     */
    public AuthenticationToken(final String username) {
       this.username = username;
-      byte[] tokenBytes = new byte[TOKEN_BYTES];
-      rnd.nextBytes(tokenBytes);
-      this.token = HashCode.fromBytes(tokenBytes);
+      this.token = randomToken();
    }
 
    /**
@@ -80,6 +78,16 @@ public class AuthenticationToken {
               .add("username", username)
               .add("token", token)
               .toString();
+   }
+
+   /**
+    * Generates a random token.
+    * @return The token as a {@code HashCode}.
+    */
+   public static HashCode randomToken() {
+      byte[] tokenBytes = new byte[TOKEN_BYTES];
+      rnd.nextBytes(tokenBytes);
+      return HashCode.fromBytes(tokenBytes);
    }
 
    /**
