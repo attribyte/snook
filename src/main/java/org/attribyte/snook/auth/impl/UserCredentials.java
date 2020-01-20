@@ -366,6 +366,15 @@ public class UserCredentials {
    }
 
    /**
+    * Gets the user for a hash.
+    * @param hash The hash.
+    * @return The user or {@code null} if none matches.
+    */
+   public final String userForHash(final HashCode hash) {
+      return userForHash.get(hash);
+   }
+
+   /**
     * An immutable map of BCrypt hash vs username.
     */
    public final ImmutableMap<String, HashCode> bcryptHashes;
