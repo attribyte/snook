@@ -21,18 +21,23 @@ package org.attribyte.snook.auth.impl;
 import com.google.common.base.Charsets;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashCode;
+import com.google.common.io.CharStreams;
 import org.attribyte.snook.auth.AuthenticationToken;
 import org.attribyte.snook.auth.Authenticator;
+import org.joda.time.format.ISODateTimeFormat;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.Iterator;
 import java.util.List;
@@ -42,13 +47,108 @@ import static com.google.common.base.Strings.nullToEmpty;
 import static org.attribyte.util.StringUtil.randomString;
 import static com.google.common.base.Strings.isNullOrEmpty;
 
+/**
+ * A users file is of the following format.
+ * @code {
+ *    #Generates a password and hash.
+ *    username0:$password$
+ *
+ *    #Generates a token and hash.
+ *    username0:$token$
+ *
+ *    #Generates a password hash.
+ *    username1:$password$topsecret
+ *
+ *    #Generates a hashed token.
+ *    username1:$token$12345123451234512345
+ *
+ *    #A previously generated hashed token.
+ *    username2:$sha256$f67ca736829c9c3d3f580877b728ff122e903ca7c19bf43c598fe5b082a4ac91
+ *
+ *    #A previously generated hashed password.
+ *    username2:$2a$04$F4UtBMn30o6kRRsl7TwyKuPdUFXIQVVJCUndiXa3YhkiD1uNOCUBG
+ * }
+ */
 public class UsersFile {
 
-   public UsersFile(final File file, final boolean preserveFormatting) throws IOException {
-      this(parse(Files.readAllLines(file.toPath()), preserveFormatting));
+   /**
+    * Creates a users file.
+    * @param file The file.
+    * @throws IOException on read error or invalid file.
+    */
+   public UsersFile(final File file) throws IOException {
+      this(parse(Files.readAllLines(file.toPath()), false));
    }
 
-   private UsersFile(final List<Record> records) {
+   /**
+    * Creates a users file from a stream.
+    * @param is The input stream.
+    * @throws IOException on read error or invalid file.
+    */
+   public UsersFile(final InputStream is) throws IOException {
+      this(parse(CharStreams.readLines(new InputStreamReader(is, Charsets.UTF_8)), false));
+   }
+
+   /**
+    * Generate a secure and insecure file from an input file.
+    * @param inputFile The input file.
+    * @param secureFile The secure file - contains only hashes.
+    * @param insecureFile The insecure file - may contain comments, tokens and cleartext passwords.
+    * @param overwrite If {@code true}, existing files will be overwritten.
+    * @throws IOException on read error or invalid file.
+    */
+   public static void generateFiles(final File inputFile, final File secureFile,
+                                    final File insecureFile, final boolean overwrite) throws IOException {
+      try(InputStream is = new FileInputStream(inputFile)) {
+         generateFiles(is, secureFile, insecureFile, overwrite);
+      }
+   }
+
+   /**
+    * Generate a secure and insecure file from an input stream.
+    * @param is The input stream.
+    * @param secureFile The secure file - contains only hashes.
+    * @param insecureFile The insecure file - may contain comments, tokens and cleartext passwords.
+    * @param overwrite If {@code true}, existing files will be overwritten.
+    * @throws IOException on read error or invalid file.
+    */
+   public static void generateFiles(final InputStream is, final File secureFile,
+                                    final File insecureFile, final boolean overwrite) throws IOException {
+      if(!overwrite) {
+         if(secureFile.exists()) {
+            throw new IOException(String.format("The file, '%s' exists", secureFile.getAbsolutePath()));
+         }
+
+         if(insecureFile.exists()) {
+            throw new IOException(String.format("The file, '%s' exists", insecureFile.getAbsolutePath()));
+         }
+      }
+
+      List<Record> records = parse(CharStreams.readLines(new InputStreamReader(is, Charsets.UTF_8)), true);
+      long genTime = System.currentTimeMillis();
+      try(PrintWriter writer = new PrintWriter(new FileWriter(insecureFile))) {
+         writer.println("# " + ISODateTimeFormat.basicDateTimeNoMillis().print(genTime));
+         writer.println();
+         for(Record record : records) {
+            writer.println(record.toLine());
+         }
+      }
+
+      records = toSecure(records);
+      try(PrintWriter writer = new PrintWriter(new FileWriter(secureFile))) {
+         writer.println("# " + ISODateTimeFormat.basicDateTimeNoMillis().print(genTime));
+         writer.println();
+         for(Record record : records) {
+            writer.println(record.toLine());
+         }
+      }
+   }
+
+   /**
+    * Creates a users file from a list of records.
+    * @param records The records.
+    */
+   UsersFile(final List<Record> records) {
       ImmutableMap.Builder<String, HashCode> bcryptHashes = ImmutableMap.builder();
       ImmutableMap.Builder<String, HashCode> sha256Hashes = ImmutableMap.builder();
       ImmutableMap.Builder<HashCode, String> userForHash = ImmutableMap.builder();
@@ -68,7 +168,7 @@ public class UsersFile {
    /**
     * The hash type for password/tokens.
     */
-   public enum HashType {
+   enum HashType {
 
       /**
        * Hash for user-selected passwords.
@@ -90,7 +190,7 @@ public class UsersFile {
    /**
     * A record in the file.
     */
-   public static class Record {
+   static class Record {
 
       public Record(final String username,
                     final HashType hashType,
@@ -283,12 +383,12 @@ public class UsersFile {
    /**
     * The default number of bcrypt rounds.
     */
-   public static final int DEFAULT_BCRYPT_ROUNDS = 10;
+   public static final int DEFAULT_BCRYPT_ROUNDS = 11;
 
    /**
     * The minimum password length.
     */
-   public static final int MIN_PASSWORD_LENGTH = 12;
+   public static final int MIN_PASSWORD_LENGTH = 10;
 
    /**
     * The minimum token length.

@@ -91,12 +91,7 @@ public class BCryptAuthenticator extends CookieAuthenticator {
                           final HttpServletResponse resp) throws IOException {
 
       HashCode passwordHash = selectPasswordHash.apply(username);
-      if(passwordHash == null) {
-         return false;
-      }
-
-      String hashed = new String(passwordHash.asBytes(), Charsets.US_ASCII);
-      if(!BCrypt.checkpw(password, hashed)) {
+      if(!checkPassword(password, passwordHash)) {
          return false;
       }
 
@@ -111,6 +106,21 @@ public class BCryptAuthenticator extends CookieAuthenticator {
       } else {
          throw new IOException("Credentials save failed");
       }
+   }
+
+   /**
+    * Check a password against a hash code.
+    * @param password The password.
+    * @param passwordHash The password hash.
+    * @return Does the hash match?
+    */
+   public static boolean checkPassword(final String password, final HashCode passwordHash) {
+      if(password == null || passwordHash == null) {
+         return false;
+      }
+
+      String hashed = new String(passwordHash.asBytes(), Charsets.US_ASCII);
+      return BCrypt.checkpw(password, hashed);
    }
 
    @Override
