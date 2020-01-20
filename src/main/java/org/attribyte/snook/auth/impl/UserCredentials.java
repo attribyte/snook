@@ -69,14 +69,14 @@ import static com.google.common.base.Strings.isNullOrEmpty;
  *    username2:$2a$04$F4UtBMn30o6kRRsl7TwyKuPdUFXIQVVJCUndiXa3YhkiD1uNOCUBG
  * }</pre>
  */
-public class UsersFile {
+public class UserCredentials {
 
    /**
     * Creates a users file.
     * @param file The file.
     * @throws IOException on read error or invalid file.
     */
-   public UsersFile(final File file) throws IOException {
+   public UserCredentials(final File file) throws IOException {
       this(parse(Files.readAllLines(file.toPath()), false));
    }
 
@@ -85,7 +85,7 @@ public class UsersFile {
     * @param is The input stream.
     * @throws IOException on read error or invalid file.
     */
-   public UsersFile(final InputStream is) throws IOException {
+   public UserCredentials(final InputStream is) throws IOException {
       this(parse(CharStreams.readLines(new InputStreamReader(is, Charsets.UTF_8)), false));
    }
 
@@ -148,7 +148,7 @@ public class UsersFile {
     * Creates a users file from a list of records.
     * @param records The records.
     */
-   UsersFile(final List<Record> records) {
+   UserCredentials(final List<Record> records) {
       ImmutableMap.Builder<String, HashCode> bcryptHashes = ImmutableMap.builder();
       ImmutableMap.Builder<String, HashCode> sha256Hashes = ImmutableMap.builder();
       ImmutableMap.Builder<HashCode, String> userForHash = ImmutableMap.builder();
