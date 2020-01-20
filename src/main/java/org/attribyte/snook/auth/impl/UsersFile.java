@@ -49,7 +49,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 
 /**
  * A users file is of the following format.
- * @code {
+ * <pre>{@code
  *    #Generates a password and hash.
  *    username0:$password$
  *
@@ -67,7 +67,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
  *
  *    #A previously generated hashed password.
  *    username2:$2a$04$F4UtBMn30o6kRRsl7TwyKuPdUFXIQVVJCUndiXa3YhkiD1uNOCUBG
- * }
+ * }</pre>
  */
 public class UsersFile {
 
