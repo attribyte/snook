@@ -56,11 +56,17 @@ import static com.google.common.base.Strings.isNullOrEmpty;
  *    #Generates a token and hash.
  *    username0:$token$
  *
+ *    #Generates a 'Basic' auth token and hash of base64([username]:[token]).
+ *    username0:$basic$
+ *
  *    #Generates a password hash.
  *    username1:$password$topsecret
  *
  *    #Generates a hashed token.
  *    username1:$token$12345123451234512345
+ *
+ *    #Generates a hashed token for 'Basic' auth.
+ *    username1:$basic$123451234512345
  *
  *    #A previously generated hashed token.
  *    username2:$sha256$f67ca736829c9c3d3f580877b728ff122e903ca7c19bf43c598fe5b082a4ac91
@@ -181,6 +187,11 @@ public class CredentialsFile {
       SHA256,
 
       /**
+       * Hash for 'Basic' auth - sha256(base64([username]:[password]).
+       */
+      SHA256_BASIC,
+
+      /**
        * No hash.
        */
       NONE
@@ -266,6 +277,14 @@ public class CredentialsFile {
                buf.append("$token$");
                buf.append(nullToEmpty(value));
             }
+         } else if(hashType == HashType.SHA256_BASIC) {
+            if(isNullOrEmpty(value)) {
+               buf.append("$sha256_basic$");
+               buf.append(hashCode.toString());
+            } else {
+               buf.append("$basic$");
+               buf.append(nullToEmpty(value));
+            }
          } else {
             if(isNullOrEmpty(value)) {
                buf.append(new String(hashCode.asBytes(), Charsets.US_ASCII));
@@ -287,6 +306,7 @@ public class CredentialsFile {
       records.forEach(record -> {
          switch(record.hashType) {
             case SHA256:
+            case SHA256_BASIC:
             case BCRYPT:
                secureRecords.add(record.clearValue());
          }
@@ -332,6 +352,12 @@ public class CredentialsFile {
                throw new IOException(String.format("Hash is invalid for '%s' at line %d", hashString, lineNumber));
             }
             record = new Record(username, HashType.SHA256, HashCode.fromString(hashString));
+         } else if(hash.startsWith("$sha256_basic$")) {
+            String hashString = hash.substring(14);
+            if(hashString.length() != 64) {
+               throw new IOException(String.format("Hash is invalid for '%s' at line %d", hashString, lineNumber));
+            }
+            record = new Record(username, HashType.SHA256_BASIC, HashCode.fromString(hashString));
          } else if(hash.startsWith("$token$")) {
             String token = hash.substring(7);
             if(token.isEmpty()) {
@@ -350,8 +376,15 @@ public class CredentialsFile {
             record = new Record(username, HashType.BCRYPT,
                     HashCode.fromBytes(BCrypt.hashpw(password, BCrypt.gensalt(DEFAULT_BCRYPT_ROUNDS))
                             .getBytes(Charsets.US_ASCII)), password);
+         } else if(hash.startsWith("$basic$")) {
+            String token = hash.substring(7);
+            if(token.isEmpty()) {
+               token = AuthenticationToken.randomToken().toString();
+            }
+            String credentials = Authenticator.base64Encoding.encode((username + ":" + token).getBytes(Charsets.UTF_8));
+            record = new Record(username, HashType.SHA256_BASIC, Authenticator.hashCredentials(credentials), token);
          } else {
-            throw new IOException(String.format("Expecting '$2a', '$sha256$, '$token$' or '$password$' at line %d", lineNumber));
+            throw new IOException(String.format("Expecting '$2a', '$sha256$, '$token$', '$password$' or '$basic$' at line %d", lineNumber));
          }
 
          if(!hashes.contains(record.hashCode)) {

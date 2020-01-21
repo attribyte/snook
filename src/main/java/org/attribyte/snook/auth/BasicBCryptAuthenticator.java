@@ -48,7 +48,7 @@ public class BasicBCryptAuthenticator extends Authenticator {
       this(validCredentialsCache, s -> {
          HashCode hash = credentialsFile.bcryptHashes.get(s);
          return hash != null ? new String(hash.asBytes(), Charsets.US_ASCII) :
-                 CredentialsFile.RANDOM_BCRYPT_STRING;
+                 null;
       });
    }
 

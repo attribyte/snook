@@ -110,15 +110,15 @@ public class CredentialsFileTest {
    @Test
    public void generateFiles() throws IOException  {
 
-      String inputLines = ("tester:$password$\ntester:$token$\n\n#comment");
+      String inputLines = ("btester:$basic$\ntester:$password$\ntester:$token$\n\n#comment");
       File secureFile = Files.createTempFile("secure_", ".txt").toFile();
       File insecureFile = Files.createTempFile("insecure_", ".txt").toFile();
 
       try(InputStream is = new ByteArrayInputStream(inputLines.getBytes(Charsets.UTF_8))) {
          CredentialsFile.generateFiles(is, secureFile, insecureFile, true);
          CredentialsFile users = new CredentialsFile(secureFile);
-         assertEquals(2, users.userForHash.size());
-         assertEquals(1, users.sha256Hashes.size());
+         assertEquals(3, users.userForHash.size());
+         assertEquals(2, users.sha256Hashes.size());
          assertEquals(1, users.bcryptHashes.size());
       } finally {
          secureFile.delete();

@@ -21,6 +21,7 @@ package org.attribyte.snook.auth;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.common.hash.HashCode;
 import org.attribyte.util.Pair;
 
@@ -32,6 +33,14 @@ import java.util.function.Function;
  * Authenticator for 'Basic' auth.
  */
 public class BasicAuthenticator extends Authenticator {
+
+   /**
+    * Creates an authenticator that uses *hashed tokens* from a credentials file.
+    * @param credentialsFile The credentials file.
+    */
+   public BasicAuthenticator(final CredentialsFile credentialsFile) {
+      this(Sets.newHashSet(credentialsFile.sha256Hashes.values()), credentialsFile.sha256Hashes::get);
+   }
 
    /**
     * Creates the authenticator.
@@ -57,6 +66,7 @@ public class BasicAuthenticator extends Authenticator {
       }
 
       String username = username(request);
+
       if(username == null) {
          return false;
       }

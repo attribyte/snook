@@ -21,6 +21,7 @@ package org.attribyte.snook.auth;
 import com.google.common.base.Charsets;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Lists;
 import com.google.common.hash.HashCode;
 import org.attribyte.snook.TestHttpServletRequest;
 import org.eclipse.jetty.http.HttpHeader;
@@ -28,6 +29,9 @@ import org.junit.Test;
 import org.mindrot.jbcrypt.BCrypt;
 
 import javax.servlet.http.HttpServletRequest;
+
+import java.io.IOException;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -88,5 +92,43 @@ public class BasicBCryptAuthenticatorTest {
       assertNull(username);
       assertFalse(basicAuthenticator.authorized(request));
       assertEquals(0, cache.size());
+   }
+
+   @Test
+   public void credentialsFile() throws IOException {
+      List<String> lines = Lists.newArrayList();
+      String token = AuthenticationToken.randomToken().toString();
+      lines.add("tester:$password$" + token);
+      List<CredentialsFile.Record> records = CredentialsFile.parse(lines, false);
+      assertEquals(1, records.size());
+      CredentialsFile credentialsFile = new CredentialsFile(records);
+      Cache<HashCode, Boolean> cache = CacheBuilder.newBuilder().build();
+      BasicBCryptAuthenticator basicAuthenticator = new BasicBCryptAuthenticator(cache, credentialsFile);
+
+      HttpServletRequest request = new TestHttpServletRequest() {
+         @Override
+         public String getHeader(final String s) {
+            return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
+                    "Basic " + Authenticator.base64Encoding.encode(("tester:" + token).getBytes(Charsets.UTF_8))
+                    : null;
+         }
+      };
+
+      assertTrue(basicAuthenticator.authorized(request));
+      String username = basicAuthenticator.authorizedUsername(request);
+      assertNotNull(username);
+      assertEquals("tester", username);
+
+      request = new TestHttpServletRequest() {
+         @Override
+         public String getHeader(final String s) {
+            return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
+                    "Basic " + Authenticator.base64Encoding.encode(("tester:x" + token).getBytes(Charsets.UTF_8))
+                    : null;
+         }
+      };
+
+      assertFalse(basicAuthenticator.authorized(request));
+      assertNull(basicAuthenticator.authorizedUsername(request));
    }
 }

@@ -20,6 +20,7 @@ package org.attribyte.snook.auth;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import org.attribyte.snook.TestHttpServletRequest;
 import org.attribyte.util.Pair;
 import org.eclipse.jetty.http.HttpHeader;
@@ -27,12 +28,15 @@ import org.junit.Test;
 
 import javax.servlet.http.HttpServletRequest;
 
+import java.io.IOException;
+import java.util.List;
+
 import static org.junit.Assert.*;
 
 public class BasicAuthenticatorTest {
 
    @Test
-   public void testBuildCredentials() {
+   public void buildCredentials() {
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> null);
       String checkCredentials = BasicAuthenticator.buildCredentials("test_user", "test_password");
       assertEquals(
@@ -41,7 +45,7 @@ public class BasicAuthenticatorTest {
    }
 
    @Test
-   public void testUsername() {
+   public void username() {
 
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> null);
 
@@ -60,7 +64,7 @@ public class BasicAuthenticatorTest {
    }
 
    @Test
-   public void testUsernamePassword() {
+   public void usernamePassword() {
 
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> null);
 
@@ -79,7 +83,7 @@ public class BasicAuthenticatorTest {
    }
 
    @Test
-   public void testUsernameEmptyPassword() {
+   public void usernameEmptyPassword() {
 
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> null);
 
@@ -98,7 +102,7 @@ public class BasicAuthenticatorTest {
    }
 
    @Test
-   public void testAuthorized() {
+   public void authorized() {
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
       ), s -> null);
@@ -115,7 +119,7 @@ public class BasicAuthenticatorTest {
       assertTrue(basicAuthenticator.authorized(request));
    }
 
-   public void testUnauthorized() {
+   public void unauthorized() {
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
       ), s -> null);
@@ -132,7 +136,7 @@ public class BasicAuthenticatorTest {
       assertTrue(basicAuthenticator.authorized(request));
    }
 
-   public void testUnauthorizedInvalidScheme() {
+   public void unauthorizedInvalidScheme() {
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
       ), s -> null);
@@ -149,7 +153,7 @@ public class BasicAuthenticatorTest {
       assertFalse(basicAuthenticator.authorized(request));
    }
 
-   public void testUnauthorizedNoScheme() {
+   public void unauthorizedNoScheme() {
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
       ), s -> null);
@@ -167,7 +171,7 @@ public class BasicAuthenticatorTest {
    }
 
    @Test
-   public void testUnauthorizedNoValue() {
+   public void unauthorizedNoValue() {
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
       ), s -> null);
@@ -185,7 +189,7 @@ public class BasicAuthenticatorTest {
    }
 
    @Test
-   public void testUnauthorizedNullValue() {
+   public void unauthorizedNullValue() {
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
       ), s -> null);
@@ -197,7 +201,7 @@ public class BasicAuthenticatorTest {
    }
 
    @Test
-   public void testAuthorizedUser() {
+   public void authorizedUser() {
 
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> s.equals("test_user") ?
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password")) : null);
@@ -218,7 +222,7 @@ public class BasicAuthenticatorTest {
    }
 
    @Test
-   public void testAuthorizedUserFromSet() {
+   public void authorizedUserFromSet() {
 
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
@@ -239,7 +243,7 @@ public class BasicAuthenticatorTest {
    }
 
    @Test
-   public void testUnauthorizedUser() {
+   public void unauthorizedUser() {
 
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> s.equals("test_user") ?
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_userx", "test_password")) : null);
@@ -258,7 +262,7 @@ public class BasicAuthenticatorTest {
    }
 
    @Test
-   public void testUnauthorizedUserFromSet() {
+   public void unauthorizedUserFromSet() {
 
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_passwordx"))
@@ -273,6 +277,43 @@ public class BasicAuthenticatorTest {
          }
       };
 
+      assertNull(basicAuthenticator.authorizedUsername(request));
+   }
+
+   @Test
+   public void credentialsFile() throws IOException {
+      List<String> lines = Lists.newArrayList();
+      String token = AuthenticationToken.randomToken().toString();
+      lines.add("tester:$basic$" + token);
+      List<CredentialsFile.Record> records = CredentialsFile.parse(lines, false);
+      assertEquals(1, records.size());
+      CredentialsFile credentialsFile = new CredentialsFile(records);
+      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(credentialsFile);
+
+      HttpServletRequest request = new TestHttpServletRequest() {
+         @Override
+         public String getHeader(final String s) {
+            return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
+                    "Basic " + Authenticator.base64Encoding.encode(("tester:" + token).getBytes(Charsets.UTF_8))
+                    : null;
+         }
+      };
+
+      assertTrue(basicAuthenticator.authorized(request));
+      String username = basicAuthenticator.authorizedUsername(request);
+      assertNotNull(username);
+      assertEquals("tester", username);
+
+      request = new TestHttpServletRequest() {
+         @Override
+         public String getHeader(final String s) {
+            return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
+                    "Basic " + Authenticator.base64Encoding.encode(("tester:x" + token).getBytes(Charsets.UTF_8))
+                    : null;
+         }
+      };
+
+      assertFalse(basicAuthenticator.authorized(request));
       assertNull(basicAuthenticator.authorizedUsername(request));
    }
 }
