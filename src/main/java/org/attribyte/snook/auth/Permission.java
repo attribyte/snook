@@ -31,6 +31,11 @@ import java.util.Set;
 public enum Permission {
 
    /**
+    * Permission to do anything.
+    */
+   SUPER,
+
+   /**
     * Permission to create.
     */
    CREATE,
@@ -58,13 +63,20 @@ public enum Permission {
    public static Optional<Permission> fromString(final String str) {
       switch(Strings.nullToEmpty(str).toLowerCase()) {
          case "create":
+         case "c":
             return Optional.of(CREATE);
          case "read":
+         case "r":
             return Optional.of(READ);
          case "update":
+         case "u":
             return Optional.of(UPDATE);
          case "delete":
+         case "d":
             return Optional.of(DELETE);
+         case "super":
+         case "admin":
+            return Optional.of(SUPER);
          default:
             return Optional.empty();
       }
@@ -83,6 +95,9 @@ public enum Permission {
       }
 
       switch(str.toLowerCase().trim()) {
+         case "admin":
+         case "super":
+            return ADMIN;
          case "r":
             return READ_ONLY;
          case "rw":
@@ -116,6 +131,11 @@ public enum Permission {
     * No permissions.
     */
    public static final ImmutableSet<Permission> NONE = ImmutableSet.of();
+
+   /**
+    * Superuser/admin permission.
+    */
+   public static final ImmutableSet<Permission> ADMIN = Sets.immutableEnumSet(SUPER, READ, CREATE, UPDATE, DELETE);
 
    /**
     * Read-only permission.
