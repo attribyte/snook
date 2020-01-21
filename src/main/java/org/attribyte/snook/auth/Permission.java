@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A CRUD permission.
@@ -67,6 +68,48 @@ public enum Permission {
          default:
             return Optional.empty();
       }
+   }
+
+
+   /**
+    * Create a set of permissions from a string.
+    * For example: r, rw, w, cud, crud, etc.
+    * @param str The string.
+    * @return The set of permissions.
+    */
+   public static Set<Permission> setFromString(String str) {
+      if(Strings.isNullOrEmpty(str)) {
+         return NONE;
+      }
+
+      switch(str.toLowerCase().trim()) {
+         case "r":
+            return READ_ONLY;
+         case "rw":
+         case "wr":
+            return READ_WRITE;
+         case "w":
+            return WRITE_ONLY;
+      }
+
+      Set<Permission> permissions = Sets.newHashSetWithExpectedSize(4);
+      for(char ch : str.toCharArray()) {
+         switch(ch) {
+            case 'c':
+               permissions.add(CREATE);
+               break;
+            case 'r':
+               permissions.add(READ);
+               break;
+            case 'u':
+               permissions.add(UPDATE);
+               break;
+            case 'd':
+               permissions.add(DELETE);
+         }
+      }
+
+      return permissions;
    }
 
    /**
