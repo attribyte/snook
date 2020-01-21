@@ -18,6 +18,7 @@
 
 package org.attribyte.snook.auth;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.hash.HashCode;
@@ -38,14 +39,28 @@ import java.util.function.Function;
 public class BasicBCryptAuthenticator extends Authenticator {
 
    /**
-    * Creates the authenticator.
-    * @param validCredentials A cache containing valid (securely hashed) credentials.
+    * Creates an authenticator from a credentials file.
+    * @param validCredentialsCache A cache for valid (securely hashed) credentials.
+    * @param credentialsFile The credentials file.
+    */
+   public BasicBCryptAuthenticator(final Cache<HashCode, Boolean> validCredentialsCache,
+                                   final CredentialsFile credentialsFile) {
+      this(validCredentialsCache, s -> {
+         HashCode hash = credentialsFile.bcryptHashes.get(s);
+         return hash != null ? new String(hash.asBytes(), Charsets.US_ASCII) :
+                 CredentialsFile.RANDOM_BCRYPT_STRING;
+      });
+   }
+
+   /**
+    * Creates an authenticator.
+    * @param validCredentialsCache A cache for valid (securely hashed) credentials.
     * @param usernameCredentials A function that returns the BCrypt password hash for a username.
     * Should return a random/constant BCrypt hash with typical rounds for invalid users.
     */
-   public BasicBCryptAuthenticator(final Cache<HashCode, Boolean> validCredentials,
+   public BasicBCryptAuthenticator(final Cache<HashCode, Boolean> validCredentialsCache,
                                    final Function<String, String> usernameCredentials) {
-      this.validCredentials = validCredentials;
+      this.validCredentials = validCredentialsCache;
       this.usernameCredentials = usernameCredentials;
    }
 

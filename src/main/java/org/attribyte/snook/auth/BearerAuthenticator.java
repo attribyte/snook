@@ -18,7 +18,6 @@
 
 package org.attribyte.snook.auth;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 
@@ -32,15 +31,41 @@ import java.util.function.Function;
 public class BearerAuthenticator extends Authenticator {
 
    /**
-    * Creates the authenticator.
+    * Creates an authenticator from a credentials file.
+    * @param credentialsFile The credentials file.
+    */
+   public BearerAuthenticator(final CredentialsFile credentialsFile) {
+      this(credentialsFile.userForHash);
+   }
+
+   /**
+    * Creates an authenticator from a map of credentials.
     * @param validCredentials A map containing username vs valid (securely hashed) credentials.
-    * @param credentialsValidator A function that indicates if securely hashed credentials are valid
+    */
+   public BearerAuthenticator(final Map<HashCode, String> validCredentials) {
+      this(validCredentials, null);
+   }
+
+   /**
+    * Creates an authenticator with an authentication function.
+    * @param credentialsValidator The function that indicates if securely hashed credentials are valid
+    *                             by returning the username or {@code null} if invalid..
+    */
+   public BearerAuthenticator(final Function<HashCode, String> credentialsValidator) {
+      this(null, credentialsValidator);
+   }
+
+   /**
+    * Creates an authenticator with a map of credentials (used first) as well as an authentication function.
+    * @param validCredentials A map containing username vs valid (securely hashed) credentials.
+    * @param credentialsValidator A function used in sequence (after {@code validCredentials})
+    *                             that indicates if securely hashed credentials are valid
     *                             by returning the username or {@code null}.
     */
    public BearerAuthenticator(final Map<HashCode, String> validCredentials,
                               final Function<HashCode, String> credentialsValidator) {
       this.validCredentials = validCredentials != null ? ImmutableMap.copyOf(validCredentials) : ImmutableMap.of();
-      this.credentialsValidator = credentialsValidator;
+      this.credentialsValidator = credentialsValidator != null ? credentialsValidator : s -> null;
    }
 
    @Override
@@ -56,12 +81,7 @@ public class BearerAuthenticator extends Authenticator {
 
    @Override
    public boolean authorized(final HttpServletRequest request) {
-      String credentials = credentials(request);
-      if(credentials == null) {
-         return false;
-      }
-      HashCode hashedCredentials = hashCredentials(credentials);
-      return validCredentials.containsKey(hashedCredentials) || !Strings.isNullOrEmpty(credentialsValidator.apply(hashedCredentials));
+      return authorizedUsername(request) != null;
    }
 
    @Override

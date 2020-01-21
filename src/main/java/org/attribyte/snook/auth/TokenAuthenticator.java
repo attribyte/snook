@@ -29,6 +29,34 @@ import java.util.function.Function;
 public class TokenAuthenticator extends BearerAuthenticator {
 
    /**
+    * Creates an authenticator from a credentials file.
+    * @param headerName The header name.
+    * @param credentialsFile The credentials file.
+    */
+   public TokenAuthenticator(final String headerName, final CredentialsFile credentialsFile) {
+      this(headerName, credentialsFile.userForHash);
+   }
+
+   /**
+    * Creates an authenticator from a map of credentials.
+    * @param headerName The header name.
+    * @param validCredentials A map containing username vs valid (securely hashed) credentials.
+    */
+   public TokenAuthenticator(final String headerName, final Map<HashCode, String> validCredentials) {
+      this(headerName, validCredentials, null);
+   }
+
+   /**
+    * Creates an authenticator with an authentication function.
+    * @param headerName The header name.
+    * @param credentialsValidator The function that indicates if securely hashed credentials are valid
+    *                             by returning the username or {@code null} if invalid..
+    */
+   public TokenAuthenticator(final String headerName, final Function<HashCode, String> credentialsValidator) {
+      this(headerName,null, credentialsValidator);
+   }
+
+   /**
     * Creates the authenticator.
     * @param headerName The header name.
     * @param validCredentials A map containing username vs valid (securely hashed) credentials.

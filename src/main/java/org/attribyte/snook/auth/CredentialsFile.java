@@ -16,7 +16,7 @@
  * and limitations under the License.
  */
 
-package org.attribyte.snook.auth.impl;
+package org.attribyte.snook.auth;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.MoreObjects;
@@ -26,8 +26,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashCode;
 import com.google.common.io.CharStreams;
-import org.attribyte.snook.auth.AuthenticationToken;
-import org.attribyte.snook.auth.Authenticator;
 import org.joda.time.format.ISODateTimeFormat;
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -48,8 +46,10 @@ import static org.attribyte.util.StringUtil.randomString;
 import static com.google.common.base.Strings.isNullOrEmpty;
 
 /**
- * A users file is of the following format.
+ * A credentials file is of the following format.
  * <pre>{@code
+ *    #Comments like this and blank lines are ignored.
+ *
  *    #Generates a password and hash.
  *    username0:$password$
  *
@@ -69,14 +69,14 @@ import static com.google.common.base.Strings.isNullOrEmpty;
  *    username2:$2a$04$F4UtBMn30o6kRRsl7TwyKuPdUFXIQVVJCUndiXa3YhkiD1uNOCUBG
  * }</pre>
  */
-public class UserCredentials {
+public class CredentialsFile {
 
    /**
     * Creates a users file.
     * @param file The file.
     * @throws IOException on read error or invalid file.
     */
-   public UserCredentials(final File file) throws IOException {
+   public CredentialsFile(final File file) throws IOException {
       this(parse(Files.readAllLines(file.toPath()), false));
    }
 
@@ -85,7 +85,7 @@ public class UserCredentials {
     * @param is The input stream.
     * @throws IOException on read error or invalid file.
     */
-   public UserCredentials(final InputStream is) throws IOException {
+   public CredentialsFile(final InputStream is) throws IOException {
       this(parse(CharStreams.readLines(new InputStreamReader(is, Charsets.UTF_8)), false));
    }
 
@@ -148,7 +148,7 @@ public class UserCredentials {
     * Creates a users file from a list of records.
     * @param records The records.
     */
-   UserCredentials(final List<Record> records) {
+   CredentialsFile(final List<Record> records) {
       ImmutableMap.Builder<String, HashCode> bcryptHashes = ImmutableMap.builder();
       ImmutableMap.Builder<String, HashCode> sha256Hashes = ImmutableMap.builder();
       ImmutableMap.Builder<HashCode, String> userForHash = ImmutableMap.builder();
@@ -403,6 +403,17 @@ public class UserCredentials {
     * The minimum token length.
     */
    public static final int MIN_TOKEN_LENGTH = 16;
+
+   /**
+    * A BCrypt hash generated for a random password.
+    */
+   public static final String RANDOM_BCRYPT_STRING =
+           BCrypt.hashpw(randomString(MIN_PASSWORD_LENGTH), BCrypt.gensalt(DEFAULT_BCRYPT_ROUNDS));
+
+   /**
+    * A BCrypt hash code generated for a random password.
+    */
+   public static final HashCode RANDOM_BCRYPT_HASH = HashCode.fromBytes(RANDOM_BCRYPT_STRING.getBytes(Charsets.US_ASCII));
 
    /**
     * Splits lines for records.
