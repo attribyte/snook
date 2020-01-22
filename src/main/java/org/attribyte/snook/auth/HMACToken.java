@@ -46,7 +46,7 @@ public class HMACToken {
          return null;
       }
 
-      HashCode sentCode = HashCode.fromBytes(BASE_64_ENCODING.decode(cookieValue.substring(0, 43)));
+      HashCode sentCode = HashCode.fromBytes(BASE_64_ENCODING.decode(cookieValue.substring(0, ENCODED_HMAC_SIZE)));
       String tokenValue = cookieValue.substring(ENCODED_HMAC_SIZE);
       HashCode expectedCode = hmacFunction.hashString(tokenValue, Charsets.UTF_8);
       if(!sentCode.equals(expectedCode)) {
