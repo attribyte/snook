@@ -23,32 +23,63 @@ import com.google.common.base.Charsets;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Ints;
 
+import java.security.SecureRandom;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+
+import static org.attribyte.util.StringUtil.randomString;
 
 public class HMACToken {
+
+   public static void main(String[] args) throws Exception {
+      HMACToken tok = new HMACToken("testing", 1, TimeUnit.DAYS);
+      System.out.println(tok.toString());
+      byte[] hmacKey = new byte[32];
+      new SecureRandom().nextBytes(hmacKey);
+      HashFunction hmacFunction = Hashing.hmacSha256(hmacKey);
+      String keyId = randomKeyId();
+      System.out.println("key id is " + keyId);
+      String cookieValue = tok.toCookieValue(keyId, hmacFunction);
+      System.out.println(cookieValue);
+      HMACToken validate = validate(cookieValue , s -> hmacFunction);
+      System.out.println("validated " + validate);
+   }
 
    /**
     * Validate a cookie value and create a token only if valid.
     * @param cookieValue The cookie value.
-    * @param hmacFunction The (keyed) HMAC function.
+    * @param hmacFunctions A function that returns a (keyed) HMAC function for a key id.
     * @return The token or {@code null} if invalid.
     */
-   public static HMACToken validate(final String cookieValue, final HashFunction hmacFunction) {
+   public static HMACToken validate(final String cookieValue, final Function<String, HashFunction> hmacFunctions) {
 
-      if(cookieValue.length() < ENCODED_HMAC_SIZE) {
+      if(cookieValue.length() < PREFIX_SIZE) {
          return null;
       }
 
-      HashCode sentCode = HashCode.fromBytes(BASE_64_ENCODING.decode(cookieValue.substring(0, ENCODED_HMAC_SIZE)));
-      String tokenValue = cookieValue.substring(ENCODED_HMAC_SIZE);
-      HashCode expectedCode = hmacFunction.hashString(tokenValue, Charsets.UTF_8);
+      String keyId = cookieValue.substring(0, KEY_ID_SIZE);
+      HashFunction hmacFunction = hmacFunctions.apply(keyId);
+      if(hmacFunction == null) {
+         return null;
+      }
+
+      HashCode sentCode = HashCode.fromBytes(BASE_64_ENCODING.decode(cookieValue.substring(KEY_ID_SIZE, PREFIX_SIZE)));
+      String tokenValue = cookieValue.substring(PREFIX_SIZE);
+
+      HashCode expectedCode = hmacFunction.newHasher()
+              .putString(keyId, Charsets.UTF_8)
+              .putString(tokenValue, Charsets.UTF_8)
+              .hash();
+
       if(!sentCode.equals(expectedCode)) {
          return null;
       }
@@ -92,9 +123,9 @@ public class HMACToken {
          throw new UnsupportedOperationException("The 'lifetime' must be > 0");
       }
 
-      long lifeMillis = TimeUnit.MILLISECONDS.convert(lifetime, lifetimeUnits);
       this.username = username;
-      this.expireTimestampSeconds = (int)(System.currentTimeMillis() + lifeMillis);
+      int lifeSeconds = (int)(TimeUnit.SECONDS.convert(lifetime, lifetimeUnits));
+      this.expireTimestampSeconds = (int)(System.currentTimeMillis()/1000L) + lifeSeconds;
    }
 
    /**
@@ -110,13 +141,22 @@ public class HMACToken {
 
    /**
     * Generate the cookie value for this token.
+    * @param keyId The key id associated with the HMAC function.
     * @param hmacFunction The HMAC function.
     * @return The cookie value.
     */
-   public String toCookieValue(final HashFunction hmacFunction) {
+   public String toCookieValue(final String keyId, final HashFunction hmacFunction) {
+      if(Strings.nullToEmpty(keyId).length() != KEY_ID_SIZE) {
+         throw new UnsupportedOperationException(String.format("The 'keyId' must be exactly %d characters", KEY_ID_SIZE));
+      }
+
       String tokenValue = expireTimestampSeconds + "," + username;
-      HashCode hmac = hmacFunction.hashString(tokenValue, Charsets.UTF_8);
-      return BASE_64_ENCODING.encode(hmac.asBytes()) + tokenValue;
+      HashCode hmac = hmacFunction.newHasher()
+              .putString(keyId, Charsets.UTF_8)
+              .putString(tokenValue, Charsets.UTF_8)
+              .hash();
+
+      return keyId + BASE_64_ENCODING.encode(hmac.asBytes()) + tokenValue;
    }
 
    @Override
@@ -160,14 +200,32 @@ public class HMACToken {
    }
 
    /**
+    * Generates a random key id.
+    * @return The random key id.
+    */
+   public static String randomKeyId() {
+      return randomString(KEY_ID_SIZE);
+   }
+
+   /**
     * The encoding to encode/decode the HMAC.
     */
    private static final BaseEncoding BASE_64_ENCODING = BaseEncoding.base64().omitPadding();
 
    /**
-    * The size (in characters) of the encoded HMAC.
+    * The size (in characters) of the encoded HMAC ({@value}).
     */
    private static final int ENCODED_HMAC_SIZE = 43;
+
+   /**
+    * The size (in characters) of the key id ({@value}).
+    */
+   private static final int KEY_ID_SIZE = 8;
+
+   /**
+    * The total size of the prefix (key id | mac) {(@value}).
+    */
+   private static final int PREFIX_SIZE = KEY_ID_SIZE + ENCODED_HMAC_SIZE;
 
    /**
     * The token splitter.
