@@ -40,8 +40,60 @@ public class GroupsTest {
       assertEquals("group0", profile.groupName);
       assertTrue(profile.hasReadPermission());
       assertFalse(profile.hasWritePermission());
+      assertTrue(profile.enabled);
       assertTrue(profile.properties.isEmpty());
    }
+
+   @Test
+   public void validDisabled() throws IOException {
+      String line = "!tester:group0:r";
+      List<GroupProfile> profiles = Groups.parse(ImmutableList.of(line));
+      assertNotNull(profiles);
+      assertEquals(1, profiles.size());
+      GroupProfile profile = profiles.get(0);
+      assertEquals("tester", profile.username);
+      assertEquals("group0", profile.groupName);
+      assertFalse(profile.enabled);
+      assertTrue(profile.hasReadPermission());
+      assertFalse(profile.hasWritePermission());
+      assertTrue(profile.properties.isEmpty());
+   }
+
+   @Test
+   public void validEmptyGroup() throws IOException {
+      String line = "tester::r";
+      List<GroupProfile> profiles = Groups.parse(ImmutableList.of(line));
+      assertNotNull(profiles);
+      assertEquals(1, profiles.size());
+      GroupProfile profile = profiles.get(0);
+      assertEquals("tester", profile.username);
+      assertEquals("", profile.groupName);
+      assertEquals("Default", profile.getDisplayName());
+      assertTrue(profile.hasReadPermission());
+      assertFalse(profile.hasWritePermission());
+      assertTrue(profile.properties.isEmpty());
+   }
+
+   @Test
+   public void validMultiGroups() throws IOException {
+      String line = "tester:group0,group1:r";
+      List<GroupProfile> profiles = Groups.parse(ImmutableList.of(line));
+      assertNotNull(profiles);
+      assertEquals(2, profiles.size());
+      GroupProfile profile0 = profiles.get(0);
+      assertEquals("tester", profile0.username);
+      assertEquals("group0", profile0.groupName);
+      assertTrue(profile0.hasReadPermission());
+      assertFalse(profile0.hasWritePermission());
+      assertTrue(profile0.properties.isEmpty());
+      GroupProfile profile1 = profiles.get(1);
+      assertEquals("tester", profile1.username);
+      assertEquals("group1", profile1.groupName);
+      assertTrue(profile1.hasReadPermission());
+      assertFalse(profile1.hasWritePermission());
+      assertTrue(profile1.properties.isEmpty());
+   }
+
 
    @Test
    public void validGlobal() throws IOException {

@@ -18,6 +18,7 @@ package org.attribyte.snook.auth;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -146,34 +147,48 @@ public class Groups {
          if(line.isEmpty() || line.startsWith("#")) {
             continue;
          }
-         GroupProfile groupPermission = groupProfileFromComponents(lineSplitter.splitToList(line));
-         if(groupPermission != null) {
-            groups.add(groupPermission);
+         boolean enabled = true;
+         if(line.startsWith("!")) {
+            line = line.substring(1);
+            enabled = false;
          }
+         groups.addAll(groupProfileFromComponents(lineSplitter.splitToList(line), enabled));
       }
-
       return groups;
    }
 
    /**
     * Creates a group profile from a line in the form of: username:groupName:[rw | r | admin | none]:{'key1'='value1',key2='value2'}
+    * @param components The list of components.
+    * @param enabled Are the groups enabled?
     * @return The group profile or {@code null} if invalid.
     */
-   static GroupProfile groupProfileFromComponents(final List<String> components) throws IOException {
+   static List<GroupProfile> groupProfileFromComponents(final List<String> components, final boolean enabled) throws IOException {
       if(components.size() > 1) {
+         Splitter groupNameSplitter = Splitter.on(',').trimResults().omitEmptyStrings();
          String username = components.get(0);
-         String groupName = components.get(1);
+         String groupNameStr = components.get(1).trim();
+         List<String> groupNames = groupNameStr.isEmpty() ? ImmutableList.of("") : groupNameSplitter.splitToList(components.get(1));
+         List<GroupProfile> profiles = Lists.newArrayListWithExpectedSize(groupNames.size());
+
          Set<Permission> permissions = Permission.NONE;
          if(components.size() > 2) {
             permissions = Permission.setFromString(components.get(2));
          }
+
          Map<String, String> properties = null;
          if(components.size() > 3) {
             properties = parseProperties(components.get(3));
          }
-         return new GroupProfile(username, groupName, permissions, properties);
+
+         long lastUpdateTimestamp = System.currentTimeMillis();
+         for(String groupName : groupNames) {
+            profiles.add(new GroupProfile(username, groupName, permissions, enabled, lastUpdateTimestamp, properties));
+         }
+
+         return profiles;
       } else {
-         return null;
+         return ImmutableList.of();
       }
    }
 
