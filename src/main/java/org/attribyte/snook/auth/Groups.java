@@ -56,6 +56,9 @@ import java.util.Set;
  * #A user with create, read, update, delete in 'group1'.
  * user2:group1:crud
  *
+ * #A disabled user.
+ * !user2:group1:crud
+ *
  * #A user in multiple groups with group profile properties.
  * user3:group2,group3:rw:{"key":"value", "key2":"value2}
  * }</pre>
