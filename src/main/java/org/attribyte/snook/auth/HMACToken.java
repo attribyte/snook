@@ -24,15 +24,22 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.collect.Maps;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Ints;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -52,6 +59,60 @@ public class HMACToken {
       System.out.println(cookieValue);
       HMACToken validate = validate(cookieValue , s -> hmacFunction);
       System.out.println("validated " + validate);
+   }
+
+   /**
+    * Generates a key file.
+    * @param outputFile The output file.
+    * @param size The number of keys.
+    * @throws IOException on write error.
+    */
+   public static void generateKeys(final File outputFile, final int size) throws IOException {
+      if(outputFile.exists()) {
+         throw new IOException(String.format("The output file, '%s', exists", outputFile.getAbsolutePath()));
+      }
+
+      SecureRandom rnd = new SecureRandom();
+      try(PrintWriter writer = new PrintWriter(new FileWriter(outputFile))) {
+         for(int i = 0; i < size; i++) {
+            String id = randomKeyId();
+            byte[] hmacKey = new byte[32];
+            rnd.nextBytes(hmacKey);
+            writer.println(id + BASE_64_ENCODING.encode(hmacKey));
+         }
+      }
+   }
+
+   /**
+    * Loads a previously generated key file.
+    * @param inputFile The input file.
+    * @return The map of HMAC function vs key id.
+    * @throws IOException on read error or invalid file.
+    */
+   public static Map<String, HashFunction> loadFunctionMap(final File inputFile) throws IOException {
+      Map<String, HashFunction> functions = Maps.newHashMap();
+      int count = 0;
+      for(String line : Files.readAllLines(inputFile.toPath())) {
+         count++;
+         line = line.trim();
+         if(line.isEmpty() || line.startsWith("#")) {
+            continue;
+         }
+
+         if(line.length() < PREFIX_SIZE) {
+            throw new IOException(String.format("Invalid key file at line, %d", count));
+         }
+
+         try {
+            String id = line.substring(0, KEY_ID_SIZE);
+            byte[] hmacKey = BASE_64_ENCODING.decode(line.substring(KEY_ID_SIZE));
+            functions.put(id, Hashing.hmacSha256(hmacKey));
+         } catch(IllegalArgumentException ie) {
+            throw new IOException(String.format("Invalid key file at line, %d", count));
+         }
+      }
+
+      return functions;
    }
 
    /**
