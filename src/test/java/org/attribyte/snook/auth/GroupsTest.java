@@ -57,6 +57,7 @@ public class GroupsTest {
       assertTrue(profile.hasReadPermission());
       assertFalse(profile.hasWritePermission());
       assertTrue(profile.properties.isEmpty());
+      assertEquals("r", Permission.setToString(profile.permissions));
    }
 
    @Test
@@ -109,6 +110,8 @@ public class GroupsTest {
       assertTrue(profile.hasReadPermission());
       assertTrue(profile.hasWritePermission());
       assertTrue(profile.properties.isEmpty());
+      assertEquals("rw", Permission.setToString(profile.permissions));
+
    }
 
    @Test

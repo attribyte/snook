@@ -33,27 +33,31 @@ public enum Permission {
    /**
     * Permission to do anything.
     */
-   SUPER,
+   SUPER("super"),
 
    /**
     * Permission to create.
     */
-   CREATE,
+   CREATE("c"),
 
    /**
     * Permission to read.
     */
-   READ,
+   READ("r"),
 
    /**
     * Permission to update.
     */
-   UPDATE,
+   UPDATE("u"),
 
    /**
     * Permission to delete.
     */
-   DELETE;
+   DELETE("d");
+
+   Permission(final String code) {
+      this.code = code;
+   }
 
    /**
     * Converts a string to a permission.
@@ -81,7 +85,6 @@ public enum Permission {
             return Optional.empty();
       }
    }
-
 
    /**
     * Create a set of permissions from a string.
@@ -126,6 +129,34 @@ public enum Permission {
 
       return permissions;
    }
+
+   /**
+    * Convert a set of permissions to the compact string.
+    * @param permissions The set of permissions.
+    * @return The compact string.
+    */
+   public static String setToString(final Set<Permission> permissions) {
+      if(permissions.contains(SUPER)) {
+         return "super";
+      } else if(permissions.size() == 1 && permissions.contains(READ)) {
+         return "r";
+      } else if(permissions.size() == READ_WRITE.size()) {
+         return "rw";
+      } else if(permissions.size() == WRITE_ONLY.size() && !permissions.contains(READ)) {
+         return "w";
+      } else {
+         StringBuilder buf = new StringBuilder();
+         permissions.forEach(p -> {
+            buf.append(p.code);
+         });
+         return buf.toString();
+      }
+   }
+
+   /**
+    * The internal code.
+    */
+   final String code;
 
    /**
     * No permissions.
