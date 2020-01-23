@@ -116,7 +116,7 @@ public class GroupsTest {
 
    @Test
    public void validWithProperties() throws IOException {
-      String line = "tester:group0:rw:{prop0=prop0val, 'prop1'='prop1,val'}";
+      String line = "tester:group0:rw:{prop0:prop0val, 'prop1':'prop1,val'}";
       List<GroupProfile> profiles = Groups.parse(ImmutableList.of(line));
       assertNotNull(profiles);
       assertEquals(1, profiles.size());
@@ -128,7 +128,7 @@ public class GroupsTest {
       assertEquals(2, profile.properties.size());
       assertEquals("prop0val", profile.properties.getOrDefault("prop0", ""));
       assertEquals("prop1,val", profile.properties.getOrDefault("prop1", ""));
-      System.out.println(profile.toString());
+      System.out.println(Groups.toLine(profile));
    }
 
    @Test(expected = IOException.class)

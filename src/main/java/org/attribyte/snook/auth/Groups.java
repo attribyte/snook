@@ -34,6 +34,7 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -196,6 +197,30 @@ public class Groups {
    }
 
    /**
+    * Writes a group profile to a line.
+    * @param profile The profile.
+    * @return The profile line.
+    */
+   static String toLine(GroupProfile profile) {
+      StringBuilder buf = new StringBuilder();
+      if(!profile.enabled) {
+         buf.append("!");
+      }
+
+      buf.append(profile.username).append(":").append(Strings.nullToEmpty(profile.groupName));
+      if(profile.permissions.isEmpty() && profile.properties.isEmpty()) {
+         return buf.toString();
+      } else {
+         buf.append(":").append(Permission.setToString(profile.permissions));
+         if(!profile.properties.isEmpty()) {
+            buf.append(":");
+            buf.append(toJSON(profile.properties));
+         }
+         return buf.toString();
+      }
+   }
+
+   /**
     * Parse the properties token.
     * @param token The token.
     * @return The map of key, value pairs.
@@ -212,6 +237,30 @@ public class Groups {
       } catch(com.google.gson.JsonSyntaxException je) {
          throw new IOException(String.format("Invalid properties, '%s'", token));
       }
+   }
+
+   /**
+    * Convert a properties map to JSON.
+    * @param properties The properties.
+    * @return The properties as JSON.
+    */
+   static String toJSON(final Map<String, String> properties) {
+      if(properties.isEmpty()) {
+         return "{}";
+      }
+
+      StringBuilder buf = new StringBuilder("{");
+      Iterator<Map.Entry<String, String>> iter = properties.entrySet().iterator();
+      Map.Entry<String, String> curr = iter.next();
+      buf.append("'").append(curr.getKey()).append("'='").append(curr.getValue()).append("'");
+      while(iter.hasNext()) {
+         curr = iter.next();
+         buf.append(",'");
+         buf.append(curr.getKey()).append("'='").append(curr.getValue()).append("'");
+      }
+
+      buf.append("}");
+      return buf.toString();
    }
 
    /**
