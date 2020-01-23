@@ -17,16 +17,20 @@ package org.attribyte.snook.auth;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.List;
@@ -50,6 +54,9 @@ import java.util.Set;
  *
  * #A user with create, read, update, delete in 'group1'.
  * user2:group1:crud
+ *
+ * #A user in multiple groups with group profile properties.
+ * user3:group2,group3:rw:{"key":"value", "key2":"value2}
  * }</pre>
  */
 public class Groups {
@@ -73,28 +80,28 @@ public class Groups {
    }
 
    /**
-    * Creates the groups from a collection of permissions.
+    * Creates the groups from a collection of profiles.
     * @param permissions The permissions.
     */
-   public Groups(final Collection<GroupPermission> permissions) {
+   public Groups(final Collection<GroupProfile> permissions) {
       this.permissions = Maps.newHashMap();
-      for(GroupPermission permission : permissions) {
-         Map<String, GroupPermission> userPermissions =
+      for(GroupProfile permission : permissions) {
+         Map<String, GroupProfile> userPermissions =
                  this.permissions.computeIfAbsent(permission.groupName, k -> Maps.newHashMap());
          userPermissions.put(permission.username, permission);
       }
    }
 
    /**
-    * Gets permission for a user in a group.
+    * Gets a profile for a user in a group.
     * @param groupName The group name.
     * @param username The username.
-    * @return The permissions or empty permissions if none.
+    * @return The profile or empty permissions if none.
     */
-   public GroupPermission permission(final String groupName, final String username) {
-      Map<String, GroupPermission> userPermissions = permissions.get(groupName);
+   public GroupProfile permission(final String groupName, final String username) {
+      Map<String, GroupProfile> userPermissions = permissions.get(groupName);
       return userPermissions != null ? userPermissions.get(username) :
-              new GroupPermission(username, groupName, ImmutableSet.of());
+              new GroupProfile(username, groupName, ImmutableSet.of(), null);
    }
 
    /**
@@ -104,17 +111,17 @@ public class Groups {
     * @return Is the user in the group?
     */
    public boolean inGroup(final String groupName, final String username) {
-      Map<String, GroupPermission> userPermissions = permissions.get(groupName);
+      Map<String, GroupProfile> userPermissions = permissions.get(groupName);
       return userPermissions != null && userPermissions.containsKey(username);
    }
 
    /**
-    * Gets an immutable map of permission vs user for a group.
+    * Gets an immutable map of profile vs user for a group.
     * @param groupName The group name.
-    * @return The map of permissions or an empty map if none.
+    * @return The map of profile or an empty map if none.
     */
-   public ImmutableMap<String, GroupPermission> permission(final String groupName) {
-      Map<String, GroupPermission> userPermissions = permissions.get(groupName);
+   public ImmutableMap<String, GroupProfile> permission(final String groupName) {
+      Map<String, GroupProfile> userPermissions = permissions.get(groupName);
       return userPermissions != null ? ImmutableMap.copyOf(userPermissions) : ImmutableMap.of();
    }
 
@@ -129,17 +136,17 @@ public class Groups {
    /**
     * Parse lines from a groups file.
     * @param lines The lines.
-    * @return The list of permissions.
+    * @return The list of profiles.
     */
-   static List<GroupPermission> parse(final List<String> lines) {
+   static List<GroupProfile> parse(final List<String> lines) throws IOException {
       Splitter lineSplitter = Splitter.on(":").trimResults().limit(4);
-      List<GroupPermission> groups = Lists.newArrayListWithExpectedSize(256);
+      List<GroupProfile> groups = Lists.newArrayListWithExpectedSize(256);
       for(String line : lines) {
          line = line.trim();
          if(line.isEmpty() || line.startsWith("#")) {
             continue;
          }
-         GroupPermission groupPermission = groupPermissionFromComponents(lineSplitter.splitToList(line));
+         GroupProfile groupPermission = groupProfileFromComponents(lineSplitter.splitToList(line));
          if(groupPermission != null) {
             groups.add(groupPermission);
          }
@@ -149,10 +156,10 @@ public class Groups {
    }
 
    /**
-    * Creates group permission from a line in the form of: username:groupName:[rw | r | admin | none]
-    * @return The group permission or {@code null} if invalid.
+    * Creates a group profile from a line in the form of: username:groupName:[rw | r | admin | none]:{'key1'='value1',key2='value2'}
+    * @return The group profile or {@code null} if invalid.
     */
-   static GroupPermission groupPermissionFromComponents(final List<String> components) {
+   static GroupProfile groupProfileFromComponents(final List<String> components) throws IOException {
       if(components.size() > 1) {
          String username = components.get(0);
          String groupName = components.get(1);
@@ -160,14 +167,37 @@ public class Groups {
          if(components.size() > 2) {
             permissions = Permission.setFromString(components.get(2));
          }
-         return new GroupPermission(username, groupName, permissions);
+         Map<String, String> properties = null;
+         if(components.size() > 3) {
+            properties = parseProperties(components.get(3));
+         }
+         return new GroupProfile(username, groupName, permissions, properties);
       } else {
          return null;
       }
    }
 
    /**
-    * A map of permissions for each user in a group.
+    * Parse the properties token.
+    * @param token The token.
+    * @return The map of key, value pairs.
     */
-   private final Map<String, Map<String, GroupPermission>> permissions;
+   static Map<String, String> parseProperties(final String token) throws IOException {
+      if(Strings.isNullOrEmpty(token)) {
+         return ImmutableMap.of();
+      }
+
+      try {
+         Gson gson = new Gson();
+         Type empMapType = new TypeToken<Map<String, String>>() {}.getType();
+         return gson.fromJson(token, empMapType);
+      } catch(com.google.gson.JsonSyntaxException je) {
+         throw new IOException(String.format("Invalid properties, '%s'", token));
+      }
+   }
+
+   /**
+    * A map of profile for each user in a group.
+    */
+   private final Map<String, Map<String, GroupProfile>> permissions;
 }

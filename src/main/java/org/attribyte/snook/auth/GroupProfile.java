@@ -17,14 +17,19 @@ package org.attribyte.snook.auth;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
 
+import java.lang.reflect.Type;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * Immutable group permissions for a user.
  */
-public class GroupPermission {
+public class GroupProfile {
 
    /**
     * The name of the global group ({@value}).
@@ -36,11 +41,13 @@ public class GroupPermission {
     * @param username The username.
     * @param groupName The group name.
     * @param permissions The set of permissions.
+    * @param properties The optional properties.
     */
-   public GroupPermission(final String username,
-                          final String groupName,
-                          final Set<Permission> permissions) {
-      this(username, groupName, permissions, true, System.currentTimeMillis());
+   public GroupProfile(final String username,
+                       final String groupName,
+                       final Set<Permission> permissions,
+                       final Map<String, String> properties) {
+      this(username, groupName, permissions, true, System.currentTimeMillis(), properties);
    }
 
    /**
@@ -50,25 +57,28 @@ public class GroupPermission {
     * @param permissions The permissions.
     * @param enabled Is the permission enabled?
     * @param lastUpdateTimestamp The time when the permission was created or last updated.
+    * @param properties The optional properties.
     */
-   public GroupPermission(final String username,
-                          final String groupName,
-                          final Set<Permission> permissions,
-                          final boolean enabled,
-                          final long lastUpdateTimestamp) {
+   public GroupProfile(final String username,
+                       final String groupName,
+                       final Set<Permission> permissions,
+                       final boolean enabled,
+                       final long lastUpdateTimestamp,
+                       final Map<String, String> properties) {
       this.username = Strings.nullToEmpty(username);
       this.groupName = Strings.nullToEmpty(groupName);
       this.enabled = enabled;
       this.permissions = permissions != null ? ImmutableSet.copyOf(permissions) : ImmutableSet.of();
       this.lastUpdateTimestamp = lastUpdateTimestamp;
+      this.properties = properties != null ? ImmutableMap.copyOf(properties) : ImmutableMap.of();
    }
 
    /**
     * Disable this permission.
     * @return This permission, disabled.
     */
-   public GroupPermission disable() {
-      return new GroupPermission(username, groupName, permissions, false, lastUpdateTimestamp);
+   public GroupProfile disable() {
+      return new GroupProfile(username, groupName, permissions, false, lastUpdateTimestamp, properties);
    }
 
    /**
@@ -76,8 +86,8 @@ public class GroupPermission {
     * @param permissions The new access permissions.
     * @return This group permission with access permission changed.
     */
-   public GroupPermission withPermission(final Set<Permission> permissions) {
-      return new GroupPermission(username, groupName, permissions, enabled, lastUpdateTimestamp);
+   public GroupProfile withPermission(final Set<Permission> permissions) {
+      return new GroupProfile(username, groupName, permissions, enabled, lastUpdateTimestamp, properties);
    }
 
    @Override
@@ -88,6 +98,7 @@ public class GroupPermission {
               .add("enabled", enabled)
               .add("permissions", permissions)
               .add("lastUpdateTimestamp", lastUpdateTimestamp)
+              .add("properties", properties)
               .toString();
    }
 
@@ -171,4 +182,9 @@ public class GroupPermission {
     * The last time the permission was updated.
     */
    public final long lastUpdateTimestamp;
+
+   /**
+    * Additional properties associated with the user,group.
+    */
+   public final ImmutableMap<String, String> properties;
 }
