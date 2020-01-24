@@ -82,8 +82,8 @@ public class HMACCookieAuthenticator extends Authenticator {
    /**
     * Performs a login.
     * <p>
-    *    If username + password is valid, creates a random token for the username,
-    *    saves it and sets the value as a response cookie. Otherwise, does nothing
+    *    If username + password is valid, creates a new HMAC token
+    *    and sets the value as a response cookie. Otherwise, does nothing
     *    and returns {@code false}.
     * </p>
     * @param username The username.
