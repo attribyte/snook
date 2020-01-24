@@ -3,9 +3,6 @@ package org.attribyte.snook.auth;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.hash.HashCode;
-import org.attribyte.snook.auth.Authenticator;
-import org.attribyte.snook.auth.BCryptAuthenticator;
-import org.attribyte.snook.auth.CredentialsFile;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -17,17 +14,17 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class CredentialsFileTest {
+public class UsersTest {
 
    @Test
    public void generateToken() throws IOException  {
       List<String> lines = Lists.newArrayList();
       lines.add("tester:$token$");
-      List<CredentialsFile.Record> records = CredentialsFile.parse(lines, true);
+      List<Users.Record> records = Users.parse(lines, true);
       assertEquals(1, records.size());
-      CredentialsFile.Record record = records.get(0);
+      Users.Record record = records.get(0);
       assertNotNull(record.value);
-      assertEquals(CredentialsFile.HashType.SHA256, record.hashType);
+      assertEquals(Users.HashType.SHA256, record.hashType);
       assertEquals("tester:$token$" + record.value, record.toLine());
       assertNotNull(record.hashCode);
    }
@@ -36,10 +33,10 @@ public class CredentialsFileTest {
    public void generatePassword() throws IOException  {
       List<String> lines = Lists.newArrayList();
       lines.add("tester:$password$");
-      List<CredentialsFile.Record> records = CredentialsFile.parse(lines, true);
+      List<Users.Record> records = Users.parse(lines, true);
       assertEquals(1, records.size());
-      CredentialsFile.Record record = records.get(0);
-      assertEquals(CredentialsFile.HashType.BCRYPT, record.hashType);
+      Users.Record record = records.get(0);
+      assertEquals(Users.HashType.BCRYPT, record.hashType);
       assertNotNull(record.hashCode);
    }
 
@@ -48,9 +45,9 @@ public class CredentialsFileTest {
       List<String> lines = Lists.newArrayList();
       lines.add("tester:$password$");
       lines.add("tester:$token$");
-      List<CredentialsFile.Record> records = CredentialsFile.parse(lines, true);
+      List<Users.Record> records = Users.parse(lines, true);
       assertEquals(2, records.size());
-      List<CredentialsFile.Record> secureRecords = CredentialsFile.toSecure(records);
+      List<Users.Record> secureRecords = Users.toSecure(records);
       assertEquals(2, secureRecords.size());
       assertTrue(secureRecords.get(0).toLine().startsWith("tester:$2a$11$"));
       assertTrue(secureRecords.get(1).toLine().startsWith("tester:$sha256$"));
@@ -61,9 +58,9 @@ public class CredentialsFileTest {
       List<String> lines = Lists.newArrayList();
       lines.add("tester0:$password$123456789012");
       lines.add("tester1:$token$123456789012123456789012123456789012");
-      List<CredentialsFile.Record> records = CredentialsFile.parse(lines, true);
+      List<Users.Record> records = Users.parse(lines, true);
       assertEquals(2, records.size());
-      CredentialsFile users = new CredentialsFile(records);
+      Users users = new Users(records);
       assertEquals(1, users.bcryptHashes.size());
       assertEquals(1, users.sha256Hashes.size());
       assertEquals(2, users.userForHash.size());
@@ -85,9 +82,9 @@ public class CredentialsFileTest {
       List<String> lines = Lists.newArrayList();
       lines.add("tester0:$token$123456789012123456789012123456789012");
       lines.add("tester1:$token$123456789012123456789012123456789012");
-      List<CredentialsFile.Record> records = CredentialsFile.parse(lines, true);
+      List<Users.Record> records = Users.parse(lines, true);
       assertEquals(2, records.size());
-      CredentialsFile users = new CredentialsFile(records);
+      Users users = new Users(records);
    }
 
 
@@ -99,9 +96,9 @@ public class CredentialsFileTest {
       lines.add("");
       lines.add("#comment");
 
-      List<CredentialsFile.Record> records = CredentialsFile.parse(lines, true);
+      List<Users.Record> records = Users.parse(lines, true);
       assertEquals(4, records.size());
-      List<CredentialsFile.Record> secureRecords = CredentialsFile.toSecure(records);
+      List<Users.Record> secureRecords = Users.toSecure(records);
       assertEquals(2, secureRecords.size());
       assertTrue(secureRecords.get(0).toLine().startsWith("tester:$2a$11$"));
       assertTrue(secureRecords.get(1).toLine().startsWith("tester:$sha256$"));
@@ -115,8 +112,8 @@ public class CredentialsFileTest {
       File insecureFile = Files.createTempFile("insecure_", ".txt").toFile();
 
       try(InputStream is = new ByteArrayInputStream(inputLines.getBytes(Charsets.UTF_8))) {
-         CredentialsFile.generateFiles(is, secureFile, insecureFile, true);
-         CredentialsFile users = new CredentialsFile(secureFile);
+         Users.generateFiles(is, secureFile, insecureFile, true);
+         Users users = new Users(secureFile);
          assertEquals(3, users.userForHash.size());
          assertEquals(2, users.sha256Hashes.size());
          assertEquals(1, users.bcryptHashes.size());

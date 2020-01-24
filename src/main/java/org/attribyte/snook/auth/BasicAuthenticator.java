@@ -38,7 +38,7 @@ public class BasicAuthenticator extends Authenticator {
     * Creates an authenticator that uses *hashed tokens* from a credentials file.
     * @param credentialsFile The credentials file.
     */
-   public BasicAuthenticator(final CredentialsFile credentialsFile) {
+   public BasicAuthenticator(final Users credentialsFile) {
       this(Sets.newHashSet(credentialsFile.sha256Hashes.values()), credentialsFile.sha256Hashes::get);
    }
 

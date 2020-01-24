@@ -34,7 +34,7 @@ public class BearerAuthenticator extends Authenticator {
     * Creates an authenticator from a credentials file.
     * @param credentialsFile The credentials file.
     */
-   public BearerAuthenticator(final CredentialsFile credentialsFile) {
+   public BearerAuthenticator(final Users credentialsFile) {
       this(credentialsFile.userForHash);
    }
 

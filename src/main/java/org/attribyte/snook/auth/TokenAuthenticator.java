@@ -33,7 +33,7 @@ public class TokenAuthenticator extends BearerAuthenticator {
     * @param headerName The header name.
     * @param credentialsFile The credentials file.
     */
-   public TokenAuthenticator(final String headerName, final CredentialsFile credentialsFile) {
+   public TokenAuthenticator(final String headerName, final Users credentialsFile) {
       this(headerName, credentialsFile.userForHash);
    }
 

@@ -44,7 +44,7 @@ public class BasicBCryptAuthenticator extends Authenticator {
     * @param credentialsFile The credentials file.
     */
    public BasicBCryptAuthenticator(final Cache<HashCode, Boolean> validCredentialsCache,
-                                   final CredentialsFile credentialsFile) {
+                                   final Users credentialsFile) {
       this(validCredentialsCache, s -> {
          HashCode hash = credentialsFile.bcryptHashes.get(s);
          return hash != null ? new String(hash.asBytes(), Charsets.US_ASCII) :

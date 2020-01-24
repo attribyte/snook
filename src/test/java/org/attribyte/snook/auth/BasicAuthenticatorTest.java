@@ -285,9 +285,9 @@ public class BasicAuthenticatorTest {
       List<String> lines = Lists.newArrayList();
       String token = AuthenticationToken.randomToken().toString();
       lines.add("tester:$basic$" + token);
-      List<CredentialsFile.Record> records = CredentialsFile.parse(lines, false);
+      List<Users.Record> records = Users.parse(lines, false);
       assertEquals(1, records.size());
-      CredentialsFile credentialsFile = new CredentialsFile(records);
+      Users credentialsFile = new Users(records);
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(credentialsFile);
 
       HttpServletRequest request = new TestHttpServletRequest() {

@@ -99,9 +99,9 @@ public class BasicBCryptAuthenticatorTest {
       List<String> lines = Lists.newArrayList();
       String token = AuthenticationToken.randomToken().toString();
       lines.add("tester:$password$" + token);
-      List<CredentialsFile.Record> records = CredentialsFile.parse(lines, false);
+      List<Users.Record> records = Users.parse(lines, false);
       assertEquals(1, records.size());
-      CredentialsFile credentialsFile = new CredentialsFile(records);
+      Users credentialsFile = new Users(records);
       Cache<HashCode, Boolean> cache = CacheBuilder.newBuilder().build();
       BasicBCryptAuthenticator basicAuthenticator = new BasicBCryptAuthenticator(cache, credentialsFile);
 
