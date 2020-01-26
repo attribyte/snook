@@ -35,7 +35,7 @@ import java.util.function.Function;
  * that holds a random authentication token used for subsequent
  * authentication.
  */
-public class BCryptAuthenticator extends CookieAuthenticator {
+public class BCryptAuthenticator extends CookieAuthenticator implements LoginAuthenticator {
 
    /**
     * Creates the authenticator with a map that contains valid password hashes.

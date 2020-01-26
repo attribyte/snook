@@ -35,7 +35,7 @@ import static org.attribyte.snook.Cookies.cookieValue;
 /**
  * An authenticator that validates an {@code HMACToken} sent as a cookie value.
  */
-public class HMACCookieAuthenticator extends Authenticator {
+public class HMACCookieAuthenticator extends Authenticator implements LoginAuthenticator {
 
    /**
     * Creates an authenticator.
