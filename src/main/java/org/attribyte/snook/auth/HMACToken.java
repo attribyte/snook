@@ -29,16 +29,20 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
+import com.google.common.io.CharStreams;
 import com.google.common.primitives.Ints;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -90,9 +94,28 @@ public class HMACToken {
     * @throws IOException on read error or invalid file.
     */
    public static Map<String, HashFunction> loadFunctionMap(final File inputFile) throws IOException {
+      return loadFunctionMap(Files.readAllLines(inputFile.toPath()));
+   }
+
+   /**
+    * Loads from an input stream.
+    * @param is The input stream.
+    * @return The map of HMAC function vs key id.
+    * @throws IOException on read error or invalid file.
+    */
+   public static Map<String, HashFunction> loadFunctionMap(final InputStream is) throws IOException {
+      return loadFunctionMap(CharStreams.readLines(new InputStreamReader(is, Charsets.UTF_8)));
+   }
+
+   /**
+    * Loads from a list of lines.
+    * @return The map of HMAC function vs key id.
+    * @throws IOException on read error or invalid file.
+    */
+   public static Map<String, HashFunction> loadFunctionMap(final List<String> lines) throws IOException {
       Map<String, HashFunction> functions = Maps.newHashMap();
       int count = 0;
-      for(String line : Files.readAllLines(inputFile.toPath())) {
+      for(String line : lines) {
          count++;
          line = line.trim();
          if(line.isEmpty() || line.startsWith("#")) {
@@ -111,7 +134,6 @@ public class HMACToken {
             throw new IOException(String.format("Invalid key file at line, %d", count));
          }
       }
-
       return functions;
    }
 
