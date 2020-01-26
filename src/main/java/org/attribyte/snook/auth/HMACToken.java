@@ -25,6 +25,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
@@ -44,6 +45,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -108,6 +110,27 @@ public class HMACToken {
    }
 
    /**
+    * Loads the set of ids from an input stream.
+    * @param is The input stream.
+    * @return The set of key ids.
+    * @throws IOException on read error or invalid file.
+    */
+   public static Set<String> loadIds(final InputStream is) throws IOException {
+      return loadIds(CharStreams.readLines(new InputStreamReader(is, Charsets.UTF_8)));
+   }
+
+
+   /**
+    * Loads the set of ids from an input file.
+    * @param inputFile The input file.
+    * @return The set of ids.
+    * @throws IOException on read error or invalid file.
+    */
+   public static Set<String> loadIds(final File inputFile) throws IOException {
+      return loadIds(Files.readAllLines(inputFile.toPath()));
+   }
+
+   /**
     * Loads from a list of lines.
     * @return The map of HMAC function vs key id.
     * @throws IOException on read error or invalid file.
@@ -135,6 +158,31 @@ public class HMACToken {
          }
       }
       return functions;
+   }
+
+   /**
+    * Loads the set of available ids.
+    * @param lines The lines.
+    * @return The set of keys.
+    * @throws IOException on invalid line.
+    */
+   public static Set<String> loadIds(final List<String> lines) throws IOException {
+      Set<String> ids = Sets.newHashSetWithExpectedSize(lines.size());
+      int count = 0;
+      for(String line : lines) {
+         count++;
+         line = line.trim();
+         if(line.isEmpty() || line.startsWith("#")) {
+            continue;
+         }
+
+         if(line.length() < PREFIX_SIZE) {
+            throw new IOException(String.format("Invalid key file at line, %d", count));
+         }
+
+         ids.add(line.substring(0, KEY_ID_SIZE));
+      }
+      return ids;
    }
 
    /**
