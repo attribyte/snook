@@ -18,8 +18,6 @@
 
 package org.attribyte.snook.auth;
 
-import com.google.common.base.Strings;
-
 import javax.servlet.http.HttpServletRequest;
 import java.util.function.Function;
 
@@ -46,16 +44,16 @@ public class CustomAuthenticator<T> {
     */
    public T authenticate(final HttpServletRequest request) {
       String username = authenticator.authorizedUsername(request);
-      return Strings.isNullOrEmpty(username) ? null : authenticatedFunction.apply(username);
+      return username != null ? authenticatedFunction.apply(username) : null;
    }
 
    /**
     * The authenticator.
     */
-   private final Authenticator authenticator;
+   protected final Authenticator authenticator;
 
    /**
     * The function called to return a custom object when a user is authenticated.
     */
-   private final Function<String, T> authenticatedFunction;
+   protected final Function<String, T> authenticatedFunction;
 }
