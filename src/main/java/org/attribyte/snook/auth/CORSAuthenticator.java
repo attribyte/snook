@@ -425,10 +425,6 @@ public class CORSAuthenticator implements Authenticator {
                             final HttpServletResponse response,
                             final Set<Option> options) {
 
-      if(Strings.nullToEmpty(request.getMethod()).toUpperCase().equalsIgnoreCase("OPTIONS")) {
-         return authorizePreFlightRequest(request, response, options);
-      }
-
       String authorizedUsername = authorizedUsername(request);
       if(authorizedUsername == null) {
          return null;
