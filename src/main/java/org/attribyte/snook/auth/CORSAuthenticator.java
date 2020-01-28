@@ -42,7 +42,7 @@ import static org.attribyte.snook.Util.host;
  * An authenticator for {@code CORS} (the {@code Origin} header value)
  * that returns the authorized host as the username, if authorized.
  */
-public class CORSAuthenticator extends Authenticator {
+public class CORSAuthenticator implements Authenticator {
 
    /**
     * CORS options.
@@ -359,8 +359,8 @@ public class CORSAuthenticator extends Authenticator {
    }
 
    @Override
-   protected String scheme() {
-      return null;
+   public String credentials(final HttpServletRequest request) {
+      return origin(request);
    }
 
    @Override

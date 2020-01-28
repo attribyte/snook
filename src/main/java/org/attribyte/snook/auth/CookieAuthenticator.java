@@ -18,6 +18,7 @@
 
 package org.attribyte.snook.auth;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import org.attribyte.snook.Cookies;
 
@@ -30,7 +31,7 @@ import static org.attribyte.snook.Cookies.cookieValue;
 /**
  * Authenticator where a token is sent as the value of a cookie.
  */
-public class CookieAuthenticator extends BearerAuthenticator {
+public class CookieAuthenticator implements Authenticator {
 
    /**
     * Creates the authenticator.
@@ -41,7 +42,8 @@ public class CookieAuthenticator extends BearerAuthenticator {
    public CookieAuthenticator(final Cookies.CookieKey cookieKey,
                               final Map<HashCode, String> validCredentials,
                               final Function<HashCode, String> credentialsValidator) {
-      super(validCredentials, credentialsValidator);
+      this.validCredentials = validCredentials != null ? ImmutableMap.copyOf(validCredentials) : ImmutableMap.of();
+      this.credentialsValidator = credentialsValidator;
       this.cookieKey = cookieKey;
    }
 
@@ -51,8 +53,14 @@ public class CookieAuthenticator extends BearerAuthenticator {
    }
 
    @Override
-   protected String scheme() {
-      return null;
+   public String authorizedUsername(final HttpServletRequest request) {
+      String credentials = credentials(request);
+      if(credentials == null) {
+         return null;
+      }
+      HashCode hashedCredentials = Authenticator.hashCredentials(credentials);
+      String username = validCredentials.get(hashedCredentials);
+      return username != null ? username : credentialsValidator.apply(hashedCredentials);
    }
 
    @Override
@@ -64,4 +72,15 @@ public class CookieAuthenticator extends BearerAuthenticator {
     * The cookie key.
     */
    public final Cookies.CookieKey cookieKey;
+
+
+   /**
+    * An immutable map of username vs hashed credentials.
+    */
+   private final ImmutableMap<HashCode, String> validCredentials;
+
+   /**
+    * A function that gets a username from hashed credentials.
+    */
+   private final Function<HashCode, String> credentialsValidator;
 }

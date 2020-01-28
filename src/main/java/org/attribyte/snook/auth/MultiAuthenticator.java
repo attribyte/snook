@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * Base class for sequences of authenticators.
  */
-public abstract class MultiAuthenticator extends Authenticator {
+public abstract class MultiAuthenticator implements Authenticator {
 
    public MultiAuthenticator(final List<Authenticator> authenticators, final String schemeName) {
       this.authenticators = authenticators != null ? ImmutableList.copyOf(authenticators) : ImmutableList.of();
@@ -41,18 +41,8 @@ public abstract class MultiAuthenticator extends Authenticator {
    }
 
    @Override
-   protected String scheme() {
-      return null;
-   }
-
-   @Override
    public String schemeName() {
       return schemeName;
-   }
-
-   @Override
-   public String credentialsHeader() {
-      return null;
    }
 
    /**

@@ -3,7 +3,7 @@ package org.attribyte.snook.auth;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public interface LoginAuthenticator {
+public interface LoginAuthenticator extends Authenticator {
 
    /**
     * Performs a login.

@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * An authenticator that excludes all requests.
  */
-public class DenyAllAuthenticator extends Authenticator {
+public class DenyAllAuthenticator implements Authenticator {
 
    @Override
    public boolean authorized(final HttpServletRequest request) {
@@ -36,8 +36,8 @@ public class DenyAllAuthenticator extends Authenticator {
    }
 
    @Override
-   protected String scheme() {
-      return null;
+   public String credentials(final HttpServletRequest request) {
+      return "";
    }
 
    @Override

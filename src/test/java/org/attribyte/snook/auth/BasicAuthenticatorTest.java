@@ -40,7 +40,7 @@ public class BasicAuthenticatorTest {
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> null);
       String checkCredentials = BasicAuthenticator.buildCredentials("test_user", "test_password");
       assertEquals(
-              Authenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8)),
+              HeaderAuthenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8)),
               checkCredentials);
    }
 
@@ -53,7 +53,7 @@ public class BasicAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
                     : null;
          }
       };
@@ -72,7 +72,7 @@ public class BasicAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
                     : null;
          }
       };
@@ -91,7 +91,7 @@ public class BasicAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode("test_user:".getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode("test_user:".getBytes(Charsets.UTF_8))
                     : null;
          }
       };
@@ -111,7 +111,7 @@ public class BasicAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
                     : null;
          }
       };
@@ -128,7 +128,7 @@ public class BasicAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode("test_user:test_password_nope".getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode("test_user:test_password_nope".getBytes(Charsets.UTF_8))
                     : null;
          }
       };
@@ -145,7 +145,7 @@ public class BasicAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Bxsic " + Authenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
+                    "Bxsic " + HeaderAuthenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
                     : null;
          }
       };
@@ -211,7 +211,7 @@ public class BasicAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
                     : null;
          }
       };
@@ -232,7 +232,7 @@ public class BasicAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
                     : null;
          }
       };
@@ -253,7 +253,7 @@ public class BasicAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
                     : null;
          }
       };
@@ -272,7 +272,7 @@ public class BasicAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
                     : null;
          }
       };
@@ -294,7 +294,7 @@ public class BasicAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode(("tester:" + token).getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode(("tester:" + token).getBytes(Charsets.UTF_8))
                     : null;
          }
       };
@@ -308,7 +308,7 @@ public class BasicAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode(("tester:x" + token).getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode(("tester:x" + token).getBytes(Charsets.UTF_8))
                     : null;
          }
       };

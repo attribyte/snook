@@ -381,7 +381,7 @@ public class Users {
             if(token.isEmpty()) {
                token = AuthenticationToken.randomToken().toString();
             }
-            String credentials = Authenticator.base64Encoding.encode((username + ":" + token).getBytes(Charsets.UTF_8));
+            String credentials = HeaderAuthenticator.base64Encoding.encode((username + ":" + token).getBytes(Charsets.UTF_8));
             record = new Record(username, HashType.SHA256_BASIC, Authenticator.hashCredentials(credentials), token);
          } else {
             throw new IOException(String.format("Expecting '$2a', '$sha256$, '$token$', '$password$' or '$basic$' at line %d", lineNumber));

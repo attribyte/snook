@@ -35,7 +35,7 @@ import static org.attribyte.snook.Cookies.cookieValue;
 /**
  * An authenticator that validates an {@code HMACToken} sent as a cookie value.
  */
-public class HMACCookieAuthenticator extends Authenticator implements LoginAuthenticator {
+public class HMACCookieAuthenticator implements LoginAuthenticator {
 
    /**
     * Creates an authenticator.
@@ -62,11 +62,6 @@ public class HMACCookieAuthenticator extends Authenticator implements LoginAuthe
    public String authorizedUsername(final HttpServletRequest request) {
       HMACToken validToken = HMACToken.validate(credentials(request), hmacFunctions);
       return (validToken != null && !validToken.isExpired()) ? validToken.username : null;
-   }
-
-   @Override
-   protected String scheme() {
-      return null;
    }
 
    @Override

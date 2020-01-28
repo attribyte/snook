@@ -32,7 +32,7 @@ import java.util.function.Function;
 /**
  * Authenticator for 'Basic' auth.
  */
-public class BasicAuthenticator extends Authenticator {
+public class BasicAuthenticator extends HeaderAuthenticator {
 
    /**
     * Creates an authenticator that uses *hashed tokens* from a credentials file.

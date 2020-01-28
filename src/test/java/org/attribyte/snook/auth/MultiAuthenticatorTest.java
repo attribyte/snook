@@ -21,7 +21,6 @@ package org.attribyte.snook.auth;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.attribyte.snook.TestHttpServletRequest;
-import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Test;
 
 import javax.servlet.http.HttpServletRequest;

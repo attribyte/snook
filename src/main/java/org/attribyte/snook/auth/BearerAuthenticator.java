@@ -28,7 +28,7 @@ import java.util.function.Function;
 /**
  * Authenticator for 'Bearer' auth.
  */
-public class BearerAuthenticator extends Authenticator {
+public class BearerAuthenticator extends HeaderAuthenticator {
 
    /**
     * Creates an authenticator from a credentials file.
@@ -74,14 +74,9 @@ public class BearerAuthenticator extends Authenticator {
       if(credentials == null) {
          return null;
       }
-      HashCode hashedCredentials = hashCredentials(credentials);
+      HashCode hashedCredentials = Authenticator.hashCredentials(credentials);
       String username = validCredentials.get(hashedCredentials);
       return username != null ? username : credentialsValidator.apply(hashedCredentials);
-   }
-
-   @Override
-   public boolean authorized(final HttpServletRequest request) {
-      return authorizedUsername(request) != null;
    }
 
    @Override

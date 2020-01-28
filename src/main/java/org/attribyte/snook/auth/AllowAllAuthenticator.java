@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * An authenticator that allows all requests.
  */
-public class AllowAllAuthenticator extends Authenticator {
+public class AllowAllAuthenticator implements Authenticator {
 
    /**
     * Creates an authenticator that allows all requests.
@@ -43,14 +43,15 @@ public class AllowAllAuthenticator extends Authenticator {
       return username;
    }
 
+
    @Override
-   protected String scheme() {
-      return "Allow";
+   public String credentials(final HttpServletRequest request) {
+      return username;
    }
 
    @Override
    public String schemeName() {
-      return scheme();
+      return "Allow All";
    }
 
    /**

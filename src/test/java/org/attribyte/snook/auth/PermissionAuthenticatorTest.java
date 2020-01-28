@@ -16,7 +16,7 @@ import static org.junit.Assert.assertNotNull;
 
 public class PermissionAuthenticatorTest {
 
-   static final Authenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
+   static final HeaderAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
            Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
    ), s -> null);
 
@@ -28,7 +28,7 @@ public class PermissionAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8))
                     : null;
          }
       };
@@ -55,7 +55,7 @@ public class PermissionAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode("test_user:test_passwordx".getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode("test_user:test_passwordx".getBytes(Charsets.UTF_8))
                     : null;
          }
       };
@@ -79,7 +79,7 @@ public class PermissionAuthenticatorTest {
          @Override
          public String getHeader(final String s) {
             return s.equalsIgnoreCase(HttpHeader.AUTHORIZATION.asString()) ?
-                    "Basic " + Authenticator.base64Encoding.encode("test_user:test_passwordx".getBytes(Charsets.UTF_8))
+                    "Basic " + HeaderAuthenticator.base64Encoding.encode("test_user:test_passwordx".getBytes(Charsets.UTF_8))
                     : null;
          }
       };
