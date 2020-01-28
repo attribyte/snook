@@ -64,11 +64,6 @@ public class BasicBCryptAuthenticator extends HeaderAuthenticator {
       this.usernameCredentials = usernameCredentials;
    }
 
-   @Override
-   public boolean authorized(final HttpServletRequest request) {
-      return authorizedUsername(request) != null;
-   }
-
    /**
     * Clears any cached credentials.
     * @param request The request.

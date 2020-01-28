@@ -52,12 +52,6 @@ public class HMACCookieAuthenticator implements LoginAuthenticator {
       this.hmacKeyFunction = hmacKeyFunction;
    }
 
-
-   @Override
-   public boolean authorized(final HttpServletRequest request) {
-      return authorizedUsername(request) != null;
-   }
-
    @Override
    public String authorizedUsername(final HttpServletRequest request) {
       HMACToken validToken = HMACToken.validate(credentials(request), hmacFunctions);
