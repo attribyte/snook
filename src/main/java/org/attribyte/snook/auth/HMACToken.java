@@ -90,6 +90,23 @@ public class HMACToken {
    }
 
    /**
+    * Generate a map of random keys.
+    * @param size The size of the keys.
+    * @return The map of bas64 encoded key vs id.
+    */
+   public static Map<String, String> generateKeys(final int size) {
+      Map<String, String> keyMap = Maps.newHashMapWithExpectedSize(size);
+      SecureRandom rnd = new SecureRandom();
+      for(int i = 0; i < size; i++) {
+         String id = randomKeyId();
+         byte[] hmacKey = new byte[32];
+         rnd.nextBytes(hmacKey);
+         keyMap.put(id, BASE_64_ENCODING.encode(hmacKey));
+      }
+      return keyMap;
+   }
+
+   /**
     * Loads a previously generated key file.
     * @param inputFile The input file.
     * @return The map of HMAC function vs key id.
