@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.RequestLogWriter;
 import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -76,19 +77,35 @@ public abstract class Server {
                     final String propsResourceName,
                     final String loggerName,
                     final boolean withGzip) throws Exception {
-      this.props = props(propsResourceName, args);
+      this(args, propsResourceName, loggerName, withGzip, null);
+   }
 
-      boolean debugMode = props.getProperty("server." + ServerConfiguration.DEBUG_PROPERTY,
-              Boolean.toString(ServerConfiguration.DEFAULT_DEBUG_MODE))
-              .equalsIgnoreCase("true");
-      this.logger = log4jLogger(loggerName, debugMode ? Level.DEBUG : Level.INFO);
+   /**
+    * Creates the server with properties from a resource, a named logger and a custom error handler.
+    * @param args The command line arguments.
+    * @param propsResourceName The name of a resource that contains default properties.
+    * @param loggerName The name of a logger.
+    * @param withGzip Should auto-gzip handling be configured?
+    * @param errorHandler A custom error handler.
+    * @throws Exception on configuration error.
+    */
+   protected Server(String[] args,
+                    final String propsResourceName,
+                    final String loggerName,
+                    final boolean withGzip,
+                    final ErrorHandler errorHandler) throws Exception {
+      this.props = props(propsResourceName, args);
       this.serverConfiguration = new ServerConfiguration("server.", props);
       this.debug = debug(this.serverConfiguration.debug);
-      if(this.debug) {
+      this.logger = log4jLogger(loggerName, debug ? Level.DEBUG : Level.INFO);
+      if(debug) {
          System.out.println("Configuration...");
          System.out.println(this.serverConfiguration.toString());
       }
       this.httpServer = httpServer();
+      if(errorHandler != null) {
+         this.httpServer.setErrorHandler(errorHandler);
+      }
       this.rootContext = rootContext(withGzip);
       if(this.serverConfiguration.allowSymlinks) {
          this.rootContext.addAliasCheck(new AllowSymLinkAliasChecker());
@@ -108,6 +125,23 @@ public abstract class Server {
                     final String propsResourceName,
                     final Logger logger,
                     final boolean withGzip) throws Exception {
+      this(args, propsResourceName, logger, withGzip, null);
+   }
+
+   /**
+    * Creates the server with properties from a resource, a specified logger and a custom error handler.
+    * @param args The command line arguments.
+    * @param propsResourceName The name of a resource that contains default properties.
+    * @param logger The logger.
+    * @param withGzip Should auto-gzip handling be configured?
+    * @param errorHandler A custom error handler.
+    * @throws Exception on configuration error.
+    */
+   protected Server(String[] args,
+                    final String propsResourceName,
+                    final Logger logger,
+                    final boolean withGzip,
+                    final ErrorHandler errorHandler) throws Exception {
       this.props = props(propsResourceName, args);
       this.logger = logger;
       this.serverConfiguration = new ServerConfiguration("server.", props);
@@ -117,6 +151,9 @@ public abstract class Server {
          System.out.println(this.serverConfiguration.toString());
       }
       this.httpServer = httpServer();
+      if(errorHandler != null) {
+         this.httpServer.setErrorHandler(errorHandler);
+      }
       this.rootContext = rootContext(withGzip);
       if(this.serverConfiguration.allowSymlinks) {
          this.rootContext.addAliasCheck(new AllowSymLinkAliasChecker());
@@ -134,10 +171,10 @@ public abstract class Server {
     * Create a log4j-based logger.
     * @param loggerName The name of the log4j logger.
     * @param minimumLevel The minimum level.
-    * @return The logger.
+    * @return The API logger.
     */
-   protected static Logger log4jLogger(final String loggerName,
-                                       final Level minimumLevel) {
+   public static Logger log4jLogger(final String loggerName,
+                                    final Level minimumLevel) {
       return new Log4jLogger(loggerName, minimumLevel);
    }
 
