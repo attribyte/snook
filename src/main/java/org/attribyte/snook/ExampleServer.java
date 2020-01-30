@@ -17,21 +17,29 @@
  */
 package org.attribyte.snook;
 
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 public class ExampleServer extends Server {
 
    public ExampleServer(String[] args) throws Exception {
-      super(args, "", "example", true);
+      super(args, "", "example", true, customErrorHandler());
    }
 
    public static void main(String[] args) throws Exception {
       ExampleServer server = new ExampleServer(args);
       server.rootContext.addServlet(new ServletHolder(new UptimeServlet()), "/uptime/*");
+      server.rootContext.addServlet(new ServletHolder(new FailServlet()), "/fail/*");
       server.httpServer.start();
       server.httpServer.join();
    }
 
    protected void shutdown() {
+   }
+
+   private static ErrorHandler customErrorHandler() {
+      ErrorHandler handler = new ErrorHandler();
+      handler.setShowStacks(true);
+      return handler;
    }
 }

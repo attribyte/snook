@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -120,6 +121,8 @@ public class ServerConfiguration {
       this.trustStorePasswordWasSpecified = false;
       this.sslContextFactory = Optional.empty();
       this.enableForwardedRequestCustomizer = false;
+      this.suppressStackTrace = false;
+      this.customErrorHandler = null;
    }
 
    /**
@@ -185,6 +188,15 @@ public class ServerConfiguration {
       }
       this.enableForwardedRequestCustomizer =
               init.getProperty(ENABLE_FORWARDED_REQUEST_CUSTOMIZER_PROPERTY, "false").equalsIgnoreCase("true");
+
+      this.suppressStackTrace = init.getProperty(SUPPRESS_STACK_TRACE_PROPERTY, "false").equalsIgnoreCase("true");
+
+      if(suppressStackTrace) {
+         this.customErrorHandler = new ErrorHandler();
+         this.customErrorHandler.setShowStacks(false);
+      } else {
+         this.customErrorHandler = null;
+      }
    }
 
    /**
@@ -358,6 +370,11 @@ public class ServerConfiguration {
    public static final String ENABLE_FORWARDED_REQUEST_CUSTOMIZER_PROPERTY = "enableForwardedRequestCustomizer";
 
    /**
+    * The property name to suppress stack trace output for unhandled exceptions.
+    */
+   public static final String SUPPRESS_STACK_TRACE_PROPERTY = "suppressStackTrace";
+
+   /**
     * The IP this server is listening on.
     */
    public final String listenIP;
@@ -475,6 +492,17 @@ public class ServerConfiguration {
     * </p>
     */
    public final boolean enableForwardedRequestCustomizer;
+
+
+   /**
+    * Are stack traces for unhandled exceptions suppressed? Default {@code false}.
+    */
+   public final boolean suppressStackTrace;
+
+   /**
+    * A custom error handler, or {@code null}.
+    */
+   final ErrorHandler customErrorHandler;
 
    @Override
    public String toString() {

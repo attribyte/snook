@@ -105,6 +105,8 @@ public abstract class Server {
       this.httpServer = httpServer();
       if(errorHandler != null) {
          this.httpServer.setErrorHandler(errorHandler);
+      } else if(this.serverConfiguration.customErrorHandler != null) {
+         this.httpServer.setErrorHandler(this.serverConfiguration.customErrorHandler);
       }
       this.rootContext = rootContext(withGzip);
       if(this.serverConfiguration.allowSymlinks) {
@@ -153,6 +155,8 @@ public abstract class Server {
       this.httpServer = httpServer();
       if(errorHandler != null) {
          this.httpServer.setErrorHandler(errorHandler);
+      } else if(this.serverConfiguration.customErrorHandler != null) {
+         this.httpServer.setErrorHandler(this.serverConfiguration.customErrorHandler);
       }
       this.rootContext = rootContext(withGzip);
       if(this.serverConfiguration.allowSymlinks) {
