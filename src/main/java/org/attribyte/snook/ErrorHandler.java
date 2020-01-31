@@ -22,6 +22,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HttpHeaders;
@@ -45,7 +46,6 @@ import java.io.PrintWriter;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -97,17 +97,19 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    public ErrorHandler(final String cacheControlHeader,
                        final Writer defaultWriter,
                        final boolean withStackTrace,
-                       final Logger logger) {
+                       final Logger logger,
+                       final Map<String, Writer> overrideWriters) {
       this.cacheControlHeader = cacheControlHeader;
       this.defaultWriter = defaultWriter;
       this.withStackTrace = withStackTrace;
       this.logger = logger;
+      this.overrideWriters = overrideWriters != null ? ImmutableMap.copyOf(overrideWriters) : ImmutableMap.of();
    }
    /**
     * Creates an error handler with default values.
     */
    public ErrorHandler() {
-      this(DEFAULT_CACHE_CONTROL_HEADER, TEXT_WRITER, true, null);
+      this(DEFAULT_CACHE_CONTROL_HEADER, TEXT_WRITER, true, null, null);
    }
 
    /**
@@ -115,7 +117,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * @return The error handler.
     */
    public ErrorHandler enableStackTrace() {
-      return new ErrorHandler(cacheControlHeader, defaultWriter, true, logger);
+      return new ErrorHandler(cacheControlHeader, defaultWriter, true, logger, overrideWriters);
    }
 
    /**
@@ -123,7 +125,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * @return The new error handler.
     */
    public ErrorHandler disableStackTrace() {
-      return new ErrorHandler(cacheControlHeader, defaultWriter, false, logger);
+      return new ErrorHandler(cacheControlHeader, defaultWriter, false, logger, overrideWriters);
    }
 
    /**
@@ -132,7 +134,16 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * @return The new error handler.
     */
    public ErrorHandler withLogger(final Logger logger) {
-      return new ErrorHandler(cacheControlHeader, defaultWriter, withStackTrace, logger);
+      return new ErrorHandler(cacheControlHeader, defaultWriter, withStackTrace, logger, overrideWriters);
+   }
+
+   /**
+    * Adds overrides to this writer.
+    * @param overrides The overrides.
+    * @return The new error handler with overrides added.
+    */
+   public ErrorHandler withOverrides(final Map<String, Writer> overrides) {
+      return new ErrorHandler(cacheControlHeader, defaultWriter, withStackTrace, logger, overrides);
    }
 
    @Override
@@ -207,9 +218,16 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * @return The writer or {@code null} if none.
     */
    protected Writer overrideWriter(final String requestURI) {
+      if(overrideWriters.isEmpty()) {
+         return null;
+      }
+      for(Map.Entry<String, Writer> curr : overrideWriters.entrySet()) {
+         if(requestURI.startsWith(curr.getKey())) {
+            return curr.getValue();
+         }
+      }
       return null;
    }
-
 
    /**
     * Selects the writer based on content type.
@@ -338,6 +356,14 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * An optional logger.
     */
    public final Logger logger;
+
+   /**
+    * A map of writer vs request path to override any defaults.
+    * <p>
+    *    The *start* of the path is matched against each key.
+    * </p>
+    */
+   public final ImmutableMap<String, Writer> overrideWriters;
 
    /**
     * {@value}

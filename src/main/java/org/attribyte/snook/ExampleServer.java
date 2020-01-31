@@ -17,13 +17,16 @@
  */
 package org.attribyte.snook;
 
-import org.attribyte.api.ConsoleLogger;
+import com.google.common.collect.ImmutableMap;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 public class ExampleServer extends Server {
 
    public ExampleServer(String[] args) throws Exception {
-      super(args, "", "example", true, new ErrorHandler());
+      super(args, "", "example", true,
+              new ErrorHandler().withOverrides(ImmutableMap.of("" +
+                      "/fail/json", ErrorHandler.JSON_WRITER,
+                      "/fail/text", ErrorHandler.TEXT_WRITER)));
    }
 
    public static void main(String[] args) throws Exception {
