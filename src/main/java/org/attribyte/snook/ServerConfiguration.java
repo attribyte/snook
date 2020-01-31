@@ -30,7 +30,6 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -122,7 +121,7 @@ public class ServerConfiguration {
       this.sslContextFactory = Optional.empty();
       this.enableForwardedRequestCustomizer = false;
       this.suppressStackTrace = false;
-      this.customErrorHandler = null;
+      this.customErrorHandler = new ErrorHandler().enableStackTrace();
    }
 
    /**
@@ -188,15 +187,8 @@ public class ServerConfiguration {
       }
       this.enableForwardedRequestCustomizer =
               init.getProperty(ENABLE_FORWARDED_REQUEST_CUSTOMIZER_PROPERTY, "false").equalsIgnoreCase("true");
-
       this.suppressStackTrace = init.getProperty(SUPPRESS_STACK_TRACE_PROPERTY, "false").equalsIgnoreCase("true");
-
-      if(suppressStackTrace) {
-         this.customErrorHandler = new ErrorHandler();
-         this.customErrorHandler.setShowStacks(false);
-      } else {
-         this.customErrorHandler = null;
-      }
+      this.customErrorHandler = suppressStackTrace ? new ErrorHandler().disableStackTrace() : new ErrorHandler().enableStackTrace();
    }
 
    /**

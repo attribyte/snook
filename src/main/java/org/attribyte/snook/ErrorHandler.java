@@ -272,7 +272,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    /**
     * The value sent with the cache control header. If {@code null} or empty, the header will not be sent.
     */
-   private final String cacheControlHeader;
+   public final String cacheControlHeader;
 
    /**
     * The default writer.
@@ -282,22 +282,22 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    /**
     * Should stack traces be included?
     */
-   private final boolean withStackTrace;
+   public final boolean withStackTrace;
 
    /**
     * An optional logger.
     */
-   private final Logger logger;
+   public final Logger logger;
 
    /**
-    * @value
+    * {@value}
     */
-   private static final String DEFAULT_CACHE_CONTROL_HEADER = "must-revalidate,no-cache,no-store";
+   public static final String DEFAULT_CACHE_CONTROL_HEADER = "must-revalidate,no-cache,no-store";
 
    /**
     * The default charset.
     */
-   private static final Charset DEFAULT_CHARSET = Charsets.ISO_8859_1;
+   public static final Charset DEFAULT_CHARSET = Charsets.ISO_8859_1;
 
 
    public static final Writer TEXT_WRITER = new Writer() {

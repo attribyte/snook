@@ -103,9 +103,13 @@ public abstract class Server {
       }
       this.httpServer = httpServer();
       if(errorHandler != null) {
-         this.httpServer.setErrorHandler(errorHandler);
+         if(errorHandler.logger == null) {
+            this.httpServer.setErrorHandler(errorHandler.withLogger(logger));
+         } else {
+            this.httpServer.setErrorHandler(errorHandler);
+         }
       } else if(this.serverConfiguration.customErrorHandler != null) {
-         this.httpServer.setErrorHandler(this.serverConfiguration.customErrorHandler);
+         this.httpServer.setErrorHandler(this.serverConfiguration.customErrorHandler.withLogger(this.logger));
       }
       this.rootContext = rootContext(withGzip);
       if(this.serverConfiguration.allowSymlinks) {
@@ -153,9 +157,13 @@ public abstract class Server {
       }
       this.httpServer = httpServer();
       if(errorHandler != null) {
-         this.httpServer.setErrorHandler(errorHandler);
+         if(errorHandler.logger == null) {
+            this.httpServer.setErrorHandler(errorHandler.withLogger(logger));
+         } else {
+            this.httpServer.setErrorHandler(errorHandler);
+         }
       } else if(this.serverConfiguration.customErrorHandler != null) {
-         this.httpServer.setErrorHandler(this.serverConfiguration.customErrorHandler);
+         this.httpServer.setErrorHandler(this.serverConfiguration.customErrorHandler.withLogger(logger));
       }
       this.rootContext = rootContext(withGzip);
       if(this.serverConfiguration.allowSymlinks) {

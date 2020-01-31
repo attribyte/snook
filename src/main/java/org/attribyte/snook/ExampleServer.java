@@ -23,7 +23,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 public class ExampleServer extends Server {
 
    public ExampleServer(String[] args) throws Exception {
-      super(args, "", "example", true, new ErrorHandler().withLogger(new ConsoleLogger()));
+      super(args, "", "example", true, new ErrorHandler());
    }
 
    public static void main(String[] args) throws Exception {
