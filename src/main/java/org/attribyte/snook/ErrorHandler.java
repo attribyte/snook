@@ -85,6 +85,17 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
        * @return The name.
        */
       public String name();
+
+
+      /**
+       * Adds custom headers to a response.
+       * <p>
+       *    Default does nothing.
+       * </p>
+       * @param response The response.
+       */
+      public default void addCustomHeaders(HttpServletResponse response) {
+      }
    }
 
    /**
@@ -185,6 +196,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          }
 
          response.setHeader(HttpHeaders.CONTENT_TYPE, writer.contentType());
+         writer.addCustomHeaders(response);
 
          boolean useStackTrace = withStackTrace;
 
