@@ -21,6 +21,9 @@ package org.attribyte.snook;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.net.HttpHeaders;
 import org.attribyte.api.Logger;
 import org.eclipse.jetty.http.HttpHeader;
@@ -30,6 +33,7 @@ import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.joda.time.format.ISODateTimeFormat;
 
@@ -41,7 +45,10 @@ import java.io.PrintWriter;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.attribyte.util.StringUtil.randomString;
 
@@ -147,23 +154,26 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          List<String> acceptableMimeTypes = baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT,
                  QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
 
-         Writer writer = null;
-
-         if(acceptableMimeTypes.isEmpty()) {
-            writer = defaultWriter;
-         } else {
-            for(String contentType : acceptableMimeTypes) {
-               Writer maybeWriter = selectWriter(contentType);
-               if(maybeWriter != null) {
-                  writer = maybeWriter;
-                  break;
+         Writer writer = overrideWriter(Strings.nullToEmpty(request.getRequestURI()));
+         if(writer == null) {
+            if(acceptableMimeTypes.isEmpty()) {
+               writer = defaultWriter;
+            } else {
+               for(String contentType : acceptableMimeTypes) {
+                  Writer maybeWriter = selectWriter(contentType);
+                  if(maybeWriter != null) {
+                     writer = maybeWriter;
+                     break;
+                  }
                }
+            }
+
+            if(writer == null) {
+               writer = defaultWriter;
             }
          }
 
-         if(writer == null) {
-            writer = defaultWriter;
-         }
+         response.setHeader(HttpHeaders.CONTENT_TYPE, writer.contentType());
 
          boolean useStackTrace = withStackTrace;
 
@@ -192,6 +202,14 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
       }
    }
 
+   /**
+    * Override the writer based on path.
+    * @return The writer or {@code null} if none.
+    */
+   protected Writer overrideWriter(final String requestURI) {
+      return null;
+   }
+
 
    /**
     * Selects the writer based on content type.
@@ -206,6 +224,9 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
             return HTML_WRITER;
          case "text/plain":
             return TEXT_WRITER;
+         case "text/json":
+         case "application/json":
+            return JSON_WRITER;
          default:
             return defaultWriter;
       }
@@ -267,6 +288,25 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          }
       } else {
          writer.println("Unknown");
+      }
+   }
+
+   /**
+    * Gets the stack trace as a string.
+    * @param cause The cause.
+    * @param request The request.
+    */
+   protected static List<String> getStackTrace(final Throwable cause,
+                                               final HttpServletRequest request) {
+      if(cause != null) {
+         List<Throwable> chain = Throwables.getCausalChain(cause);
+         List<String> traces = Lists.newArrayListWithExpectedSize(chain.size());
+         for(Throwable t : chain) {
+            traces.add(Throwables.getStackTraceAsString(t));
+         }
+         return traces;
+      } else {
+         return ImmutableList.of("Unknown");
       }
    }
 
@@ -369,9 +409,11 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
             String idMessage = String.format("REF ID: %s", randomString(8));
             writer.printf("<h3>%s</h3>", idMessage);
             logger.error(idMessage, cause);
-            writer.write("<pre>");
-            writeStackTrace(cause, request, writer);
-            writer.write("</pre>");
+            if(withStackTrace) {
+               writer.println("<pre>");
+               writeStackTrace(cause, request, writer);
+               writer.println("</pre>");
+            }
          }
          writer.write("</body></html>");
          writer.flush();
@@ -385,6 +427,52 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
       @Override
       public String contentType() {
          return MimeTypes.Type.TEXT_HTML.asString();
+      }
+   };
+
+   public static final Writer JSON_WRITER = new Writer() {
+      @Override
+      public void write(final HttpServletRequest request, final PrintWriter writer, final int code, String message,
+                        final boolean withStackTrace, final Logger logger) {
+         Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
+         Map<String, String> json = Maps.newLinkedHashMap();
+         Throwable cause = getCause(request);
+
+         json.put("url", request.getRequestURI());
+         json.put("status", Integer.toString(code));
+         json.put("message", message);
+         if (servlet != null) {
+            json.put("servlet", servlet.toString());
+         }
+
+         if(logger != null && cause != null) {
+            String id = randomString(8);
+            json.put("ref_id", id);
+            logger.error(id, cause);
+            if(withStackTrace) {
+               List<String> stackTraces = getStackTrace(cause, request);
+               for(int i = 0; i < stackTraces.size(); i++) {
+                  json.put("cause" + i, stackTraces.get(i));
+               }
+            }
+         }
+
+         writer.append(json.entrySet().stream()
+                 .map(e -> QuotedStringTokenizer.quote(e.getKey()) +
+                         ":" +
+                         QuotedStringTokenizer.quote((e.getValue())))
+                 .collect(Collectors.joining(",\n", "{\n", "\n}")));
+         writer.flush();;
+      }
+
+      @Override
+      public String name() {
+         return "json";
+      }
+
+      @Override
+      public String contentType() {
+         return MimeTypes.Type.APPLICATION_JSON.asString();
       }
    };
 }
