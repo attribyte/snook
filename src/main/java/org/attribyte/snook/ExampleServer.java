@@ -17,13 +17,13 @@
  */
 package org.attribyte.snook;
 
-import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.attribyte.api.ConsoleLogger;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 public class ExampleServer extends Server {
 
    public ExampleServer(String[] args) throws Exception {
-      super(args, "", "example", true, customErrorHandler());
+      super(args, "", "example", true, new ErrorHandler().withLogger(new ConsoleLogger()));
    }
 
    public static void main(String[] args) throws Exception {

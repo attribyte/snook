@@ -32,6 +32,6 @@ public class FailServlet extends HttpServlet {
 
    @Override
    protected void service(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-      throw new RuntimeException("Fail!");
+      throw new RuntimeException("Fail - 0", new UnsupportedOperationException("Fail - 1", new Exception("Fail - 2")));
    }
 }

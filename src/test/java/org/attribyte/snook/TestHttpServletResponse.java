@@ -174,12 +174,14 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public void setContentLength(final int i) {
+   }
 
+   @Override
+   public void setContentLengthLong(final long l) {
    }
 
    @Override
    public void setContentType(final String s) {
-
    }
 
    @Override

@@ -10,7 +10,7 @@
     <name>Snook HTTP Server Utilities</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jettyVersion>9.4.19.v20190610</jettyVersion>
+        <jettyVersion>9.4.21.v20190926</jettyVersion>
     </properties>
     <description>
         Utilities and framework for creating and deploying HTTP servers.
@@ -103,6 +103,11 @@
             <version>${jettyVersion}</version>
             <optional>true</optional>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.1.0</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
