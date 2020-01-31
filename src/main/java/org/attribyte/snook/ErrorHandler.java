@@ -24,12 +24,14 @@ import com.google.common.base.Throwables;
 import com.google.common.net.HttpHeaders;
 import org.attribyte.api.Logger;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.StringUtil;
+import org.joda.time.format.ISODateTimeFormat;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -197,8 +199,16 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * @return The writer or {@code null} if none mapped to the content type.
     */
    protected Writer selectWriter(final String contentType) {
-      //TODO...
-      return defaultWriter;
+      switch(Strings.nullToEmpty(contentType).trim().toLowerCase()) {
+         case "text/html":
+         case "text/*":
+         case "*/*":
+            return HTML_WRITER;
+         case "text/plain":
+            return TEXT_WRITER;
+         default:
+            return defaultWriter;
+      }
    }
 
    /**
@@ -324,12 +334,57 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
 
       @Override
       public String name() {
-         return null;
+         return "text";
       }
 
       @Override
       public String contentType() {
-         return MimeTypes.Type.TEXT_PLAIN_8859_1.asString();
+         return MimeTypes.Type.TEXT_PLAIN.asString();
+      }
+   };
+
+   public static final Writer HTML_WRITER = new Writer() {
+      @Override
+      public void write(final HttpServletRequest request, final PrintWriter writer, final int code, String message,
+                        final boolean withStackTrace, final Logger logger) {
+
+         if(message == null) {
+            message = HttpStatus.getMessage(code);
+         }
+
+         writer.write("<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"/><title>Error ");
+         writer.write("<title>Error ");
+         String status = Integer.toString(code);
+         writer.write(status);
+         if(message != null && !message.equals(status)) {
+            writer.write(' ');
+            writer.write(StringUtil.sanitizeXmlString(message));
+         }
+         writer.write("</title></head><body>");
+         writer.printf("%n<h2>%d %s</h2>%n", code, StringUtil.sanitizeXmlString(message));
+         writer.printf("<h3>%s</h3>%n", ISODateTimeFormat.basicDateTimeNoMillis().print(System.currentTimeMillis()));
+         writer.printf("<h3>%s</h3>%n", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+         Throwable cause = getCause(request);
+         if(logger != null && cause != null) {
+            String idMessage = String.format("REF ID: %s", randomString(8));
+            writer.printf("<h3>%s</h3>", idMessage);
+            logger.error(idMessage, cause);
+            writer.write("<pre>");
+            writeStackTrace(cause, request, writer);
+            writer.write("</pre>");
+         }
+         writer.write("</body></html>");
+         writer.flush();
+      }
+
+      @Override
+      public String name() {
+         return "html";
+      }
+
+      @Override
+      public String contentType() {
+         return MimeTypes.Type.TEXT_HTML.asString();
       }
    };
 }
