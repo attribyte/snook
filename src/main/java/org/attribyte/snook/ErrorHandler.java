@@ -22,7 +22,6 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HttpHeaders;
@@ -46,6 +45,7 @@ import java.io.PrintWriter;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -99,28 +99,47 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    }
 
    /**
-    * Creates an error handler.
+    * Creates an error handler with a map of overrides.
     * @param cacheControlHeader The cache control header value.
     * @param defaultWriter The default writer.
     * @param withStackTrace Should stack traces be sent to the client?
     * @param logger A logger.
+    * @param overrideWriters A map (that should preserve iteration order for entries)
+    *                        of writer vs prefix to override output type for paths. May be {@code null}.
     */
    public ErrorHandler(final String cacheControlHeader,
                        final Writer defaultWriter,
                        final boolean withStackTrace,
                        final Logger logger,
                        final Map<String, Writer> overrideWriters) {
+      this(cacheControlHeader, defaultWriter, withStackTrace, logger, overrideWriters.entrySet());
+   }
+
+   /**
+    * Creates an error handler with a list of overrides.
+    * @param cacheControlHeader The cache control header value.
+    * @param defaultWriter The default writer.
+    * @param withStackTrace Should stack traces be sent to the client?
+    * @param logger A logger.
+    * @param overrideWriters A list of prefix, writers to override output type for paths. May be {@code null}.
+    */
+   public ErrorHandler(final String cacheControlHeader,
+                       final Writer defaultWriter,
+                       final boolean withStackTrace,
+                       final Logger logger,
+                       final Collection<Map.Entry<String, Writer>> overrideWriters) {
       this.cacheControlHeader = cacheControlHeader;
       this.defaultWriter = defaultWriter;
       this.withStackTrace = withStackTrace;
       this.logger = logger;
-      this.overrideWriters = overrideWriters != null ? ImmutableMap.copyOf(overrideWriters) : ImmutableMap.of();
+      this.overrideWriters = overrideWriters != null ? ImmutableList.copyOf(overrideWriters) : ImmutableList.of();
    }
+
    /**
     * Creates an error handler with default values.
     */
    public ErrorHandler() {
-      this(DEFAULT_CACHE_CONTROL_HEADER, TEXT_WRITER, true, null, null);
+      this(DEFAULT_CACHE_CONTROL_HEADER, TEXT_WRITER, true, null, ImmutableList.of());
    }
 
    /**
@@ -149,11 +168,20 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    }
 
    /**
-    * Adds overrides to this writer.
+    * Adds overrides to this writer from a map.
     * @param overrides The overrides.
     * @return The new error handler with overrides added.
     */
    public ErrorHandler withOverrides(final Map<String, Writer> overrides) {
+      return new ErrorHandler(cacheControlHeader, defaultWriter, withStackTrace, logger, overrides);
+   }
+
+   /**
+    * Adds overrides to this writer from a list of map entries.
+    * @param overrides The overrides.
+    * @return The new error handler with overrides added.
+    */
+   public ErrorHandler withOverrides(final List<Map.Entry<String, Writer>> overrides) {
       return new ErrorHandler(cacheControlHeader, defaultWriter, withStackTrace, logger, overrides);
    }
 
@@ -233,7 +261,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
       if(overrideWriters.isEmpty()) {
          return null;
       }
-      for(Map.Entry<String, Writer> curr : overrideWriters.entrySet()) {
+      for(Map.Entry<String, Writer> curr : overrideWriters) {
          if(requestURI.startsWith(curr.getKey())) {
             return curr.getValue();
          }
@@ -394,12 +422,9 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    public final Logger logger;
 
    /**
-    * A map of writer vs request path to override any defaults.
-    * <p>
-    *    The *start* of the path is matched against each key.
-    * </p>
+    * A list of path prefix, writer pairs - matched in order.
     */
-   public final ImmutableMap<String, Writer> overrideWriters;
+   public final ImmutableList<Map.Entry<String, Writer>> overrideWriters;
 
    /**
     * {@value}
