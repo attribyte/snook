@@ -209,6 +209,9 @@ public abstract class Server {
       }
       this.httpServer = httpServer();
       this.rootContext = rootContext(withGzip);
+      if(this.serverConfiguration.customErrorHandler != null) {
+         this.httpServer.setErrorHandler(this.serverConfiguration.customErrorHandler.withLogger(logger));
+      }
       if(this.serverConfiguration.allowSymlinks) {
          this.rootContext.addAliasCheck(new AllowSymLinkAliasChecker());
       }
@@ -325,6 +328,54 @@ public abstract class Server {
       if(logger != null) {
          logger.error(message, t);
       }
+   }
+
+
+   /**
+    * Starts the server.
+    * @throws Exception on start error.
+    */
+   public void start() throws Exception {
+      httpServer.start();
+   }
+
+
+   /**
+    * Starts the server with a custom error handler.
+    * @param errorHandler The error handler.
+    * @throws Exception on start error.
+    */
+   public void start(final ErrorHandler errorHandler) throws Exception {
+      httpServer.setErrorHandler(errorHandler);
+      httpServer.start();
+   }
+
+   /**
+    * Starts the server, then joins.
+    * @throws Exception on start error.
+    */
+   public void startWithJoin() throws Exception {
+      httpServer.start();
+      httpServer.join();
+   }
+
+   /**
+    * Starts the server with a custom error handler, then joins.
+    * @param errorHandler The error handler.
+    * @throws Exception on start error.
+    */
+   public void startWithJoin(final ErrorHandler errorHandler) throws Exception {
+      httpServer.setErrorHandler(errorHandler);
+      httpServer.start();
+      httpServer.join();
+   }
+
+   /**
+    * Join with the calling thread.
+    * @throws InterruptedException on interrupted.
+    */
+   public void join() throws InterruptedException {
+      httpServer.join();
    }
 
    /**
