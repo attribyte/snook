@@ -429,26 +429,36 @@ public class CORSAuthenticator implements Authenticator {
       if(authorizedUsername == null) {
          return null;
       } else {
-         if(options.contains(Option.ALLOW_CREDENTIALS)) {
+         addAuthorizedHeaders(request, response, options);
+         if(!exposeHeaders.isEmpty()) {
+            response.setHeader(ACCESS_CONTROL_EXPOSE_HEADERS_HEADER, exposeHeaders);
+         }
+         return authorizedUsername;
+      }
+   }
+
+   /**
+    * Adds response headers for an authorized request.
+    * @param request The request.
+    * @param response The response.
+    * @param options The CORS options.
+    */
+   public static void addAuthorizedHeaders(final HttpServletRequest request, final HttpServletResponse response,
+           final Set<Option> options) {
+
+      if(options.contains(Option.ALLOW_CREDENTIALS)) {
             /*
                When responding to a credentialed request, the server must specify an origin in the value of the
                Access-Control-Allow-Origin header, instead of specifying the "*" wildcard.
              */
-            response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin(request));
-            response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, "true");
-            response.setHeader(HttpHeaders.VARY, HttpHeaders.ORIGIN);
-         } else if(options.contains(Option.ALLOW_ANY_ORGIN)){
-            response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, "*");
-         } else {
-            response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin(request));
-            response.setHeader(HttpHeaders.VARY, HttpHeaders.ORIGIN);
-         }
-
-         if(!exposeHeaders.isEmpty()) {
-            response.setHeader(ACCESS_CONTROL_EXPOSE_HEADERS_HEADER, exposeHeaders);
-         }
-
-         return authorizedUsername;
+         response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin(request));
+         response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, "true");
+         response.setHeader(HttpHeaders.VARY, HttpHeaders.ORIGIN);
+      } else if(options.contains(Option.ALLOW_ANY_ORGIN)){
+         response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, "*");
+      } else {
+         response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin(request));
+         response.setHeader(HttpHeaders.VARY, HttpHeaders.ORIGIN);
       }
    }
 
@@ -457,7 +467,7 @@ public class CORSAuthenticator implements Authenticator {
     * @param request The request.
     * @return The origin header value.
     */
-   public String origin(final HttpServletRequest request) {
+   public static String origin(final HttpServletRequest request) {
       return request.getHeader(HttpHeader.ORIGIN.name());
    }
 
