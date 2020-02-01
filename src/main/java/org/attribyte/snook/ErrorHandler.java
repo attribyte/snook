@@ -295,7 +295,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * @param contentType The content type.
     * @return The writer or a text writer if none mapped to the content type.
     */
-   public Writer selectBuiltInWriter(final String contentType) {
+   public static Writer selectBuiltInWriter(final String contentType) {
       switch(Strings.nullToEmpty(contentType).trim().toLowerCase()) {
          case "text/html":
          case "text/*":
