@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
 import com.google.common.primitives.Ints;
-import org.eclipse.jetty.http.HttpHeader;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -468,7 +467,7 @@ public class CORSAuthenticator implements Authenticator {
     * @return The origin header value.
     */
    public static String origin(final HttpServletRequest request) {
-      return request.getHeader(HttpHeader.ORIGIN.name());
+      return request.getHeader(HttpHeaders.ORIGIN);
    }
 
    @Override
