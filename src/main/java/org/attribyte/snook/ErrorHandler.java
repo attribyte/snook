@@ -405,10 +405,8 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    /**
     * Gets the stack trace as a string.
     * @param cause The cause.
-    * @param request The request.
     */
-   protected static List<String> getStackTrace(final Throwable cause,
-                                               final HttpServletRequest request) {
+   public static List<String> getStackTrace(final Throwable cause) {
       if(cause != null) {
          List<Throwable> chain = Throwables.getCausalChain(cause);
          List<String> traces = Lists.newArrayListWithExpectedSize(chain.size());
@@ -426,8 +424,18 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * @param request The request.
     * @return The cause or {@code null}.
     */
-   protected static Throwable getCause(final HttpServletRequest request) {
+   public static Throwable getCause(final HttpServletRequest request) {
       return (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+   }
+
+   /**
+    * Gets the servlet name.
+    * @param request The request.
+    * @return The servlet name.
+    */
+   public static String getServletName(final HttpServletRequest request) {
+      Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
+      return servlet != null ? servlet.toString() : "";
    }
 
    /**
@@ -465,7 +473,6 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     */
    public static final Charset DEFAULT_CHARSET = Charsets.ISO_8859_1;
 
-
    public static final Writer TEXT_WRITER = new Writer() {
       @Override
       public void write(final HttpServletRequest request, final PrintWriter writer, final int code, final String message,
@@ -479,7 +486,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          writer.printf("HTTP ERROR: %d %s%n", code, StringUtil.sanitizeXmlString(message));
          writer.printf("STATUS: %s%n", code);
          writer.printf("MESSAGE: %s%n", message);
-         writer.printf("SERVLET: %s%n", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+         writer.printf("SERVLET: %s%n", getServletName(request));
          if(cause != null && withStackTrace) {
             writer.println("CAUSE:");
             writer.println();
@@ -519,7 +526,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          writer.write("</title></head><body>");
          writer.printf("%n<h2>%d %s</h2>%n", code, StringUtil.sanitizeXmlString(message));
          writer.printf("<h3>%s</h3>%n", ISODateTimeFormat.basicDateTimeNoMillis().print(System.currentTimeMillis()));
-         writer.printf("<h3>%s</h3>%n", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+         writer.printf("<h3>%s</h3>%n", getServletName(request));
          Throwable cause = getCause(request);
          if(logger != null && cause != null) {
             String idMessage = String.format("REF ID: %s", randomString(8));
@@ -550,23 +557,20 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
       @Override
       public void write(final HttpServletRequest request, final PrintWriter writer, final int code, String message,
                         final boolean withStackTrace, final Logger logger) {
-         Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
          Map<String, String> json = Maps.newLinkedHashMap();
          Throwable cause = getCause(request);
 
          json.put("url", request.getRequestURI());
          json.put("status", Integer.toString(code));
          json.put("message", message);
-         if (servlet != null) {
-            json.put("servlet", servlet.toString());
-         }
+         json.put("servlet", getServletName(request));
 
          if(logger != null && cause != null) {
             String id = randomString(8);
             json.put("ref_id", id);
             logger.error(id, cause);
             if(withStackTrace) {
-               List<String> stackTraces = getStackTrace(cause, request);
+               List<String> stackTraces = getStackTrace(cause);
                for(int i = 0; i < stackTraces.size(); i++) {
                   json.put("cause" + i, stackTraces.get(i));
                }
