@@ -86,7 +86,6 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
        */
       public String name();
 
-
       /**
        * Adds custom headers to a response.
        * <p>
@@ -95,6 +94,15 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
        * @param response The response.
        */
       public default void addCustomHeaders(HttpServletResponse response) {
+      }
+
+      /**
+       * Sanitize HTML/XML markup.
+       * @param str The string.
+       * @return The sanitized string.
+       */
+      public static String sanitizeMarkup(final String str) {
+         return StringUtil.sanitizeXmlString(str);
       }
    }
 
