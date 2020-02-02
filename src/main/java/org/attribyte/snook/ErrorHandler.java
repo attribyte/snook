@@ -516,7 +516,6 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          }
 
          writer.write("<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"/><title>Error ");
-         writer.write("<title>Error ");
          String status = Integer.toString(code);
          writer.write(status);
          if(message != null && !message.equals(status)) {
