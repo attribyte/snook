@@ -68,11 +68,36 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
        * @param writer The output writer.
        * @param code The error code.
        * @param message The message.
+       * @param cause The cause. May be {@code null}.
        * @param withStackTrace Should the stack trace be included?
        * @param logger A logger. May be {@code null};
        */
       public void write(HttpServletRequest request, PrintWriter writer, int code, String message,
-                        boolean withStackTrace, Logger logger);
+                        Throwable cause, boolean withStackTrace, Logger logger);
+
+
+      /**
+       * Send an error response.
+       * @param request The request.
+       * @param code The code.
+       * @param message The message.
+       * @param withStackTrace Should a stack trace be included in the output?
+       * @param logger A logger.
+       * @param response The response.
+       * @throws IOException on write error.
+       */
+      public default void send(HttpServletRequest request, int code, String message,
+                               boolean withStackTrace, Logger logger,
+                               final HttpServletResponse response) throws IOException {
+         response.setStatus(code);
+         response.setContentType(contentType());
+         Throwable cause = getCause(request);
+         if(withStackTrace && cause == null) {
+            cause = new Exception("");
+         }
+         write(request, response.getWriter(), code, message, cause, withStackTrace, logger);
+         response.flushBuffer();
+      }
 
       /**
        * The content type for this writer.
@@ -243,7 +268,8 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
                ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().acquireBuffer();
                ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
                PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(out, useCharset(baseRequest, writer.contentType())));
-               writer.write(request, printWriter, response.getStatus(), message, useStackTrace, logger);
+               writer.write(request, printWriter, response.getStatus(), message,
+                       getCause(request), useStackTrace, logger);
                printWriter.flush();
                break;
             } catch(BufferOverflowException e) {
@@ -476,8 +502,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    public static final Writer TEXT_WRITER = new Writer() {
       @Override
       public void write(final HttpServletRequest request, final PrintWriter writer, final int code, final String message,
-                        final boolean withStackTrace, final Logger logger) {
-         Throwable cause = getCause(request);
+                        final Throwable cause, final boolean withStackTrace, final Logger logger) {
          if(logger != null && cause != null) {
             String idMessage = String.format("REF ID: %s", randomString(8));
             writer.println(idMessage);
@@ -509,7 +534,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    public static final Writer HTML_WRITER = new Writer() {
       @Override
       public void write(final HttpServletRequest request, final PrintWriter writer, final int code, String message,
-                        final boolean withStackTrace, final Logger logger) {
+                        final Throwable cause, final boolean withStackTrace, final Logger logger) {
 
          if(message == null) {
             message = HttpStatus.getMessage(code);
@@ -526,16 +551,17 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          writer.printf("%n<h2>%d %s</h2>%n", code, StringUtil.sanitizeXmlString(message));
          writer.printf("<h3>%s</h3>%n", ISODateTimeFormat.basicDateTimeNoMillis().print(System.currentTimeMillis()));
          writer.printf("<h3>%s</h3>%n", getServletName(request));
-         Throwable cause = getCause(request);
+
          if(logger != null && cause != null) {
             String idMessage = String.format("REF ID: %s", randomString(8));
             writer.printf("<h3>%s</h3>", idMessage);
             logger.error(idMessage, cause);
-            if(withStackTrace) {
-               writer.println("<pre>");
-               writeStackTrace(cause, request, writer);
-               writer.println("</pre>");
-            }
+         }
+
+         if(cause != null && withStackTrace) {
+            writer.println("<pre>");
+            writeStackTrace(cause, request, writer);
+            writer.println("</pre>");
          }
          writer.write("</body></html>");
          writer.flush();
@@ -555,10 +581,8 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    public static final Writer JSON_WRITER = new Writer() {
       @Override
       public void write(final HttpServletRequest request, final PrintWriter writer, final int code, String message,
-                        final boolean withStackTrace, final Logger logger) {
+                        final Throwable cause, final boolean withStackTrace, final Logger logger) {
          Map<String, String> json = Maps.newLinkedHashMap();
-         Throwable cause = getCause(request);
-
          json.put("url", request.getRequestURI());
          json.put("status", Integer.toString(code));
          json.put("message", message);
@@ -568,11 +592,12 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
             String id = randomString(8);
             json.put("ref_id", id);
             logger.error(id, cause);
-            if(withStackTrace) {
-               List<String> stackTraces = getStackTrace(cause);
-               for(int i = 0; i < stackTraces.size(); i++) {
-                  json.put("cause" + i, stackTraces.get(i));
-               }
+         }
+
+         if(cause != null && withStackTrace) {
+            List<String> stackTraces = getStackTrace(cause);
+            for(int i = 0; i < stackTraces.size(); i++) {
+               json.put("cause" + i, stackTraces.get(i));
             }
          }
 
