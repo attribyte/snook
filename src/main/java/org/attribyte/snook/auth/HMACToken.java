@@ -95,7 +95,7 @@ public class HMACToken {
     * @return The map of bas64 encoded key vs id.
     */
    public static Map<String, String> generateKeys(final int size) {
-      Map<String, String> keyMap = Maps.newHashMapWithExpectedSize(size);
+      Map<String, String> keyMap = Maps.newLinkedHashMapWithExpectedSize(size);
       SecureRandom rnd = new SecureRandom();
       for(int i = 0; i < size; i++) {
          String id = randomKeyId();
@@ -153,7 +153,7 @@ public class HMACToken {
     * @throws IOException on read error or invalid file.
     */
    public static Map<String, HashFunction> loadFunctionMap(final List<String> lines) throws IOException {
-      Map<String, HashFunction> functions = Maps.newHashMap();
+      Map<String, HashFunction> functions = Maps.newLinkedHashMap();
       int count = 0;
       for(String line : lines) {
          count++;
@@ -184,7 +184,7 @@ public class HMACToken {
     * @throws IOException on invalid line.
     */
    public static Set<String> loadIds(final List<String> lines) throws IOException {
-      Set<String> ids = Sets.newHashSetWithExpectedSize(lines.size());
+      Set<String> ids = Sets.newLinkedHashSetWithExpectedSize(lines.size());
       int count = 0;
       for(String line : lines) {
          count++;
