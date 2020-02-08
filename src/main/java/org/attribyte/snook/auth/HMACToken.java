@@ -31,7 +31,9 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.CharStreams;
+import com.google.common.io.Files;
 import com.google.common.primitives.Ints;
+import org.attribyte.util.InitUtil;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -39,12 +41,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -54,17 +56,68 @@ import static org.attribyte.util.StringUtil.randomString;
 public class HMACToken {
 
    public static void main(String[] args) throws Exception {
-      HMACToken tok = new HMACToken("testing", 1, TimeUnit.DAYS);
-      System.out.println(tok.toString());
-      byte[] hmacKey = new byte[32];
-      new SecureRandom().nextBytes(hmacKey);
-      HashFunction hmacFunction = Hashing.hmacSha256(hmacKey);
-      String keyId = randomKeyId();
-      System.out.println("key id is " + keyId);
-      String cookieValue = tok.toCookieValue(keyId, hmacFunction);
-      System.out.println(cookieValue);
-      HMACToken validate = validate(cookieValue , s -> hmacFunction);
-      System.out.println("validated " + validate);
+
+      Properties props = new Properties();
+      args = InitUtil.fromCommandLine(args, props);
+
+      if(args.length < 1) {
+         System.err.println("Usage: HMACToken -size=[number of hashes] [output file]");
+         System.exit(1);
+      }
+
+      File outputFile = new File(args[0]);
+      if(outputFile.exists()) {
+         System.err.println(String.format("The output file, '%s' exists!", outputFile.getAbsolutePath()));
+         System.exit(1);
+      }
+
+      File sigFile = new File(args[0] + ".sig");
+      if(sigFile.exists()) {
+         System.err.println(String.format("The signature file, '%s' exists!", sigFile.getAbsolutePath()));
+         System.exit(1);
+      }
+
+      File idsFile = new File(args[0] + ".ids");
+      if(idsFile.exists()) {
+         System.err.println(String.format("The ids file, '%s' exists!", idsFile.getAbsolutePath()));
+         System.exit(1);
+      }
+
+      Integer size = Ints.tryParse(props.getProperty("size", "4096"));
+      if(size == null || size < 1) {
+         System.err.println("The 'size' must be > 0");
+         System.exit(1);
+      }
+
+      System.out.println(String.format("Generating '%s' with %d keys...", outputFile.getAbsolutePath(), size));
+
+      try {
+         generateKeys(outputFile, size);
+         HashCode hashCode = hashKeysFile(outputFile);
+         System.out.println("hash code is " + hashCode.toString());
+         Files.write(hashCode.asBytes(), sigFile);
+         if(!checkSigFile(sigFile, outputFile)) {
+            System.err.println("Invalid signature!");
+            outputFile.delete();
+            sigFile.delete();
+            idsFile.delete();
+            System.exit(1);
+         }
+
+         try(PrintWriter writer = new PrintWriter(new FileWriter(idsFile))) {
+            for(String id : loadIds(outputFile)) {
+               writer.println(id);
+            }
+         }
+
+      } catch(IOException ioe) {
+         outputFile.delete();
+         sigFile.delete();
+         idsFile.delete();
+         throw ioe;
+      }
+
+      System.out.println("Done!");
    }
 
    /**
@@ -87,6 +140,40 @@ public class HMACToken {
             writer.println(id + BASE_64_ENCODING.encode(hmacKey));
          }
       }
+   }
+
+   /**
+    * Hash the keys file.
+    * @param file The keys file.
+    * @return The hash code.
+    * @throws IOException on read error.
+    */
+   public static HashCode hashKeysFile(final File file) throws IOException {
+      return Files.asByteSource(file).hash(SIGNATURE_FUNCTION);
+   }
+
+   /**
+    * Checks the hash of a keys file for changes.
+    * @param hashCode The hash code.
+    * @param file The file.
+    * @return Does the hash match?
+    */
+   public static boolean checkKeysFile(final HashCode hashCode, final File file) throws IOException {
+      return hashCode.equals(hashKeysFile(file));
+   }
+
+   /**
+    * Checks the signature of a keys file.
+    * @param sigFile A file containing the signature.
+    * @param keysFile The keys file.
+    * @return Do the hashes match?
+    */
+   public static boolean checkSigFile(final File sigFile, final File keysFile) throws IOException {
+      if(!sigFile.exists() || !keysFile.exists()) {
+         return false;
+      }
+      HashCode checkCode = HashCode.fromBytes(Files.toByteArray(sigFile));
+      return checkKeysFile(checkCode, keysFile);
    }
 
    /**
@@ -113,7 +200,7 @@ public class HMACToken {
     * @throws IOException on read error or invalid file.
     */
    public static Map<String, HashFunction> loadFunctionMap(final File inputFile) throws IOException {
-      return loadFunctionMap(Files.readAllLines(inputFile.toPath()));
+      return loadFunctionMap(Files.readLines(inputFile, Charsets.US_ASCII));
    }
 
    /**
@@ -144,7 +231,7 @@ public class HMACToken {
     * @throws IOException on read error or invalid file.
     */
    public static Set<String> loadIds(final File inputFile) throws IOException {
-      return loadIds(Files.readAllLines(inputFile.toPath()));
+      return loadIds(Files.readLines(inputFile, Charsets.US_ASCII));
    }
 
    /**
@@ -354,6 +441,11 @@ public class HMACToken {
    public static String randomKeyId() {
       return randomString(KEY_ID_SIZE);
    }
+
+   /**
+    * The (file) signature function.
+    */
+   private static final HashFunction SIGNATURE_FUNCTION = Hashing.sha256();
 
    /**
     * The encoding to encode/decode the HMAC.
