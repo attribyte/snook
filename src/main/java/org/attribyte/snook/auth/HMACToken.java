@@ -71,6 +71,25 @@ public class HMACToken {
          System.exit(1);
       }
 
+      File keyFile = new File(args[0] + ".sig.key");
+      final File generatedKeyFile;
+      final byte[] sigKey;
+      if(keyFile.exists()) {
+         sigKey = Files.toByteArray(keyFile);
+         if(sigKey.length != KEY_SIZE) {
+            System.err.println(String.format("The key file, '%s' is invalid", keyFile.getAbsolutePath()));
+            System.exit(1);
+         } else {
+            System.out.println(String.format("Using existing key file, '%s'", keyFile.getAbsolutePath()));
+         }
+         generatedKeyFile = null;
+      } else {
+         sigKey = randomKey(new SecureRandom());
+         System.out.println(String.format("Writing key file, '%s'...", keyFile.getAbsolutePath()));
+         Files.write(sigKey, keyFile);
+         generatedKeyFile = keyFile;
+      }
+
       File sigFile = new File(args[0] + ".sig");
       if(sigFile.exists()) {
          System.err.println(String.format("The signature file, '%s' exists!", sigFile.getAbsolutePath()));
@@ -89,21 +108,21 @@ public class HMACToken {
          System.exit(1);
       }
 
-      System.out.println(String.format("Generating '%s' with %d keys...", outputFile.getAbsolutePath(), size));
+      System.out.println(String.format("Generating and writing '%s' with %d keys...", outputFile.getAbsolutePath(), size));
 
       try {
          generateKeys(outputFile, size);
-         HashCode hashCode = hashKeysFile(outputFile);
-         System.out.println("hash code is " + hashCode.toString());
+         HashCode hashCode = hashKeysFile(outputFile, sigKey);
+         System.out.println(String.format("Writing signature file, '%s'...", sigFile.getAbsolutePath()));
          Files.write(hashCode.asBytes(), sigFile);
-         if(!checkSigFile(sigFile, outputFile)) {
+         System.out.println("Checking signature...");
+         if(!checkSigFile(sigFile, outputFile, sigKey)) {
             System.err.println("Invalid signature!");
-            outputFile.delete();
-            sigFile.delete();
-            idsFile.delete();
+            deleteFiles(outputFile, sigFile, idsFile, generatedKeyFile);
             System.exit(1);
          }
 
+         System.out.println(String.format("Writing ids file, '%s'...", idsFile.getAbsolutePath()));
          try(PrintWriter writer = new PrintWriter(new FileWriter(idsFile))) {
             for(String id : loadIds(outputFile)) {
                writer.println(id);
@@ -111,13 +130,23 @@ public class HMACToken {
          }
 
       } catch(IOException ioe) {
-         outputFile.delete();
-         sigFile.delete();
-         idsFile.delete();
+         deleteFiles(outputFile, sigFile, idsFile, generatedKeyFile);
          throw ioe;
       }
 
       System.out.println("Done!");
+   }
+
+   /**
+    * Delete a sequence of files, ignoring the return status.
+    * @param files The files.
+    */
+   private static void deleteFiles(File...files) {
+      for(File file : files) {
+         if(file != null) {
+            file.delete();
+         }
+      }
    }
 
    /**
@@ -134,10 +163,7 @@ public class HMACToken {
       SecureRandom rnd = new SecureRandom();
       try(PrintWriter writer = new PrintWriter(new FileWriter(outputFile))) {
          for(int i = 0; i < size; i++) {
-            String id = randomKeyId();
-            byte[] hmacKey = new byte[32];
-            rnd.nextBytes(hmacKey);
-            writer.println(id + BASE_64_ENCODING.encode(hmacKey));
+            writer.println(randomKeyId() + BASE_64_ENCODING.encode(randomKey(rnd)));
          }
       }
    }
@@ -145,35 +171,40 @@ public class HMACToken {
    /**
     * Hash the keys file.
     * @param file The keys file.
+    * @param key The signature key.
     * @return The hash code.
     * @throws IOException on read error.
     */
-   public static HashCode hashKeysFile(final File file) throws IOException {
-      return Files.asByteSource(file).hash(SIGNATURE_FUNCTION);
+   public static HashCode hashKeysFile(final File file, final byte[] key) throws IOException {
+      return Files.asByteSource(file).hash(Hashing.hmacSha256(key));
    }
 
    /**
     * Checks the hash of a keys file for changes.
     * @param hashCode The hash code.
     * @param file The file.
+    * @param key The signature key.
     * @return Does the hash match?
     */
-   public static boolean checkKeysFile(final HashCode hashCode, final File file) throws IOException {
-      return hashCode.equals(hashKeysFile(file));
+   public static boolean checkKeysFile(final HashCode hashCode, final File file,
+                                       final byte[] key) throws IOException {
+      return hashCode.equals(hashKeysFile(file, key));
    }
 
    /**
     * Checks the signature of a keys file.
     * @param sigFile A file containing the signature.
     * @param keysFile The keys file.
+    * @param key The signature key.
     * @return Do the hashes match?
     */
-   public static boolean checkSigFile(final File sigFile, final File keysFile) throws IOException {
+   public static boolean checkSigFile(final File sigFile, final File keysFile,
+                                      final byte[] key) throws IOException {
       if(!sigFile.exists() || !keysFile.exists()) {
          return false;
       }
       HashCode checkCode = HashCode.fromBytes(Files.toByteArray(sigFile));
-      return checkKeysFile(checkCode, keysFile);
+      return checkKeysFile(checkCode, keysFile, key);
    }
 
    /**
@@ -185,10 +216,7 @@ public class HMACToken {
       Map<String, String> keyMap = Maps.newLinkedHashMapWithExpectedSize(size);
       SecureRandom rnd = new SecureRandom();
       for(int i = 0; i < size; i++) {
-         String id = randomKeyId();
-         byte[] hmacKey = new byte[32];
-         rnd.nextBytes(hmacKey);
-         keyMap.put(id, BASE_64_ENCODING.encode(hmacKey));
+         keyMap.put(randomKeyId(), BASE_64_ENCODING.encode(randomKey(rnd)));
       }
       return keyMap;
    }
@@ -443,9 +471,20 @@ public class HMACToken {
    }
 
    /**
-    * The (file) signature function.
+    * Generate a random HMAC key.
+    * @param rnd The secure random.
+    * @return The key.
     */
-   private static final HashFunction SIGNATURE_FUNCTION = Hashing.sha256();
+   private static byte[] randomKey(final SecureRandom rnd) {
+      byte[] hmacKey = new byte[KEY_SIZE];
+      rnd.nextBytes(hmacKey);
+      return hmacKey;
+   }
+
+   /**
+    * The size in bytes of generated random keys.
+    */
+   private static final int KEY_SIZE = 32;
 
    /**
     * The encoding to encode/decode the HMAC.
