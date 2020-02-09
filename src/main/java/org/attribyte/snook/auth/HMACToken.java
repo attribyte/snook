@@ -53,8 +53,22 @@ import java.util.function.Function;
 
 import static org.attribyte.util.StringUtil.randomString;
 
+/**
+ * Generates HMAC keys and perform verification.
+ */
 public class HMACToken {
 
+   /**
+    * Generates random HMAC keys.
+    * {@code Usage: HMACToken -size=[number of hashes] [output file]}
+    * <p>
+    *    Generates the key file, a signature key file {@code [name].sig.key} (if not present),
+    *    a signature file {@code [name].sig} and a file containing just the ids {@code [name].ids}, one per line.
+    *    Fails if any files exist other than the signature key file.
+    * </p>
+    * @param args The arguments.
+    * @throws Exception on error.
+    */
    public static void main(String[] args) throws Exception {
 
       Properties props = new Properties();
@@ -238,7 +252,7 @@ public class HMACToken {
     * @throws IOException on read error or invalid file.
     */
    public static Map<String, HashFunction> loadFunctionMap(final InputStream is) throws IOException {
-      return loadFunctionMap(CharStreams.readLines(new InputStreamReader(is, Charsets.UTF_8)));
+      return loadFunctionMap(CharStreams.readLines(new InputStreamReader(is, Charsets.US_ASCII)));
    }
 
    /**
@@ -248,7 +262,7 @@ public class HMACToken {
     * @throws IOException on read error or invalid file.
     */
    public static Set<String> loadIds(final InputStream is) throws IOException {
-      return loadIds(CharStreams.readLines(new InputStreamReader(is, Charsets.UTF_8)));
+      return loadIds(CharStreams.readLines(new InputStreamReader(is, Charsets.US_ASCII)));
    }
 
 
