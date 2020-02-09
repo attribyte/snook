@@ -67,7 +67,51 @@ public abstract class PermissionAuthenticator {
    }
 
    /**
-    * The authenticator.
+    * Check for an authorized user and if the user has read permission.
+    * @param request The request.
+    * @param context The permission context.
+    * @return Is the use authorized with read permission?
     */
+   public boolean canRead(final HttpServletRequest request, final String context) {
+      Set<Permission> permissions = permission(request, context);
+      return permissions != null && permissions.contains(Permission.READ);
+   }
+
+   /**
+    * Check for an authorized user and if the user has read/write permission.
+    * @param request The request.
+    * @param context The permission context.
+    * @return Is the use authorized with read/write permission?
+    */
+   public boolean isReadWrite(final HttpServletRequest request, final String context) {
+      Set<Permission> permissions = permission(request, context);
+      return permissions != null && permissions.contains(Permission.READ) && permissions.contains(Permission.UPDATE);
+   }
+
+   /**
+    * Check for an authorized user and if the user has update permission.
+    * @param request The request.
+    * @param context The permission context.
+    * @return Is the use authorized with update permission?
+    */
+   public boolean canWrite(final HttpServletRequest request, final String context) {
+      Set<Permission> permissions = permission(request, context);
+      return permissions != null && permissions.contains(Permission.UPDATE);
+   }
+
+   /**
+    * Check for an authorized user and if the user has admin permission.
+    * @param request The request.
+    * @param context The permission context.
+    * @return Is the use authorized with admin permission?
+    */
+   public boolean isSuper(final HttpServletRequest request, final String context) {
+      Set<Permission> permissions = permission(request, context);
+      return permissions != null && permissions.contains(Permission.SUPER);
+   }
+
+   /**
+       * The authenticator.
+       */
    private final Authenticator authenticator;
 }
