@@ -264,6 +264,17 @@ public class Groups {
    }
 
    /**
+    * Gets a list of all profiles.
+    * @return The profiles.
+    */
+   public final List<GroupProfile> allProfiles() {
+      List<GroupProfile> profiles = Lists.newArrayList();
+      permissions.forEach((k,v) -> {
+         profiles.addAll(v.values());
+      });
+      return profiles;
+   }
+   /**
     * A map of profile for each user in a group.
     */
    private final Map<String, Map<String, GroupProfile>> permissions;
