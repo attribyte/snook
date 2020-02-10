@@ -100,6 +100,35 @@ public abstract class PermissionAuthenticator {
    }
 
    /**
+    * @see #canWrite(HttpServletRequest, String)
+    */
+   public boolean canUpdate(final HttpServletRequest request, final String context) {
+      return canWrite(request, context);
+   }
+
+   /**
+    * Check for an authorized user and if the user has create permission.
+    * @param request The request.
+    * @param context The permission context.
+    * @return Is the use authorized with create permission?
+    */
+   public boolean canCreate(final HttpServletRequest request, final String context) {
+      Set<Permission> permissions = permission(request, context);
+      return permissions != null && permissions.contains(Permission.CREATE);
+   }
+
+   /**
+    * Check for an authorized user and if the user has delete permission.
+    * @param request The request.
+    * @param context The permission context.
+    * @return Is the use authorized with delete permission?
+    */
+   public boolean canDelete(final HttpServletRequest request, final String context) {
+      Set<Permission> permissions = permission(request, context);
+      return permissions != null && permissions.contains(Permission.DELETE);
+   }
+
+   /**
     * Check for an authorized user and if the user has admin permission.
     * @param request The request.
     * @param context The permission context.
