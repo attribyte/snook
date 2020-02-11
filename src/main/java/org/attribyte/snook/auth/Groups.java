@@ -225,7 +225,7 @@ public class Groups {
     * @param token The token.
     * @return The map of key, value pairs.
     */
-   static Map<String, String> parseProperties(final String token) throws IOException {
+   public static Map<String, String> parseProperties(final String token) throws IOException {
       if(Strings.isNullOrEmpty(token)) {
          return ImmutableMap.of();
       }
@@ -244,7 +244,7 @@ public class Groups {
     * @param properties The properties.
     * @return The properties as JSON.
     */
-   static String toJSON(final Map<String, String> properties) {
+   public static String toJSON(final Map<String, String> properties) {
       if(properties.isEmpty()) {
          return "{}";
       }
