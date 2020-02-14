@@ -32,47 +32,55 @@ import java.util.function.Function;
 /**
  * Authenticator for 'Basic' auth.
  */
-public class BasicAuthenticator<T> extends HeaderAuthenticator<T> {
+public abstract class BasicAuthenticator<T> extends HeaderAuthenticator<T> {
 
 
+   /**
+    * Creates a boolean authenticator.
+    * @see #BasicAuthenticator(Set, Function)
+    */
    public static BasicAuthenticator<Boolean> booleanAuthenticator(final Set<HashCode> validCredentials,
                                                                   final Function<String, HashCode> usernameCredentials) {
-      return new BasicAuthenticator<>(validCredentials, usernameCredentials, s ->
-              s != null ? Boolean.TRUE : Boolean.FALSE);
-   }
+      return new BasicAuthenticator<Boolean>(validCredentials, usernameCredentials) {
+         @Override
+         public Boolean authorized(final HttpServletRequest request) {
+            return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
+         }
+      };
+   };
 
+   /**
+    * Creates a boolean authenticator.
+    * @see #BasicAuthenticator(Users)
+    */
    public static BasicAuthenticator<Boolean> booleanAuthenticator(final Users credentialsFile) {
-      return new BasicAuthenticator<>(credentialsFile, s ->
-              s != null ? Boolean.TRUE : Boolean.FALSE);
-   }
+
+      return new BasicAuthenticator<Boolean>(credentialsFile) {
+         @Override
+         public Boolean authorized(final HttpServletRequest request) {
+            return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
+         }
+      };
+   };
 
    /**
     * Creates an authenticator that uses *hashed tokens* from a credentials file.
     * @param credentialsFile The credentials file.
     */
-   public BasicAuthenticator(final Users credentialsFile,
-                             final Function<String, T> authorizedValue) {
+   public BasicAuthenticator(final Users credentialsFile) {
       this(Sets.newHashSet(credentialsFile.sha256Hashes.values()),
-              credentialsFile.sha256Hashes::get, authorizedValue);
+              credentialsFile.sha256Hashes::get);
    }
 
    /**
     * Creates the authenticator.
     * @param validCredentials A set containing valid (securely hashed) credentials.
     * @param usernameCredentials A function that returns securely hashed credentials for a username.
-    * @param authorizedValue A function that returns the non-null return value if user is authorized.
     */
    public BasicAuthenticator(final Set<HashCode> validCredentials,
-                             final Function<String, HashCode> usernameCredentials,
-                             final Function<String, T> authorizedValue) {
+                             final Function<String, HashCode> usernameCredentials) {
       this.validCredentials = validCredentials != null ? ImmutableSet.copyOf(validCredentials) : ImmutableSet.of();
       this.usernameCredentials = usernameCredentials;
-      this.authorizedValue = authorizedValue;
-   }
-
-   @Override
-   public T authorized(final HttpServletRequest request) {
-      return authorizedValue.apply(authorizedUsername(request));
    }
 
    @Override
@@ -170,9 +178,4 @@ public class BasicAuthenticator<T> extends HeaderAuthenticator<T> {
     * A function that gets hashed credentials for a username.
     */
    private final Function<String, HashCode> usernameCredentials;
-
-   /**
-    * A function that returns non-null if the username is non-null.
-    */
-   private final Function<String, T> authorizedValue;
 }
