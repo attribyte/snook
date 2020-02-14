@@ -45,17 +45,9 @@ public abstract class MultiAuthenticator implements Authenticator<Boolean> {
       return schemeName;
    }
 
-   /**
-    * Check if a value is {@code null} or false.
-    * @param obj The object.
-    * @return Is the object null or {@code Boolean.FALSE}?
-    */
-   protected static boolean isNullOrFalse(final Object obj) {
-      if(!(obj instanceof Boolean)) {
-         return obj == null;
-      } else {
-         return obj == Boolean.FALSE;
-      }
+   @Override
+   public Boolean authorized(final HttpServletRequest request) {
+      return authorizedUsername(request) != null;
    }
 
    /**

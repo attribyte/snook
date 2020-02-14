@@ -34,13 +34,7 @@ public class FirstAuthenticator extends MultiAuthenticator {
 
    @Override
    public Boolean authorized(final HttpServletRequest request) {
-      for(Authenticator<?> authenticator : authenticators) {
-         String credentials = Strings.emptyToNull(authenticator.credentials(request));
-         if(credentials != null) {
-            return isNullOrFalse(authenticator.authorized(request)) ? Boolean.FALSE : Boolean.TRUE;
-         }
-      }
-      return Boolean.FALSE;
+      return authorizedUsername(request) != null;
    }
 
    @Override

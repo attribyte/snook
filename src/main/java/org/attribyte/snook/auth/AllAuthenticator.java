@@ -36,16 +36,6 @@ public class AllAuthenticator extends MultiAuthenticator {
    }
 
    @Override
-   public Boolean authorized(final HttpServletRequest request) {
-      for(Authenticator<?> authenticator : authenticators) {
-         if(isNullOrFalse(authenticator.authorized(request))) {
-            return Boolean.FALSE;
-         }
-      }
-      return Boolean.TRUE;
-   }
-
-   @Override
    public String authorizedUsername(final HttpServletRequest request) {
       String lastUsername = null;
       for(Authenticator<?> authenticator : authenticators) {
