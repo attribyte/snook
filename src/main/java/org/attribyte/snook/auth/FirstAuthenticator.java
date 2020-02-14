@@ -28,30 +28,29 @@ import java.util.List;
  */
 public class FirstAuthenticator extends MultiAuthenticator {
 
-   public FirstAuthenticator(final List<Authenticator> authenticators) {
+   public FirstAuthenticator(final List<Authenticator<?>> authenticators) {
       super(authenticators, "First");
    }
 
    @Override
-   public boolean authorized(final HttpServletRequest request) {
-      for(Authenticator authenticator : authenticators) {
+   public Boolean authorized(final HttpServletRequest request) {
+      for(Authenticator<?> authenticator : authenticators) {
          String credentials = Strings.emptyToNull(authenticator.credentials(request));
          if(credentials != null) {
-            return authenticator.authorized(request);
+            return isNullOrFalse(authenticator.authorized(request)) ? Boolean.FALSE : Boolean.TRUE;
          }
       }
-      return false;
+      return Boolean.FALSE;
    }
 
    @Override
    public String authorizedUsername(final HttpServletRequest request) {
-      for(Authenticator authenticator : authenticators) {
+      for(Authenticator<?> authenticator : authenticators) {
          String credentials = Strings.emptyToNull(authenticator.credentials(request));
          if(credentials != null) {
             return authenticator.authorizedUsername(request);
          }
       }
-
       return null;
    }
 }

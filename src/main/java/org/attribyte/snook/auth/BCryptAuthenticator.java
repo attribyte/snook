@@ -35,7 +35,7 @@ import java.util.function.Function;
  * that holds a random authentication token used for subsequent
  * authentication.
  */
-public class BCryptAuthenticator extends CookieAuthenticator implements LoginAuthenticator {
+public class BCryptAuthenticator extends CookieAuthenticator implements LoginAuthenticator<Boolean> {
 
    /**
     * Creates the authenticator with a map that contains valid password hashes.
@@ -86,13 +86,13 @@ public class BCryptAuthenticator extends CookieAuthenticator implements LoginAut
     * @return Was the password valid and token saved and set as a cookie?
     * @throws IOException if credentials save failed.
     */
-   public boolean doLogin(final String username, final String password,
+   public Boolean doLogin(final String username, final String password,
                           final int tokenLifetimeSeconds,
                           final HttpServletResponse resp) throws IOException {
 
       HashCode passwordHash = selectPasswordHash.apply(username);
       if(!checkPassword(password, passwordHash)) {
-         return false;
+         return Boolean.FALSE;
       }
 
       AuthenticationToken returnedToken = new AuthenticationToken(username);
@@ -102,7 +102,7 @@ public class BCryptAuthenticator extends CookieAuthenticator implements LoginAut
       boolean saved = saveCredentials.apply(savedToken);
       if(saved) {
          Cookies.setCookie(cookieKey, returnedToken.token.toString(), tokenLifetimeSeconds, cookieOptions, resp);
-         return true;
+         return Boolean.TRUE;
       } else {
          throw new IOException("Credentials save failed");
       }

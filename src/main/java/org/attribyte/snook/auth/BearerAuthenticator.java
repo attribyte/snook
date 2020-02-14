@@ -28,7 +28,7 @@ import java.util.function.Function;
 /**
  * Authenticator for 'Bearer' auth.
  */
-public class BearerAuthenticator extends HeaderAuthenticator {
+public class BearerAuthenticator extends HeaderAuthenticator<Boolean> {
 
    /**
     * Creates an authenticator from a credentials file.
@@ -66,6 +66,11 @@ public class BearerAuthenticator extends HeaderAuthenticator {
                               final Function<HashCode, String> credentialsValidator) {
       this.validCredentials = validCredentials != null ? ImmutableMap.copyOf(validCredentials) : ImmutableMap.of();
       this.credentialsValidator = credentialsValidator != null ? credentialsValidator : s -> null;
+   }
+
+   @Override
+   public Boolean authorized(final HttpServletRequest request) {
+      return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
    }
 
    @Override

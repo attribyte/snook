@@ -36,7 +36,7 @@ import java.util.function.Function;
  * Credentials dumped from storage are secure from off-line attack.
  * Credentials dumped from memory are not secure from off-line attack.
  */
-public class BasicBCryptAuthenticator extends HeaderAuthenticator {
+public class BasicBCryptAuthenticator extends HeaderAuthenticator<Boolean> {
 
    /**
     * Creates an authenticator from a credentials file.
@@ -89,6 +89,11 @@ public class BasicBCryptAuthenticator extends HeaderAuthenticator {
       HashCode hashedCredentials = credentials.hashCredentials();
       validCredentials.invalidate(hashedCredentials);
       return true;
+   }
+
+   @Override
+   public Boolean authorized(final HttpServletRequest request) {
+      return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
    }
 
    @Override

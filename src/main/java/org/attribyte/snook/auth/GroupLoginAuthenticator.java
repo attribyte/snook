@@ -27,13 +27,13 @@ import java.util.Set;
 /**
  * A login authenticator that returns groups/permissions for a user.
  */
-public abstract class GroupLoginAuthenticator extends PermissionAuthenticator implements LoginAuthenticator {
+public abstract class GroupLoginAuthenticator extends PermissionAuthenticator implements LoginAuthenticator<Boolean> {
 
    /**
     * Creates a group login authenticator.
     * @param authenticator The
     */
-   public GroupLoginAuthenticator(final LoginAuthenticator authenticator) {
+   public GroupLoginAuthenticator(final LoginAuthenticator<?> authenticator) {
       super(authenticator);
       this.loginAuthenticator = authenticator;
    }
@@ -54,10 +54,10 @@ public abstract class GroupLoginAuthenticator extends PermissionAuthenticator im
    }
 
    @Override
-   public boolean doLogin(final String username, final String password,
+   public Boolean doLogin(final String username, final String password,
                           final int tokenLifetimeSeconds,
                           final HttpServletResponse resp) throws IOException {
-      return loginAuthenticator.doLogin(username, password, tokenLifetimeSeconds, resp);
+      return loginAuthenticator.doLogin(username, password, tokenLifetimeSeconds, resp) != null ? Boolean.TRUE : Boolean.FALSE;
    }
 
    @Override
@@ -78,7 +78,7 @@ public abstract class GroupLoginAuthenticator extends PermissionAuthenticator im
    public List<GroupProfile> login(final String username, final String password,
                                    final int tokenLifetimeSeconds,
                                    final HttpServletResponse resp) throws IOException {
-      if(loginAuthenticator.doLogin(username, password, tokenLifetimeSeconds, resp)) {
+      if(doLogin(username, password, tokenLifetimeSeconds, resp)) {
          return groupsForUser(username);
       } else {
          return LOGIN_FAILED_GROUPS;

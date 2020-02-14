@@ -32,7 +32,7 @@ import java.util.function.Function;
 /**
  * Authenticator for 'Basic' auth.
  */
-public class BasicAuthenticator extends HeaderAuthenticator {
+public class BasicAuthenticator extends HeaderAuthenticator<Boolean> {
 
    /**
     * Creates an authenticator that uses *hashed tokens* from a credentials file.
@@ -54,21 +54,21 @@ public class BasicAuthenticator extends HeaderAuthenticator {
    }
 
    @Override
-   public boolean authorized(final HttpServletRequest request) {
+   public Boolean authorized(final HttpServletRequest request) {
       String credentials = credentials(request);
       if(credentials == null) {
-         return false;
+         return Boolean.FALSE;
       }
 
       HashCode hashedCredentials = credentialHasher.hashString(credentials, Charsets.US_ASCII);
       if(validCredentials.contains(hashedCredentials)) {
-         return true;
+         return Boolean.TRUE;
       }
 
       String username = username(request);
 
       if(username == null) {
-         return false;
+         return Boolean.FALSE;
       }
 
       HashCode checkCredentials = usernameCredentials.apply(username);

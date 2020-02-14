@@ -27,9 +27,9 @@ import java.util.List;
 /**
  * Base class for sequences of authenticators.
  */
-public abstract class MultiAuthenticator implements Authenticator {
+public abstract class MultiAuthenticator implements Authenticator<Boolean> {
 
-   public MultiAuthenticator(final List<Authenticator> authenticators, final String schemeName) {
+   public MultiAuthenticator(final List<Authenticator<?>> authenticators, final String schemeName) {
       this.authenticators = authenticators != null ? ImmutableList.copyOf(authenticators) : ImmutableList.of();
       this.schemeName = schemeName + " " +
               Joiner.on(',').join(this.authenticators.stream().map(Authenticator::schemeName).iterator());
@@ -46,9 +46,22 @@ public abstract class MultiAuthenticator implements Authenticator {
    }
 
    /**
+    * Check if a value is {@code null} or false.
+    * @param obj The object.
+    * @return Is the object null or {@code Boolean.FALSE}?
+    */
+   protected static boolean isNullOrFalse(final Object obj) {
+      if(!(obj instanceof Boolean)) {
+         return obj == null;
+      } else {
+         return obj == Boolean.FALSE;
+      }
+   }
+
+   /**
     * The list of authenticators.
     */
-   protected final ImmutableList<Authenticator> authenticators;
+   protected final ImmutableList<Authenticator<?>> authenticators;
 
    /**
     * The scheme name.

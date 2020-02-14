@@ -31,7 +31,7 @@ import static org.attribyte.snook.Cookies.cookieValue;
 /**
  * Authenticator where a token is sent as the value of a cookie.
  */
-public class CookieAuthenticator implements Authenticator {
+public class CookieAuthenticator implements Authenticator<Boolean> {
 
    /**
     * Creates the authenticator.
@@ -50,6 +50,11 @@ public class CookieAuthenticator implements Authenticator {
    @Override
    public String credentials(final HttpServletRequest request) {
       return cookieValue(cookieKey.name, request);
+   }
+
+   @Override
+   public Boolean authorized(final HttpServletRequest request) {
+      return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
    }
 
    @Override

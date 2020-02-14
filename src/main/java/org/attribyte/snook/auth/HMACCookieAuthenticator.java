@@ -35,7 +35,7 @@ import static org.attribyte.snook.Cookies.cookieValue;
 /**
  * An authenticator that validates an {@code HMACToken} sent as a cookie value.
  */
-public class HMACCookieAuthenticator implements LoginAuthenticator {
+public class HMACCookieAuthenticator implements LoginAuthenticator<Boolean> {
 
    /**
     * Creates an authenticator.
@@ -50,6 +50,11 @@ public class HMACCookieAuthenticator implements LoginAuthenticator {
       this.hmacFunctions = hmacFunctions;
       this.checkPasswordFunction = checkPasswordFunction;
       this.hmacKeyFunction = hmacKeyFunction;
+   }
+
+   @Override
+   public Boolean authorized(final HttpServletRequest request) {
+      return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
    }
 
    @Override
@@ -69,27 +74,27 @@ public class HMACCookieAuthenticator implements LoginAuthenticator {
    }
 
    @Override
-   public boolean doLogin(final String username, final String password,
+   public Boolean doLogin(final String username, final String password,
                           final int tokenLifetimeSeconds,
                           final HttpServletResponse resp) throws IOException {
 
       if(!checkPasswordFunction.apply(username, password)) {
-         return false;
+         return Boolean.FALSE;
       }
 
       String keyId = hmacKeyFunction.apply(username);
       if(Strings.isNullOrEmpty(keyId)) {
-         return false;
+         return Boolean.FALSE;
       }
 
       HashFunction hmacFunction = hmacFunctions.apply(keyId);
       if(hmacFunction == null) {
-         return false;
+         return Boolean.FALSE;
       }
 
       HMACToken token = new HMACToken(username, tokenLifetimeSeconds, TimeUnit.SECONDS);
       Cookies.setCookie(cookieKey, token.toCookieValue(keyId, hmacFunction), tokenLifetimeSeconds, cookieOptions, resp);
-      return true;
+      return Boolean.TRUE;
    }
 
    /**

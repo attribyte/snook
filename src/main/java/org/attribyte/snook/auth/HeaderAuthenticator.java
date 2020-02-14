@@ -24,9 +24,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * Authenticate HTTP requests.
+ * Authenticate based on the value of an HTTP header.
  */
-public abstract class HeaderAuthenticator implements Authenticator {
+public abstract class HeaderAuthenticator<T> implements Authenticator<T> {
 
    /**
     * Gets the credentials from the request.
