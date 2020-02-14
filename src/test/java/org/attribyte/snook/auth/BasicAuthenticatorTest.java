@@ -37,7 +37,7 @@ public class BasicAuthenticatorTest {
 
    @Test
    public void buildCredentials() {
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> null);
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(), s -> null);
       String checkCredentials = BasicAuthenticator.buildCredentials("test_user", "test_password");
       assertEquals(
               HeaderAuthenticator.base64Encoding.encode("test_user:test_password".getBytes(Charsets.UTF_8)),
@@ -47,7 +47,7 @@ public class BasicAuthenticatorTest {
    @Test
    public void username() {
 
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> null);
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(), s -> null);
 
       HttpServletRequest request = new TestHttpServletRequest() {
          @Override
@@ -66,7 +66,7 @@ public class BasicAuthenticatorTest {
    @Test
    public void usernamePassword() {
 
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> null);
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(), s -> null);
 
       HttpServletRequest request = new TestHttpServletRequest() {
          @Override
@@ -85,7 +85,7 @@ public class BasicAuthenticatorTest {
    @Test
    public void usernameEmptyPassword() {
 
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> null);
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(), s -> null);
 
       HttpServletRequest request = new TestHttpServletRequest() {
          @Override
@@ -103,7 +103,7 @@ public class BasicAuthenticatorTest {
 
    @Test
    public void authorized() {
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
       ), s -> null);
 
@@ -120,7 +120,7 @@ public class BasicAuthenticatorTest {
    }
 
    public void unauthorized() {
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
       ), s -> null);
 
@@ -137,7 +137,7 @@ public class BasicAuthenticatorTest {
    }
 
    public void unauthorizedInvalidScheme() {
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
       ), s -> null);
 
@@ -154,7 +154,7 @@ public class BasicAuthenticatorTest {
    }
 
    public void unauthorizedNoScheme() {
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
       ), s -> null);
 
@@ -172,7 +172,7 @@ public class BasicAuthenticatorTest {
 
    @Test
    public void unauthorizedNoValue() {
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
       ), s -> null);
 
@@ -190,7 +190,7 @@ public class BasicAuthenticatorTest {
 
    @Test
    public void unauthorizedNullValue() {
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
       ), s -> null);
 
@@ -203,7 +203,7 @@ public class BasicAuthenticatorTest {
    @Test
    public void authorizedUser() {
 
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> s.equals("test_user") ?
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(), s -> s.equals("test_user") ?
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password")) : null);
 
 
@@ -224,7 +224,7 @@ public class BasicAuthenticatorTest {
    @Test
    public void authorizedUserFromSet() {
 
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
       ), s -> null);
 
@@ -245,7 +245,7 @@ public class BasicAuthenticatorTest {
    @Test
    public void unauthorizedUser() {
 
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(), s -> s.equals("test_user") ?
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(), s -> s.equals("test_user") ?
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_userx", "test_password")) : null);
 
 
@@ -264,7 +264,7 @@ public class BasicAuthenticatorTest {
    @Test
    public void unauthorizedUserFromSet() {
 
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(
               Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_passwordx"))
       ), s -> null);
 
@@ -288,7 +288,7 @@ public class BasicAuthenticatorTest {
       List<Users.Record> records = Users.parse(lines, false);
       assertEquals(1, records.size());
       Users credentialsFile = new Users(records);
-      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(credentialsFile);
+      BasicAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(credentialsFile);
 
       HttpServletRequest request = new TestHttpServletRequest() {
          @Override

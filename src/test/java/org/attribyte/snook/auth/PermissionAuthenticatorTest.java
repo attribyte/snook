@@ -16,10 +16,9 @@ import static org.junit.Assert.assertNotNull;
 
 public class PermissionAuthenticatorTest {
 
-   static final HeaderAuthenticator basicAuthenticator = new BasicAuthenticator(ImmutableSet.of(
+   static final HeaderAuthenticator<Boolean> basicAuthenticator = BasicAuthenticator.booleanAuthenticator(ImmutableSet.of(
            Authenticator.hashCredentials(BasicAuthenticator.buildCredentials("test_user", "test_password"))
    ), s -> null);
-
 
    @Test
    public void testAuthorized() {
