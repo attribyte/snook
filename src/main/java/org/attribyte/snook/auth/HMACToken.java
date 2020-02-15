@@ -339,7 +339,7 @@ public class HMACToken {
     */
    public static HMACToken validate(final String cookieValue, final Function<String, HashFunction> hmacFunctions) {
 
-      if(cookieValue.length() < PREFIX_SIZE) {
+      if(cookieValue == null || cookieValue.length() < PREFIX_SIZE) {
          return null;
       }
 
