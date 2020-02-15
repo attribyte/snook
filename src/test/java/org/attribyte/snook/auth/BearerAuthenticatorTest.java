@@ -31,7 +31,7 @@ public class BearerAuthenticatorTest {
 
    @Test
    public void testAuthorized() {
-      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableMap.of(
+      BearerAuthenticator<Boolean> bearerAuthenticator = BearerAuthenticator.booleanAuthenticator(ImmutableMap.of(
               Authenticator.hashCredentials("test12345"), "test_user_0"
       ), s -> null);
 
@@ -48,7 +48,8 @@ public class BearerAuthenticatorTest {
 
    @Test
    public void testAuthorizedUsername() {
-      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableMap.of(
+
+      BearerAuthenticator<Boolean> bearerAuthenticator = BearerAuthenticator.booleanAuthenticator(ImmutableMap.of(
               Authenticator.hashCredentials("test12345"), "test_user_0"
       ), s -> null);
 
@@ -65,7 +66,7 @@ public class BearerAuthenticatorTest {
 
    @Test
    public void testAuthorizedFunction() {
-      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableMap.of(),
+      BearerAuthenticator<Boolean> bearerAuthenticator = BearerAuthenticator.booleanAuthenticator(ImmutableMap.of(),
        s -> s.equals(Authenticator.hashCredentials("test12345")) ? "test_user_0" : null);
 
       HttpServletRequest request = new TestHttpServletRequest() {
@@ -82,7 +83,7 @@ public class BearerAuthenticatorTest {
 
    @Test
    public void testUnauthorized() {
-      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableMap.of(
+      BearerAuthenticator<Boolean> bearerAuthenticator = BearerAuthenticator.booleanAuthenticator(ImmutableMap.of(
               Authenticator.hashCredentials("test12344"), "test_user_0"
       ), s -> null);
 
@@ -100,7 +101,7 @@ public class BearerAuthenticatorTest {
 
    @Test
    public void testUnauthorizedFunction() {
-      BearerAuthenticator bearerAuthenticator = new BearerAuthenticator(ImmutableMap.of(),
+      BearerAuthenticator<Boolean> bearerAuthenticator = BearerAuthenticator.booleanAuthenticator(ImmutableMap.of(),
               s -> s.equals(Authenticator.hashCredentials("test12344")) ? "test_user_0" : null);
 
       HttpServletRequest request = new TestHttpServletRequest() {

@@ -28,7 +28,60 @@ import java.util.function.Function;
 /**
  * Authenticator for 'Bearer' auth.
  */
-public class BearerAuthenticator extends HeaderAuthenticator<Boolean> {
+public abstract class BearerAuthenticator<T> extends HeaderAuthenticator<T> {
+
+   /**
+    * Creates a boolean authenticator.
+    * @see #BearerAuthenticator(Users)
+    */
+   public static BearerAuthenticator<Boolean> booleanAuthenticator(final Users credentialsFile) {
+      return new BearerAuthenticator<Boolean>(credentialsFile) {
+         @Override
+         public Boolean authorized(final HttpServletRequest request) {
+            return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
+         }
+      };
+   };
+
+   /**
+    * Creates a boolean authenticator.
+    * @see #BearerAuthenticator(Map)
+    */
+   public static BearerAuthenticator<Boolean> booleanAuthenticator(final Map<HashCode, String> validCredentials) {
+      return new BearerAuthenticator<Boolean>(validCredentials) {
+         @Override
+         public Boolean authorized(final HttpServletRequest request) {
+            return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
+         }
+      };
+   };
+
+   /**
+    * Creates a boolean authenticator.
+    * @see #BearerAuthenticator(Function)
+    */
+   public static BearerAuthenticator<Boolean> booleanAuthenticator(final Function<HashCode, String> credentialsValidator) {
+      return new BearerAuthenticator<Boolean>(credentialsValidator) {
+         @Override
+         public Boolean authorized(final HttpServletRequest request) {
+            return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
+         }
+      };
+   };
+
+   /**
+    * Creates a boolean authenticator.
+    * @see #BearerAuthenticator(Map, Function)
+    */
+   public static BearerAuthenticator<Boolean> booleanAuthenticator(final Map<HashCode, String> validCredentials,
+                                                                   final Function<HashCode, String> credentialsValidator) {
+      return new BearerAuthenticator<Boolean>(validCredentials, credentialsValidator) {
+         @Override
+         public Boolean authorized(final HttpServletRequest request) {
+            return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
+         }
+      };
+   };
 
    /**
     * Creates an authenticator from a credentials file.
@@ -66,11 +119,6 @@ public class BearerAuthenticator extends HeaderAuthenticator<Boolean> {
                               final Function<HashCode, String> credentialsValidator) {
       this.validCredentials = validCredentials != null ? ImmutableMap.copyOf(validCredentials) : ImmutableMap.of();
       this.credentialsValidator = credentialsValidator != null ? credentialsValidator : s -> null;
-   }
-
-   @Override
-   public Boolean authorized(final HttpServletRequest request) {
-      return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
    }
 
    @Override

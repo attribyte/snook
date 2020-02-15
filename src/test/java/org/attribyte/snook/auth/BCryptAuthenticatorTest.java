@@ -50,7 +50,7 @@ public class BCryptAuthenticatorTest {
       Function<HashCode, String> credentialsValidator = hashCode -> savedTokens.contains(hashCode) ? "test_user" : null;
       Function<AuthenticationToken, Boolean> saveToken = authenticationToken -> savedTokens.add(authenticationToken.token);
 
-      BCryptAuthenticator authenticator = new BCryptAuthenticator(
+      BCryptAuthenticator<Boolean> authenticator = BCryptAuthenticator.booleanAuthenticator(
               new Cookies.CookieKey("authtoken"), credentialsValidator, hashedPasswords, saveToken);
 
       TestHttpServletResponse resp = new TestHttpServletResponse();
@@ -86,7 +86,7 @@ public class BCryptAuthenticatorTest {
       Function<HashCode, String> credentialsValidator = hashCode -> savedTokens.contains(hashCode) ? "test_user" : null;
       Function<AuthenticationToken, Boolean> saveToken = authenticationToken -> savedTokens.add(authenticationToken.token);
 
-      BCryptAuthenticator authenticator = new BCryptAuthenticator(
+      BCryptAuthenticator<Boolean> authenticator = BCryptAuthenticator.booleanAuthenticator(
               new Cookies.CookieKey("authtoken"), credentialsValidator, hashedPasswords, saveToken);
 
       TestHttpServletResponse resp = new TestHttpServletResponse();

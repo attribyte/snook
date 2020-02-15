@@ -32,7 +32,7 @@ public class CookieAuthenticatorTest {
 
    @Test
    public void testAuthorized() {
-      CookieAuthenticator cookieAuthenticator = new CookieAuthenticator(new Cookies.CookieKey("token"),
+      CookieAuthenticator<Boolean> cookieAuthenticator = CookieAuthenticator.booleanAuthenticator(new Cookies.CookieKey("token"),
               ImmutableMap.of(
               Authenticator.hashCredentials("test12345"), "test_user_0"
       ), s -> null);
@@ -50,7 +50,7 @@ public class CookieAuthenticatorTest {
 
    @Test
    public void testUnauthorized() {
-      CookieAuthenticator cookieAuthenticator = new CookieAuthenticator(new Cookies.CookieKey("token"),
+      CookieAuthenticator<Boolean> cookieAuthenticator = CookieAuthenticator.booleanAuthenticator(new Cookies.CookieKey("token"),
               ImmutableMap.of(
                       Authenticator.hashCredentials("test12344"), "test_user_0"
               ), s -> null);
@@ -67,7 +67,7 @@ public class CookieAuthenticatorTest {
 
    @Test
    public void testUnauthorizedMissing() {
-      CookieAuthenticator cookieAuthenticator = new CookieAuthenticator(new Cookies.CookieKey("token"),
+      CookieAuthenticator<Boolean> cookieAuthenticator = CookieAuthenticator.booleanAuthenticator(new Cookies.CookieKey("token"),
               ImmutableMap.of(
                       Authenticator.hashCredentials("test12344"), "test_user_0"
               ), s -> null);

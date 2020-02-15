@@ -1,5 +1,7 @@
 package org.attribyte.snook.auth;
 
+import org.attribyte.snook.Cookies;
+
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
@@ -23,4 +25,10 @@ public interface LoginAuthenticator<T> extends Authenticator<T> {
                     final int tokenLifetimeSeconds,
                     final HttpServletResponse resp) throws IOException;
 
+
+   /**
+    * Performs a logout, if possible.
+    * @param resp The response.
+    */
+   public void doLogout(final HttpServletResponse resp);
 }

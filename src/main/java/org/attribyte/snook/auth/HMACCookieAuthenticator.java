@@ -97,6 +97,11 @@ public class HMACCookieAuthenticator implements LoginAuthenticator<Boolean> {
       return Boolean.TRUE;
    }
 
+   @Override
+   public void doLogout(final HttpServletResponse resp) {
+      Cookies.removeCookie(cookieKey, resp);
+   }
+
    /**
     * The cookie key
     */

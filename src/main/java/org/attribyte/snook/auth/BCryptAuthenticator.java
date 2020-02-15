@@ -24,6 +24,7 @@ import com.google.common.hash.HashCode;
 import org.attribyte.snook.Cookies;
 import org.mindrot.jbcrypt.BCrypt;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.EnumSet;
@@ -35,7 +36,52 @@ import java.util.function.Function;
  * that holds a random authentication token used for subsequent
  * authentication.
  */
-public class BCryptAuthenticator extends CookieAuthenticator implements LoginAuthenticator<Boolean> {
+public abstract class BCryptAuthenticator<T> extends CookieAuthenticator<T> implements LoginAuthenticator<T> {
+
+
+   /**
+    * @see #BCryptAuthenticator(Cookies.CookieKey, Function, ImmutableMap, Function)
+    */
+   public static BCryptAuthenticator<Boolean> booleanAuthenticator(final Cookies.CookieKey cookieKey,
+                                                                   final Function<HashCode, String> credentialsValidator,
+                                                                   final ImmutableMap<String, HashCode> passwordHashMap,
+                                                                   final Function<AuthenticationToken, Boolean> saveCredentials) {
+
+      return new BCryptAuthenticator<Boolean>(cookieKey, credentialsValidator, passwordHashMap, saveCredentials) {
+
+         @Override
+         public Boolean validCredentials(final String username) {
+            return Boolean.TRUE;
+         }
+
+         @Override
+         public Boolean invalidCredentials(final String username) {
+            return Boolean.FALSE;
+         }
+      };
+   }
+
+   /**
+    * @see #BCryptAuthenticator(Cookies.CookieKey, Function, Function, Function)
+    */
+   public static BCryptAuthenticator<Boolean> booleanAuthenticator(final Cookies.CookieKey cookieKey,
+                                                                   final Function<HashCode, String> credentialsValidator,
+                                                                   final Function<String, HashCode> selectPasswordHash,
+                                                                   final Function<AuthenticationToken, Boolean> saveCredentials) {
+
+      return new BCryptAuthenticator<Boolean>(cookieKey, credentialsValidator, selectPasswordHash, saveCredentials) {
+
+         @Override
+         public Boolean validCredentials(final String username) {
+            return Boolean.TRUE;
+         }
+
+         @Override
+         public Boolean invalidCredentials(final String username) {
+            return Boolean.FALSE;
+         }
+      };
+   }
 
    /**
     * Creates the authenticator with a map that contains valid password hashes.
@@ -72,6 +118,12 @@ public class BCryptAuthenticator extends CookieAuthenticator implements LoginAut
       this.saveCredentials = saveCredentials;
    }
 
+   @Override
+   public T authorized(final HttpServletRequest request) {
+      String authorizedUsername = authorizedUsername(request);
+      return authorizedUsername != null ? validCredentials(authorizedUsername) : invalidCredentials(authorizedUsername);
+   }
+
    /**
     * Performs a login.
     * <p>
@@ -86,13 +138,13 @@ public class BCryptAuthenticator extends CookieAuthenticator implements LoginAut
     * @return Was the password valid and token saved and set as a cookie?
     * @throws IOException if credentials save failed.
     */
-   public Boolean doLogin(final String username, final String password,
-                          final int tokenLifetimeSeconds,
-                          final HttpServletResponse resp) throws IOException {
+   public T doLogin(final String username, final String password,
+                    final int tokenLifetimeSeconds,
+                    final HttpServletResponse resp) throws IOException {
 
       HashCode passwordHash = selectPasswordHash.apply(username);
       if(!checkPassword(password, passwordHash)) {
-         return Boolean.FALSE;
+         return invalidCredentials(username);
       }
 
       AuthenticationToken returnedToken = new AuthenticationToken(username);
@@ -102,11 +154,25 @@ public class BCryptAuthenticator extends CookieAuthenticator implements LoginAut
       boolean saved = saveCredentials.apply(savedToken);
       if(saved) {
          Cookies.setCookie(cookieKey, returnedToken.token.toString(), tokenLifetimeSeconds, cookieOptions, resp);
-         return Boolean.TRUE;
+         return validCredentials(username);
       } else {
          throw new IOException("Credentials save failed");
       }
    }
+
+   /**
+    * Supplies credentials for a valid login.
+    * @param username The username.
+    * @return The credentials.
+    */
+   public abstract T validCredentials(final String username);
+
+   /**
+    * Supplies credentials for an invalid login.
+    * @param username The username.
+    * @return The credentials.
+    */
+   public abstract T invalidCredentials(final String username);
 
    /**
     * Check a password against a hash code.
@@ -128,10 +194,7 @@ public class BCryptAuthenticator extends CookieAuthenticator implements LoginAut
       return "Cookie (BCrypt)";
    }
 
-   /**
-    * Performs a logout by deleting the remote cookie.
-    * @param resp The response.
-    */
+   @Override
    public void doLogout(final HttpServletResponse resp) {
       Cookies.removeCookie(cookieKey, resp);
    }

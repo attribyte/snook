@@ -20,13 +20,71 @@ package org.attribyte.snook.auth;
 
 import com.google.common.hash.HashCode;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.function.Function;
 
 /**
  * Authenticator where a token is the value of a cookie (with no scheme, unlike 'Bearer').
  */
-public class TokenAuthenticator extends BearerAuthenticator {
+public abstract class TokenAuthenticator<T> extends BearerAuthenticator<T> {
+
+   /**
+    * Creates a boolean authenticator.
+    * @see #TokenAuthenticator(String, Users)
+    */
+   public static TokenAuthenticator<Boolean> booleanAuthenticator(final String headerName,
+                                                                  final Users credentialsFile) {
+      return new TokenAuthenticator<Boolean>(headerName, credentialsFile) {
+         @Override
+         public Boolean authorized(final HttpServletRequest request) {
+            return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
+         }
+      };
+   };
+
+   /**
+    * Creates a boolean authenticator.
+    * @see #TokenAuthenticator(String, Map)
+    */
+   public static TokenAuthenticator<Boolean> booleanAuthenticator(final String headerName,
+                                                                  final Map<HashCode, String> validCredentials) {
+      return new TokenAuthenticator<Boolean>(headerName, validCredentials) {
+         @Override
+         public Boolean authorized(final HttpServletRequest request) {
+            return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
+         }
+      };
+   };
+
+   /**
+    * Creates a boolean authenticator.
+    * @see #TokenAuthenticator(String, Function)
+    */
+   public static TokenAuthenticator<Boolean> booleanAuthenticator(final String headerName,
+                                                                  final Function<HashCode, String> credentialsValidator) {
+      return new TokenAuthenticator<Boolean>(headerName, credentialsValidator) {
+         @Override
+         public Boolean authorized(final HttpServletRequest request) {
+            return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
+         }
+      };
+   };
+
+   /**
+    * Creates a boolean authenticator.
+    * @see #TokenAuthenticator(String, Map, Function)
+    */
+   public static TokenAuthenticator<Boolean> booleanAuthenticator(final String headerName,
+                                                                  final Map<HashCode, String> validCredentials,
+                                                                  final Function<HashCode, String> credentialsValidator) {
+      return new TokenAuthenticator<Boolean>(headerName, validCredentials, credentialsValidator) {
+         @Override
+         public Boolean authorized(final HttpServletRequest request) {
+            return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
+         }
+      };
+   };
 
    /**
     * Creates an authenticator from a credentials file.
