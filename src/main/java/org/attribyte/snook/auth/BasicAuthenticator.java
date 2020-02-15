@@ -34,7 +34,6 @@ import java.util.function.Function;
  */
 public abstract class BasicAuthenticator<T> extends HeaderAuthenticator<T> {
 
-
    /**
     * Creates a boolean authenticator.
     * @see #BasicAuthenticator(Set, Function)

@@ -44,7 +44,7 @@ public class BasicBCryptAuthenticatorTest {
       String bcrypt = BCrypt.hashpw("test_password", BCrypt.gensalt(4));
 
 
-      BasicBCryptAuthenticator basicAuthenticator = new BasicBCryptAuthenticator(cache, h -> bcrypt);
+      BasicBCryptAuthenticator<Boolean> basicAuthenticator = BasicBCryptAuthenticator.booleanAuthenticator(cache, h -> bcrypt);
 
       HttpServletRequest request = new TestHttpServletRequest() {
          @Override
@@ -77,7 +77,7 @@ public class BasicBCryptAuthenticatorTest {
       String bcrypt = BCrypt.hashpw("test_passwordx", BCrypt.gensalt(4));
 
 
-      BasicBCryptAuthenticator basicAuthenticator = new BasicBCryptAuthenticator(cache, h -> bcrypt);
+      BasicBCryptAuthenticator<Boolean> basicAuthenticator = BasicBCryptAuthenticator.booleanAuthenticator(cache, h -> bcrypt);
 
       HttpServletRequest request = new TestHttpServletRequest() {
          @Override
@@ -103,7 +103,8 @@ public class BasicBCryptAuthenticatorTest {
       assertEquals(1, records.size());
       Users credentialsFile = new Users(records);
       Cache<HashCode, Boolean> cache = CacheBuilder.newBuilder().build();
-      BasicBCryptAuthenticator basicAuthenticator = new BasicBCryptAuthenticator(cache, credentialsFile);
+
+      BasicBCryptAuthenticator<Boolean> basicAuthenticator = BasicBCryptAuthenticator.booleanAuthenticator(cache, credentialsFile);
 
       HttpServletRequest request = new TestHttpServletRequest() {
          @Override
