@@ -24,7 +24,6 @@ import org.attribyte.snook.Cookies;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
@@ -37,6 +36,7 @@ import static org.attribyte.snook.Cookies.cookieValue;
  */
 public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T> {
 
+
    /**
     * @see #HMACCookieAuthenticator(Cookies.CookieKey, Function, BiFunction, Function)
     */
@@ -44,7 +44,18 @@ public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T
                                                                        final Function<String, HashFunction> hmacFunctions,
                                                                        final BiFunction<String, String, Boolean> checkPasswordFunction,
                                                                        final Function<String, String> hmacKeyFunction) {
-      return new HMACCookieAuthenticator<Boolean>(cookieKey, hmacFunctions, checkPasswordFunction, hmacKeyFunction) {
+      return booleanAuthenticator(cookieKey, hmacFunctions, checkPasswordFunction, hmacKeyFunction, DEFAULT_COOKIE_OPTIONS);
+   }
+
+   /**
+    * @see #HMACCookieAuthenticator(Cookies.CookieKey, Function, BiFunction, Function, EnumSet)
+    */
+   public static HMACCookieAuthenticator<Boolean> booleanAuthenticator(final Cookies.CookieKey cookieKey,
+                                                                       final Function<String, HashFunction> hmacFunctions,
+                                                                       final BiFunction<String, String, Boolean> checkPasswordFunction,
+                                                                       final Function<String, String> hmacKeyFunction,
+                                                                       final EnumSet<Cookies.Option> cookieOptions) {
+      return new HMACCookieAuthenticator<Boolean>(cookieKey, hmacFunctions, checkPasswordFunction, hmacKeyFunction, cookieOptions) {
          @Override
          public Boolean validCredentials(final String username) {
             return Boolean.TRUE;
@@ -61,15 +72,32 @@ public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T
     * Creates an authenticator.
     * @param hmacFunctions A map of HMAC function vs key id.
     * @param checkPasswordFunction A function to check username/password.
+    * @param hmacKeyFunction A function that returns the key id for a username.
     */
    public HMACCookieAuthenticator(final Cookies.CookieKey cookieKey,
                                   final Function<String, HashFunction> hmacFunctions,
                                   final BiFunction<String, String, Boolean> checkPasswordFunction,
                                   final Function<String, String> hmacKeyFunction) {
+      this(cookieKey, hmacFunctions, checkPasswordFunction, hmacKeyFunction, DEFAULT_COOKIE_OPTIONS);
+   }
+
+   /**
+    * Creates an authenticator.
+    * @param hmacFunctions A map of HMAC function vs key id.
+    * @param checkPasswordFunction A function to check username/password.
+    * @param hmacKeyFunction A function that returns the key id for a username.
+    * @param cookieOptions The cookie options.
+    */
+   public HMACCookieAuthenticator(final Cookies.CookieKey cookieKey,
+                                  final Function<String, HashFunction> hmacFunctions,
+                                  final BiFunction<String, String, Boolean> checkPasswordFunction,
+                                  final Function<String, String> hmacKeyFunction,
+                                  final EnumSet<Cookies.Option> cookieOptions) {
       this.cookieKey = cookieKey;
       this.hmacFunctions = hmacFunctions;
       this.checkPasswordFunction = checkPasswordFunction;
       this.hmacKeyFunction = hmacKeyFunction;
+      this.cookieOptions = cookieOptions == null ? DEFAULT_COOKIE_OPTIONS : cookieOptions;
    }
 
    @Override
@@ -97,7 +125,7 @@ public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T
    @Override
    public T doLogin(final String username, final String password,
                     final int tokenLifetimeSeconds,
-                    final HttpServletResponse resp) throws IOException {
+                    final HttpServletResponse resp) {
 
       if(!checkPasswordFunction.apply(username, password)) {
          return invalidCredentials(username);
@@ -160,5 +188,10 @@ public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T
    /**
     * The cookie options to be set with the authentication token cookie.
     */
-   private static final EnumSet<Cookies.Option> cookieOptions = EnumSet.of(Cookies.Option.HTTP_ONLY, Cookies.Option.SECURE_ONLY);
+   private final EnumSet<Cookies.Option> cookieOptions;
+
+   /**
+    * The default cookie options to be set with the authentication token cookie.
+    */
+   public static final EnumSet<Cookies.Option> DEFAULT_COOKIE_OPTIONS = EnumSet.of(Cookies.Option.HTTP_ONLY, Cookies.Option.SECURE_ONLY);
 }

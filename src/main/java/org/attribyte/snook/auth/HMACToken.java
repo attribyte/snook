@@ -489,7 +489,7 @@ public class HMACToken {
     * @param rnd The secure random.
     * @return The key.
     */
-   private static byte[] randomKey(final SecureRandom rnd) {
+   public static byte[] randomKey(final SecureRandom rnd) {
       byte[] hmacKey = new byte[KEY_SIZE];
       rnd.nextBytes(hmacKey);
       return hmacKey;

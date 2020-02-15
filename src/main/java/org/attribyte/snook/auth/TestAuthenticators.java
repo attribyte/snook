@@ -18,13 +18,21 @@
 
 package org.attribyte.snook.auth;
 
+import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+import org.attribyte.snook.Cookies;
 
+import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.SecureRandom;
+import java.util.EnumSet;
+import java.util.function.BiFunction;
 
 /**
  * A simple authenticator for testing.
@@ -84,5 +92,25 @@ public class TestAuthenticators {
     */
    public static LoginAuthenticator<Boolean> testAuthenticator(final String username, final String password) {
       return new TestLoginAuthenticator(username, password);
+   }
+
+   /**
+    * Creates a single-user HMAC-Cookie authenticator.
+    * @param cookieName The cookie name.
+    * @param username The username.
+    * @param password The password.
+    * @return The authenticator.
+    */
+   public static HMACCookieAuthenticator<Boolean> testHMACCookieAuthenticator(final String cookieName,
+                                                                              final String username, final String password) {
+      final byte[] hmacKey = HMACToken.randomKey(new SecureRandom());
+      final HashFunction hmacFunction = Hashing.hmacSha256(hmacKey);
+      final String keyId = HMACToken.randomKeyId();
+      final HashCode passwordHash = Authenticator.hashCredentials(password);
+      return HMACCookieAuthenticator.booleanAuthenticator(new Cookies.CookieKey(cookieName),
+              key -> Strings.nullToEmpty(key).equals(keyId) ? hmacFunction : null,
+              (u, p) -> username.equals(Strings.nullToEmpty(u)) && passwordHash.equals(Authenticator.hashCredentials(Strings.nullToEmpty(p))),
+              input -> keyId,
+              EnumSet.of(Cookies.Option.HTTP_ONLY));
    }
 }
