@@ -22,6 +22,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.hash.HashCode;
+import org.attribyte.api.http.Header;
 import org.attribyte.util.Pair;
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -90,6 +91,16 @@ public abstract class BasicBCryptAuthenticator<T> extends HeaderAuthenticator<T>
                                    final Function<String, String> usernameCredentials) {
       this.validCredentials = validCredentialsCache;
       this.usernameCredentials = usernameCredentials;
+   }
+
+   /**
+    * Creates a request header.
+    * @param username The username.
+    * @param password The password.
+    * @return The request header.
+    */
+   public Header requestHeader(final String username, final String password) {
+      return super.requestHeader(BasicAuthenticator.buildCredentials(username, password));
    }
 
    /**

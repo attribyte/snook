@@ -23,6 +23,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashCode;
+import org.attribyte.api.http.Header;
 import org.attribyte.util.Pair;
 
 import javax.servlet.http.HttpServletRequest;
@@ -80,6 +81,16 @@ public abstract class BasicAuthenticator<T> extends HeaderAuthenticator<T> {
                              final Function<String, HashCode> usernameCredentials) {
       this.validCredentials = validCredentials != null ? ImmutableSet.copyOf(validCredentials) : ImmutableSet.of();
       this.usernameCredentials = usernameCredentials;
+   }
+
+   /**
+    * Creates a request header.
+    * @param username The username.
+    * @param password The password.
+    * @return The request header.
+    */
+   public Header requestHeader(final String username, final String password) {
+      return super.requestHeader(buildCredentials(username, password));
    }
 
    @Override

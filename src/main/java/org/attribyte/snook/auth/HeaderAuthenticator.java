@@ -19,6 +19,7 @@
 package org.attribyte.snook.auth;
 
 import com.google.common.base.Strings;
+import org.attribyte.api.http.Header;
 import org.eclipse.jetty.http.HttpHeader;
 
 import javax.servlet.http.HttpServletRequest;
@@ -27,6 +28,20 @@ import javax.servlet.http.HttpServletRequest;
  * Authenticate based on the value of an HTTP header.
  */
 public abstract class HeaderAuthenticator<T> implements Authenticator<T> {
+
+   /**
+    * Creates a credentials header to be added to a request.
+    * @param credentialsValue The credentials value.
+    * @return The input response builder.
+    */
+   public Header requestHeader(final String credentialsValue) {
+      String scheme = scheme();
+      if(Strings.isNullOrEmpty(scheme)) {
+         return new Header(credentialsHeader(), credentialsValue);
+      } else {
+         return new Header(credentialsHeader(), scheme + " " + credentialsValue);
+      }
+   }
 
    /**
     * Gets the credentials from the request.
