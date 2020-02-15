@@ -369,7 +369,7 @@ public class CORSAuthenticator implements Authenticator<Boolean> {
 
    @Override
    public Boolean authorized(final HttpServletRequest request) {
-      return allowed(origin(request)) != null;
+      return allowed(origin(request)) != null ? Boolean.TRUE : Boolean.FALSE;
    }
 
    @Override
