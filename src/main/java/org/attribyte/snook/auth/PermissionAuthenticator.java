@@ -32,7 +32,7 @@ public abstract class PermissionAuthenticator {
     * Creates the permission authenticator.
     * @param authenticator The authenticator.
     */
-   public PermissionAuthenticator(final Authenticator authenticator) {
+   public PermissionAuthenticator(final Authenticator<?> authenticator) {
       this.authenticator = authenticator;
    }
 
@@ -142,5 +142,5 @@ public abstract class PermissionAuthenticator {
    /**
        * The authenticator.
        */
-   private final Authenticator authenticator;
+   private final Authenticator<?> authenticator;
 }
