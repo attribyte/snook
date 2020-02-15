@@ -31,23 +31,18 @@ import java.util.List;
  */
 public class AnyAuthenticator extends MultiAuthenticator {
 
-   public AnyAuthenticator(final List<Authenticator> authenticators) {
+   public AnyAuthenticator(final List<Authenticator<?>> authenticators) {
       super(authenticators, "Any");
    }
 
    @Override
-   public boolean authorized(final HttpServletRequest request) {
-      for(Authenticator authenticator : authenticators) {
-         if(authenticator.authorized(request)) {
-            return true;
-         }
-      }
-      return false;
+   public Boolean authorized(final HttpServletRequest request) {
+      return authorizedUsername(request) != null;
    }
 
    @Override
    public String authorizedUsername(final HttpServletRequest request) {
-      for(Authenticator authenticator : authenticators) {
+      for(Authenticator<?> authenticator : authenticators) {
          String username = Strings.emptyToNull(authenticator.authorizedUsername(request));
          if(username != null) {
             return username;

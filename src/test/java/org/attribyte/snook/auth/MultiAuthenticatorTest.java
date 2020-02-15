@@ -35,11 +35,11 @@ public class MultiAuthenticatorTest {
    private static final String HEADER_NAME_0 = "X-Test-Header-0";
    private static final String HEADER_NAME_1 = "X-Test-Header-1";
 
-   private static TokenAuthenticator tokenAuthenticator0 = new TokenAuthenticator(HEADER_NAME_0, ImmutableMap.of(
+   private static TokenAuthenticator<Boolean> tokenAuthenticator0 = TokenAuthenticator.booleanAuthenticator(HEADER_NAME_0, ImmutableMap.of(
            Authenticator.hashCredentials("test12345"), "test_user_0"
    ), s -> null);
 
-   private static TokenAuthenticator tokenAuthenticator1 = new TokenAuthenticator(HEADER_NAME_1, ImmutableMap.of(
+   private static TokenAuthenticator<Boolean> tokenAuthenticator1 = TokenAuthenticator.booleanAuthenticator(HEADER_NAME_1, ImmutableMap.of(
            Authenticator.hashCredentials("test54321"), "test_user_1"
    ), s -> null);
 

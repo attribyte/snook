@@ -34,7 +34,7 @@ public class TokenAuthenticatorTest {
 
    @Test
    public void testAuthorized() {
-      TokenAuthenticator tokenAuthenticator = new TokenAuthenticator(HEADER_NAME, ImmutableMap.of(
+      TokenAuthenticator<Boolean> tokenAuthenticator = TokenAuthenticator.booleanAuthenticator(HEADER_NAME, ImmutableMap.of(
               Authenticator.hashCredentials("test12345"), "test_user_0"
       ), s -> null);
 
@@ -52,7 +52,7 @@ public class TokenAuthenticatorTest {
    @Test
    public void testAuthorizedUsername() {
 
-      TokenAuthenticator tokenAuthenticator = new TokenAuthenticator(HEADER_NAME, ImmutableMap.of(
+      TokenAuthenticator<Boolean> tokenAuthenticator = TokenAuthenticator.booleanAuthenticator(HEADER_NAME, ImmutableMap.of(
               Authenticator.hashCredentials("test12345"), "test_user_0"
       ), s -> null);
 
@@ -70,7 +70,7 @@ public class TokenAuthenticatorTest {
    @Test
    public void testAuthorizedFunction() {
 
-      TokenAuthenticator tokenAuthenticator = new TokenAuthenticator(HEADER_NAME, ImmutableMap.of(
+      TokenAuthenticator<Boolean> tokenAuthenticator = TokenAuthenticator.booleanAuthenticator(HEADER_NAME, ImmutableMap.of(
               Authenticator.hashCredentials("test12345"), "test_user_0"
       ), s -> null);
 
@@ -89,7 +89,7 @@ public class TokenAuthenticatorTest {
    @Test
    public void testUnauthorized() {
 
-      TokenAuthenticator tokenAuthenticator = new TokenAuthenticator(HEADER_NAME, ImmutableMap.of(
+      TokenAuthenticator<Boolean> tokenAuthenticator = TokenAuthenticator.booleanAuthenticator(HEADER_NAME, ImmutableMap.of(
               Authenticator.hashCredentials("test12344"), "test_user_0"
       ), s -> null);
 
@@ -108,7 +108,7 @@ public class TokenAuthenticatorTest {
    @Test
    public void testUnauthorizedFunction() {
 
-      TokenAuthenticator tokenAuthenticator = new TokenAuthenticator(HEADER_NAME, ImmutableMap.of(
+      TokenAuthenticator<Boolean> tokenAuthenticator = TokenAuthenticator.booleanAuthenticator(HEADER_NAME, ImmutableMap.of(
               Authenticator.hashCredentials("test12344"), "test_user_0"
       ), s -> null);
 

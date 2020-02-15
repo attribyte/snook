@@ -15,6 +15,7 @@
 
 package org.attribyte.snook.auth;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import javax.servlet.http.HttpServletRequest;
@@ -27,13 +28,13 @@ import java.util.Set;
 /**
  * A login authenticator that returns groups/permissions for a user.
  */
-public abstract class GroupLoginAuthenticator extends PermissionAuthenticator implements LoginAuthenticator {
+public abstract class GroupLoginAuthenticator extends PermissionAuthenticator implements LoginAuthenticator<List<GroupProfile>> {
 
    /**
     * Creates a group login authenticator.
     * @param authenticator The
     */
-   public GroupLoginAuthenticator(final LoginAuthenticator authenticator) {
+   public GroupLoginAuthenticator(final LoginAuthenticator<?> authenticator) {
       super(authenticator);
       this.loginAuthenticator = authenticator;
    }
@@ -54,35 +55,16 @@ public abstract class GroupLoginAuthenticator extends PermissionAuthenticator im
    }
 
    @Override
-   public boolean doLogin(final String username, final String password,
+   public List<GroupProfile> doLogin(final String username, final String password,
                           final int tokenLifetimeSeconds,
                           final HttpServletResponse resp) throws IOException {
-      return loginAuthenticator.doLogin(username, password, tokenLifetimeSeconds, resp);
+      return loginAuthenticator.doLogin(username, password, tokenLifetimeSeconds, resp) != null ? groupsForUser(username) : ImmutableList.of();
    }
 
    @Override
    protected Set<Permission> authenticatedPermission(final String username, final String context) {
       GroupProfile matchProfile = findGroup(context, groupsForUser(username));
       return matchProfile != null ? matchProfile.permissions : ImmutableSet.of();
-   }
-
-   /**
-    * Perform login with a username and password.
-    * @param username The username.
-    * @param password The password.
-    * @param tokenLifetimeSeconds The token lifetime.
-    * @param resp The HTTP response.
-    * @return The list of groups for the user or {@code null} if login was invalid.
-    * @throws IOException on read/write error.
-    */
-   public List<GroupProfile> login(final String username, final String password,
-                                   final int tokenLifetimeSeconds,
-                                   final HttpServletResponse resp) throws IOException {
-      if(loginAuthenticator.doLogin(username, password, tokenLifetimeSeconds, resp)) {
-         return groupsForUser(username);
-      } else {
-         return LOGIN_FAILED_GROUPS;
-      }
    }
 
    /**
@@ -98,17 +80,25 @@ public abstract class GroupLoginAuthenticator extends PermissionAuthenticator im
    public GroupProfile login(final String groupName, final String username, final String password,
                              final int tokenLifetimeSeconds,
                              final HttpServletResponse resp) throws IOException {
-      return findGroup(groupName, login(username, password, tokenLifetimeSeconds, resp));
+
+      GroupProfile matchedGroup = findGroup(groupName, doLogin(username, password, tokenLifetimeSeconds, resp));
+      if(matchedGroup != null) {
+         return matchedGroup;
+      } else {
+         doLogout(resp);
+         return null;
+      }
    }
 
-   /**
-    * Check for an authorized user and return permission.
-    * @param request The request.
-    * @return A custom object if authenticated or {@code null} if not.
-    */
-   public List<GroupProfile> authenticate(final HttpServletRequest request) {
+   @Override
+   public void doLogout(final HttpServletResponse resp) {
+      loginAuthenticator.doLogout(resp);
+   }
+
+   @Override
+   public List<GroupProfile> authorized(final HttpServletRequest request) {
       String username = loginAuthenticator.authorizedUsername(request);
-      return username != null ? groupsForUser(username) : null;
+      return username != null ? groupsForUser(username) : loginFailedGroups();
    }
 
    /**
@@ -118,7 +108,7 @@ public abstract class GroupLoginAuthenticator extends PermissionAuthenticator im
     * @return The group profile or {@code null} if authentication failed.
     */
    public GroupProfile authenticate(final HttpServletRequest request, final String groupName) {
-      return findGroup(groupName, authenticate(request));
+      return findGroup(groupName, authorized(request));
    }
 
    /**
@@ -150,12 +140,20 @@ public abstract class GroupLoginAuthenticator extends PermissionAuthenticator im
    public abstract List<GroupProfile> groupsForUser(final String username);
 
    /**
+    * Gets the groups returned on failed login.
+    * @return The list of groups. Default is {@code null}.
+    */
+   public List<GroupProfile> loginFailedGroups() {
+      return DEFAULT_LOGIN_FAILED_GROUPS;
+   }
+
+   /**
     * The list of group profiles returned on failed login.
     */
-   public static final List<GroupProfile> LOGIN_FAILED_GROUPS = null;
+   public static final List<GroupProfile> DEFAULT_LOGIN_FAILED_GROUPS = null;
 
    /**
     * The request authenticator.
     */
-   protected final LoginAuthenticator loginAuthenticator;
+   protected final LoginAuthenticator<?> loginAuthenticator;
 }

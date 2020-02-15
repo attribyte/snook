@@ -35,7 +35,27 @@ import static org.attribyte.snook.Cookies.cookieValue;
 /**
  * An authenticator that validates an {@code HMACToken} sent as a cookie value.
  */
-public class HMACCookieAuthenticator implements LoginAuthenticator {
+public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T> {
+
+   /**
+    * @see #HMACCookieAuthenticator(Cookies.CookieKey, Function, BiFunction, Function)
+    */
+   public static HMACCookieAuthenticator<Boolean> booleanAuthenticator(final Cookies.CookieKey cookieKey,
+                                                                       final Function<String, HashFunction> hmacFunctions,
+                                                                       final BiFunction<String, String, Boolean> checkPasswordFunction,
+                                                                       final Function<String, String> hmacKeyFunction) {
+      return new HMACCookieAuthenticator<Boolean>(cookieKey, hmacFunctions, checkPasswordFunction, hmacKeyFunction) {
+         @Override
+         public Boolean validCredentials(final String username) {
+            return Boolean.TRUE;
+         }
+
+         @Override
+         public Boolean invalidCredentials(final String username) {
+            return Boolean.FALSE;
+         }
+      };
+   }
 
    /**
     * Creates an authenticator.
@@ -69,28 +89,53 @@ public class HMACCookieAuthenticator implements LoginAuthenticator {
    }
 
    @Override
-   public boolean doLogin(final String username, final String password,
-                          final int tokenLifetimeSeconds,
-                          final HttpServletResponse resp) throws IOException {
+   public T authorized(final HttpServletRequest request) {
+      String authorizedUsername = authorizedUsername(request);
+      return authorizedUsername != null ? validCredentials(authorizedUsername) : invalidCredentials(authorizedUsername);
+   }
+
+   @Override
+   public T doLogin(final String username, final String password,
+                    final int tokenLifetimeSeconds,
+                    final HttpServletResponse resp) throws IOException {
 
       if(!checkPasswordFunction.apply(username, password)) {
-         return false;
+         return invalidCredentials(username);
       }
 
       String keyId = hmacKeyFunction.apply(username);
       if(Strings.isNullOrEmpty(keyId)) {
-         return false;
+         return invalidCredentials(username);
       }
 
       HashFunction hmacFunction = hmacFunctions.apply(keyId);
       if(hmacFunction == null) {
-         return false;
+         return invalidCredentials(username);
       }
 
       HMACToken token = new HMACToken(username, tokenLifetimeSeconds, TimeUnit.SECONDS);
       Cookies.setCookie(cookieKey, token.toCookieValue(keyId, hmacFunction), tokenLifetimeSeconds, cookieOptions, resp);
-      return true;
+      return validCredentials(username);
    }
+
+   @Override
+   public void doLogout(final HttpServletResponse resp) {
+      Cookies.removeCookie(cookieKey, resp);
+   }
+
+   /**
+    * Supplies credentials for a valid login.
+    * @param username The username.
+    * @return The credentials.
+    */
+   public abstract T validCredentials(final String username);
+
+   /**
+    * Supplies credentials for an invalid login.
+    * @param username The username.
+    * @return The credentials.
+    */
+   public abstract T invalidCredentials(final String username);
 
    /**
     * The cookie key

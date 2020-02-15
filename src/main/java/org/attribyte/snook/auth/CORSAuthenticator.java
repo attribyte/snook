@@ -41,7 +41,7 @@ import static org.attribyte.snook.Util.host;
  * An authenticator for {@code CORS} (the {@code Origin} header value)
  * that returns the authorized host as the username, if authorized.
  */
-public class CORSAuthenticator implements Authenticator {
+public class CORSAuthenticator implements Authenticator<Boolean> {
 
    /**
     * CORS options.
@@ -368,7 +368,7 @@ public class CORSAuthenticator implements Authenticator {
    }
 
    @Override
-   public boolean authorized(final HttpServletRequest request) {
+   public Boolean authorized(final HttpServletRequest request) {
       return allowed(origin(request)) != null;
    }
 

@@ -23,11 +23,11 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * An authenticator that excludes all requests.
  */
-public class DenyAllAuthenticator implements Authenticator {
+public class DenyAllAuthenticator<T> implements Authenticator<T> {
 
    @Override
-   public boolean authorized(final HttpServletRequest request) {
-      return false;
+   public T authorized(final HttpServletRequest request) {
+      return null;
    }
 
    @Override

@@ -1,9 +1,11 @@
 package org.attribyte.snook.auth;
 
+import org.attribyte.snook.Cookies;
+
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public interface LoginAuthenticator extends Authenticator {
+public interface LoginAuthenticator<T> extends Authenticator<T> {
 
    /**
     * Performs a login.
@@ -19,8 +21,14 @@ public interface LoginAuthenticator extends Authenticator {
     * @return Was the password valid and token saved and set as a cookie?
     * @throws IOException if credentials save failed.
     */
-   public boolean doLogin(final String username, final String password,
-                          final int tokenLifetimeSeconds,
-                          final HttpServletResponse resp) throws IOException;
+   public T doLogin(final String username, final String password,
+                    final int tokenLifetimeSeconds,
+                    final HttpServletResponse resp) throws IOException;
 
+
+   /**
+    * Performs a logout, if possible.
+    * @param resp The response.
+    */
+   public void doLogout(final HttpServletResponse resp);
 }

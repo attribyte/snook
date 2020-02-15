@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * An authenticator that allows all requests.
  */
-public class AllowAllAuthenticator implements Authenticator {
+public class AllowAllAuthenticator implements Authenticator<Boolean> {
 
    /**
     * Creates an authenticator that allows all requests.
@@ -34,15 +34,14 @@ public class AllowAllAuthenticator implements Authenticator {
    }
 
    @Override
-   public boolean authorized(final HttpServletRequest request) {
-      return true;
+   public Boolean authorized(final HttpServletRequest request) {
+      return Boolean.TRUE;
    }
 
    @Override
    public String authorizedUsername(final HttpServletRequest request) {
       return username;
    }
-
 
    @Override
    public String credentials(final HttpServletRequest request) {

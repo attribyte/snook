@@ -8,7 +8,7 @@ import com.google.common.io.BaseEncoding;
 
 import javax.servlet.http.HttpServletRequest;
 
-public interface Authenticator {
+public interface Authenticator<T> {
 
    /**
     * Gets the credentials from the request.
@@ -33,11 +33,9 @@ public interface Authenticator {
    /**
     * Determine if a request is authorized.
     * @param request The request.
-    * @return Is the request authorized?
+    * @return Non-null if the request is authorized.
     */
-   public default boolean authorized(final HttpServletRequest request) {
-      return authorizedUsername(request) != null;
-   }
+   public T authorized(final HttpServletRequest request);
 
    /**
     * The default hash function for credentials.

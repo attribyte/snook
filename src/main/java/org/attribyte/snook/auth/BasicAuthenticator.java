@@ -32,14 +32,43 @@ import java.util.function.Function;
 /**
  * Authenticator for 'Basic' auth.
  */
-public class BasicAuthenticator extends HeaderAuthenticator {
+public abstract class BasicAuthenticator<T> extends HeaderAuthenticator<T> {
+
+   /**
+    * Creates a boolean authenticator.
+    * @see #BasicAuthenticator(Set, Function)
+    */
+   public static BasicAuthenticator<Boolean> booleanAuthenticator(final Set<HashCode> validCredentials,
+                                                                  final Function<String, HashCode> usernameCredentials) {
+      return new BasicAuthenticator<Boolean>(validCredentials, usernameCredentials) {
+         @Override
+         public Boolean authorized(final HttpServletRequest request) {
+            return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
+         }
+      };
+   };
+
+   /**
+    * Creates a boolean authenticator.
+    * @see #BasicAuthenticator(Users)
+    */
+   public static BasicAuthenticator<Boolean> booleanAuthenticator(final Users credentialsFile) {
+
+      return new BasicAuthenticator<Boolean>(credentialsFile) {
+         @Override
+         public Boolean authorized(final HttpServletRequest request) {
+            return authorizedUsername(request) != null ? Boolean.TRUE : Boolean.FALSE;
+         }
+      };
+   };
 
    /**
     * Creates an authenticator that uses *hashed tokens* from a credentials file.
     * @param credentialsFile The credentials file.
     */
    public BasicAuthenticator(final Users credentialsFile) {
-      this(Sets.newHashSet(credentialsFile.sha256Hashes.values()), credentialsFile.sha256Hashes::get);
+      this(Sets.newHashSet(credentialsFile.sha256Hashes.values()),
+              credentialsFile.sha256Hashes::get);
    }
 
    /**
@@ -51,28 +80,6 @@ public class BasicAuthenticator extends HeaderAuthenticator {
                              final Function<String, HashCode> usernameCredentials) {
       this.validCredentials = validCredentials != null ? ImmutableSet.copyOf(validCredentials) : ImmutableSet.of();
       this.usernameCredentials = usernameCredentials;
-   }
-
-   @Override
-   public boolean authorized(final HttpServletRequest request) {
-      String credentials = credentials(request);
-      if(credentials == null) {
-         return false;
-      }
-
-      HashCode hashedCredentials = credentialHasher.hashString(credentials, Charsets.US_ASCII);
-      if(validCredentials.contains(hashedCredentials)) {
-         return true;
-      }
-
-      String username = username(request);
-
-      if(username == null) {
-         return false;
-      }
-
-      HashCode checkCredentials = usernameCredentials.apply(username);
-      return checkCredentials != null && checkCredentials.equals(hashedCredentials);
    }
 
    @Override
