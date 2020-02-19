@@ -19,8 +19,8 @@
 package org.attribyte.snook.auth;
 
 import com.google.common.base.Strings;
+import com.google.common.net.HttpHeaders;
 import org.attribyte.api.http.Header;
-import org.eclipse.jetty.http.HttpHeader;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -88,6 +88,6 @@ public abstract class HeaderAuthenticator<T> implements Authenticator<T> {
     * @return The name or {@code null} if none.
     */
    public String credentialsHeader() {
-      return HttpHeader.AUTHORIZATION.asString();
+      return HttpHeaders.AUTHORIZATION;
    }
 }

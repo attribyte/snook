@@ -22,7 +22,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.hash.HashCode;
-import org.eclipse.jetty.http.HttpHeader;
+import com.google.common.net.HttpHeaders;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Optional;
@@ -35,7 +35,7 @@ public class Credentials {
     * @return The credentials or {@code empty} if none.
     */
    public static final Optional<Credentials> credentials(final HttpServletRequest request) {
-      return credentials(request.getHeader(HttpHeader.AUTHORIZATION.asString()));
+      return credentials(request.getHeader(HttpHeaders.AUTHORIZATION));
    }
 
    /**

@@ -60,6 +60,213 @@ public class CORSAuthenticator implements Authenticator<Boolean> {
    }
 
    /**
+    * Builds immutable instances of the authenticator.
+    */
+   public static class Builder {
+
+      /**
+       * Sets the set of denied domains.
+       * @param denyDomains The collection of domains.
+       * @return A self-reference.
+       */
+      public Builder setDenyDomains(final Collection<String> denyDomains) {
+         this.denyDomain = denyDomains != null ? Sets.newHashSet(denyDomains) : null;
+         return this;
+      }
+
+      /**
+       * Adds a denied domain.
+       * @param domain The domain.
+       * @return A self-reference
+       */
+      public Builder addDenyDomain(final String domain) {
+         if(this.denyDomain == null) {
+            this.denyDomain = Sets.newHashSet(domain);
+         } else {
+            this.denyDomain.add(domain);
+         }
+         return this;
+      }
+
+      /**
+       * Sets the set of denied hosts.
+       * @param denyHosts The denied hosts.
+       * @return A self-reference.
+       */
+      public Builder setDenyHosts(final Collection<String> denyHosts) {
+         this.denyHost = denyHosts != null ? Sets.newHashSet(denyHosts) : null;
+         return this;
+      }
+
+      /**
+       * Adds a denied host.
+       * @param host The host.
+       * @return A self-reference.
+       */
+      public Builder addDenyHost(final String host) {
+         if(this.denyHost == null) {
+            this.denyHost = Sets.newHashSet(host);
+         } else {
+            this.denyHost.add(host);
+         }
+         return this;
+      }
+
+      /**
+       * Sets the allowed domains.
+       * @param allowDomains The allowed domains.
+       * @return A self-reference.
+       */
+      public Builder setAllowDomains(final Collection<String> allowDomains) {
+         this.allowDomain = allowDomains != null ? Sets.newHashSet(allowDomains) : null;
+         return this;
+      }
+
+      /**
+       * Adds an allowed domain.
+       * @param domain The domain.
+       * @return A self-reference.
+       */
+      public Builder addAllowDomain(final String domain) {
+         if(this.allowDomain == null) {
+            this.allowDomain = Sets.newHashSet(domain);
+         } else {
+            this.allowDomain.add(domain);
+         }
+         return this;
+      }
+
+      /**
+       * Sets the allowed hosts.
+       * @param allowHosts The allowed hosts.
+       * @return A self-reference.
+       */
+      public Builder setAllowHost(final Collection<String> allowHosts) {
+         this.allowHost = allowHosts != null ? Sets.newHashSet(allowHosts) : null;
+         return this;
+      }
+
+      /**
+       * Adds an allowed host.
+       * @param host The allowed host.
+       * @return A self-reference.
+       */
+      public Builder addAllowHost(final String host) {
+         if(this.allowHost == null) {
+            this.allowHost = Sets.newHashSet(host);
+         } else {
+            this.allowHost.add(host);
+         }
+         return this;
+      }
+
+      /**
+       * Sets to allow all hosts.
+       * @param allowAll Are all hosts allowed?
+       * @return A self-reference.
+       */
+      public Builder setAllowAll(final boolean allowAll) {
+         this.allowHost = Sets.newHashSet("*");
+         this.allowDomain = Sets.newHashSet("*");
+         return this;
+      }
+
+      /**
+       * Sets to allow all hosts.
+       * @return A self-reference.
+       */
+      public Builder allowAll() {
+         return setAllowAll(true);
+      }
+
+      /**
+       * Sets if a secure origin is required.
+       * @param secureOriginRequired Is a secure origin required.
+       * @return A self-reference.
+       */
+      public Builder setSecureOriginRequired(final boolean secureOriginRequired) {
+         this.secureOriginRequired = secureOriginRequired;
+         return this;
+      }
+
+      /**
+       * Require a secure origin.
+       * @return A self-reference.
+       */
+      public Builder secureOriginRequired() {
+         this.secureOriginRequired = true;
+         return this;
+      }
+
+      /**
+       * Sets a comma-separated list of allowed headers.
+       * @param allowHeaders The list of allowed headers.
+       * @return A self-reference.
+       */
+      public Builder setAllowHeaders(final String allowHeaders) {
+         this.allowHeaders = allowHeaders;
+         return this;
+      }
+
+      /**
+       * Sets a comma-separated list of exposed headers.
+       * @param exposeHeaders The list of exposed headers.
+       * @return A self-reference.
+       */
+      public Builder setExposeHeaders(final String exposeHeaders) {
+         this.exposeHeaders = exposeHeaders;
+         return this;
+      }
+
+      /**
+       * Sets a comma-separated list of allowed methods.
+       * @param allowMethods The allowed methods.
+       * @return A self-reference.
+       */
+      public Builder setAllowMethods(final String allowMethods) {
+         this.allowMethods = allowMethods;
+         return this;
+      }
+
+      /**
+       * Sets the maximum age in seconds.
+       * @param maxAgeSeconds The maximum age in seconds.
+       * @return A self-reference.
+       */
+      public Builder setMaxAgeSeconds(final int maxAgeSeconds) {
+         this.maxAgeSeconds = Integer.toString(maxAgeSeconds);
+         return this;
+      }
+
+      /**
+       * Builds an immutable authenticator.
+       * @return The authenticator.
+       */
+      public CORSAuthenticator build() {
+         return new CORSAuthenticator(denyDomain, denyHost, allowDomain, allowHost, secureOriginRequired,
+                 allowHeaders, allowMethods, maxAgeSeconds, exposeHeaders);
+      }
+
+      private Set<String> denyDomain = null;
+      private Set<String> denyHost;
+      private Set<String> allowDomain;
+      private Set<String> allowHost;
+      private boolean secureOriginRequired = false;
+      private String allowHeaders = null;
+      private String exposeHeaders = null;
+      private String allowMethods = DEFAULT_ALLOW_METHODS;
+      private String maxAgeSeconds = DEFAULT_MAX_AGE;
+   }
+
+   /**
+    * Creates an empty builder with defaults.
+    * @return The new builder.
+    */
+   public static Builder builder() {
+      return new Builder();
+   }
+
+   /**
     * A property with a comma-separated list of hosts to allow ({@value}).
     */
    public static final String ALLOW_ORIGIN_HOST_PROP = "allowOriginHost";
@@ -100,9 +307,19 @@ public class CORSAuthenticator implements Authenticator<Boolean> {
    public static final String ALLOW_METHODS_PROP = "allowMethods";
 
    /**
+    * The default methods to allow.
+    */
+   public static final String DEFAULT_ALLOW_METHODS = "OPTIONS, GET, POST";
+
+   /**
     * A property that sets the maximum age of a pre-flight request in seconds. Default 86400. ({@value}).
     */
    public static final String MAX_AGE_PROP = "maxAge";
+
+   /**
+    * The defaut value for max age.
+    */
+   public static final String DEFAULT_MAX_AGE = "86400";
 
    /**
     * The access control allow origin header ({@value}).
@@ -171,8 +388,8 @@ public class CORSAuthenticator implements Authenticator<Boolean> {
               ImmutableSet.copyOf(recordSplitter.split(props.getProperty(ALLOW_ORIGIN_HOST_PROP, ""))),
               props.getProperty(REQUIRE_SECURE_ORIGIN_PROP, "").trim().equalsIgnoreCase("true"),
               props.getProperty(ALLOW_HEADERS_PROP, ""),
-              props.getProperty(ALLOW_METHODS_PROP, "OPTIONS, GET, POST"),
-              props.getProperty(MAX_AGE_PROP, "86400"),
+              props.getProperty(ALLOW_METHODS_PROP, DEFAULT_ALLOW_METHODS),
+              props.getProperty(MAX_AGE_PROP, DEFAULT_MAX_AGE),
               props.getProperty(EXPOSE_HEADERS_PROP, "")
       );
    }
