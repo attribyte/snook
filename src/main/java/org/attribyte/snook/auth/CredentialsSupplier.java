@@ -23,6 +23,20 @@ import javax.servlet.http.HttpServletResponse;
 public interface CredentialsSupplier {
 
    /**
+    * A credentials supplier that does nothing.
+    */
+   public static CredentialsSupplier NOOP = new CredentialsSupplier() {
+      @Override
+      public boolean addCredentials(final String username, final int tokenLifetimeSeconds, final HttpServletResponse resp) {
+         return true;
+      }
+
+      @Override
+      public void removeCredentials(final HttpServletResponse resp) {
+      }
+   };
+
+   /**
     * Adds credentials to a response.
     * @param username The username.
     * @param tokenLifetimeSeconds The response token lifetime in seconds, if any.
