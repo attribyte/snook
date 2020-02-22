@@ -107,7 +107,7 @@ public class TestAuthenticators {
       final HashFunction hmacFunction = Hashing.hmacSha256(hmacKey);
       final String keyId = HMACToken.randomKeyId();
       final HashCode passwordHash = Authenticator.hashCredentials(password);
-      return HMACCookieAuthenticator.booleanAuthenticator(new Cookies.CookieKey(cookieName),
+      return HMACCookieLoginAuthenticator.booleanAuthenticator(new Cookies.CookieKey(cookieName),
               key -> Strings.nullToEmpty(key).equals(keyId) ? hmacFunction : null,
               (u, p) -> username.equals(Strings.nullToEmpty(u)) && passwordHash.equals(Authenticator.hashCredentials(Strings.nullToEmpty(p))),
               input -> keyId,

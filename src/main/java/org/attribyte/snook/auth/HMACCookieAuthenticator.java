@@ -22,9 +22,6 @@ import com.google.common.hash.HashFunction;
 import org.attribyte.snook.Cookies;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.util.EnumSet;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static org.attribyte.snook.Cookies.cookieValue;
@@ -32,29 +29,14 @@ import static org.attribyte.snook.Cookies.cookieValue;
 /**
  * An authenticator that validates an {@code HMACToken} sent as a cookie value.
  */
-public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T> {
-
-
-   /**
-    * @see #HMACCookieAuthenticator(Cookies.CookieKey, Function, BiFunction, Function)
-    */
-   public static HMACCookieAuthenticator<Boolean> booleanAuthenticator(final Cookies.CookieKey cookieKey,
-                                                                       final Function<String, HashFunction> hmacFunctions,
-                                                                       final BiFunction<String, String, Boolean> checkPasswordFunction,
-                                                                       final Function<String, String> hmacKeyFunction) {
-      return booleanAuthenticator(cookieKey, hmacFunctions, checkPasswordFunction, hmacKeyFunction,
-              HMACCookieSupplier.DEFAULT_COOKIE_OPTIONS);
-   }
+public abstract class HMACCookieAuthenticator<T> implements Authenticator<T> {
 
    /**
-    * @see #HMACCookieAuthenticator(Cookies.CookieKey, Function, BiFunction, Function, EnumSet)
+    * @see #HMACCookieAuthenticator(Cookies.CookieKey, Function)
     */
    public static HMACCookieAuthenticator<Boolean> booleanAuthenticator(final Cookies.CookieKey cookieKey,
-                                                                       final Function<String, HashFunction> hmacFunctions,
-                                                                       final BiFunction<String, String, Boolean> checkPasswordFunction,
-                                                                       final Function<String, String> hmacKeyFunction,
-                                                                       final EnumSet<Cookies.Option> cookieOptions) {
-      return new HMACCookieAuthenticator<Boolean>(cookieKey, hmacFunctions, checkPasswordFunction, hmacKeyFunction, cookieOptions) {
+                                                                       final Function<String, HashFunction> hmacFunctions) {
+      return new HMACCookieAuthenticator<Boolean>(cookieKey, hmacFunctions) {
          @Override
          public Boolean validCredentials(final String username) {
             return Boolean.TRUE;
@@ -69,33 +51,13 @@ public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T
 
    /**
     * Creates an authenticator.
-    * @param hmacFunctions A map of HMAC function vs key id.
-    * @param checkPasswordFunction A function to check username/password.
-    * @param hmacKeyFunction A function that returns the key id for a username.
+    * @param cookieKey The cookie key.
+    * @param hmacFunctions The HMAC functions.
     */
    public HMACCookieAuthenticator(final Cookies.CookieKey cookieKey,
-                                  final Function<String, HashFunction> hmacFunctions,
-                                  final BiFunction<String, String, Boolean> checkPasswordFunction,
-                                  final Function<String, String> hmacKeyFunction) {
-      this(cookieKey, hmacFunctions, checkPasswordFunction, hmacKeyFunction, HMACCookieSupplier.DEFAULT_COOKIE_OPTIONS);
-   }
-
-   /**
-    * Creates an authenticator.
-    * @param hmacFunctions A map of HMAC function vs key id.
-    * @param checkPasswordFunction A function to check username/password.
-    * @param hmacKeyFunction A function that returns the key id for a username.
-    * @param cookieOptions The cookie options.
-    */
-   public HMACCookieAuthenticator(final Cookies.CookieKey cookieKey,
-                                  final Function<String, HashFunction> hmacFunctions,
-                                  final BiFunction<String, String, Boolean> checkPasswordFunction,
-                                  final Function<String, String> hmacKeyFunction,
-                                  final EnumSet<Cookies.Option> cookieOptions) {
+                                  final Function<String, HashFunction> hmacFunctions) {
       this.cookieKey = cookieKey;
       this.hmacFunctions = hmacFunctions;
-      this.checkPasswordFunction = checkPasswordFunction;
-      this.cookieSupplier = new HMACCookieSupplier(cookieKey, hmacFunctions, hmacKeyFunction, cookieOptions);
    }
 
    @Override
@@ -120,24 +82,6 @@ public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T
       return authorizedUsername != null ? validCredentials(authorizedUsername) : invalidCredentials(authorizedUsername);
    }
 
-   @Override
-   public T doLogin(final String username, final String password,
-                    final int tokenLifetimeSeconds,
-                    final HttpServletResponse resp) {
-
-      if(!checkPasswordFunction.apply(username, password)) {
-         return invalidCredentials(username);
-      }
-
-      return cookieSupplier.addCredentials(username, tokenLifetimeSeconds, resp) ?
-              validCredentials(username) : invalidCredentials(username);
-   }
-
-   @Override
-   public void doLogout(final HttpServletResponse resp) {
-      cookieSupplier.removeCredentials(resp);
-   }
-
    /**
     * Supplies credentials for a valid login.
     * @param username The username.
@@ -160,15 +104,5 @@ public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T
    /**
     * A map of (keyed) HMAC function vs key id.
     */
-   private final Function<String, HashFunction> hmacFunctions;
-
-   /**
-    * The function used to check a username/password.
-    */
-   private final BiFunction<String, String, Boolean> checkPasswordFunction;
-
-   /**
-    * The cookie supplier.
-    */
-   private final HMACCookieSupplier cookieSupplier;
+   protected final Function<String, HashFunction> hmacFunctions;
 }
