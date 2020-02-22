@@ -18,14 +18,12 @@
 
 package org.attribyte.snook.auth;
 
-import com.google.common.base.Strings;
 import com.google.common.hash.HashFunction;
 import org.attribyte.snook.Cookies;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.EnumSet;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -44,7 +42,8 @@ public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T
                                                                        final Function<String, HashFunction> hmacFunctions,
                                                                        final BiFunction<String, String, Boolean> checkPasswordFunction,
                                                                        final Function<String, String> hmacKeyFunction) {
-      return booleanAuthenticator(cookieKey, hmacFunctions, checkPasswordFunction, hmacKeyFunction, DEFAULT_COOKIE_OPTIONS);
+      return booleanAuthenticator(cookieKey, hmacFunctions, checkPasswordFunction, hmacKeyFunction,
+              HMACCookieSupplier.DEFAULT_COOKIE_OPTIONS);
    }
 
    /**
@@ -78,7 +77,7 @@ public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T
                                   final Function<String, HashFunction> hmacFunctions,
                                   final BiFunction<String, String, Boolean> checkPasswordFunction,
                                   final Function<String, String> hmacKeyFunction) {
-      this(cookieKey, hmacFunctions, checkPasswordFunction, hmacKeyFunction, DEFAULT_COOKIE_OPTIONS);
+      this(cookieKey, hmacFunctions, checkPasswordFunction, hmacKeyFunction, HMACCookieSupplier.DEFAULT_COOKIE_OPTIONS);
    }
 
    /**
@@ -96,8 +95,7 @@ public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T
       this.cookieKey = cookieKey;
       this.hmacFunctions = hmacFunctions;
       this.checkPasswordFunction = checkPasswordFunction;
-      this.hmacKeyFunction = hmacKeyFunction;
-      this.cookieOptions = cookieOptions == null ? DEFAULT_COOKIE_OPTIONS : cookieOptions;
+      this.cookieSupplier = new HMACCookieSupplier(cookieKey, hmacFunctions, hmacKeyFunction, cookieOptions);
    }
 
    @Override
@@ -131,24 +129,13 @@ public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T
          return invalidCredentials(username);
       }
 
-      String keyId = hmacKeyFunction.apply(username);
-      if(Strings.isNullOrEmpty(keyId)) {
-         return invalidCredentials(username);
-      }
-
-      HashFunction hmacFunction = hmacFunctions.apply(keyId);
-      if(hmacFunction == null) {
-         return invalidCredentials(username);
-      }
-
-      HMACToken token = new HMACToken(username, tokenLifetimeSeconds, TimeUnit.SECONDS);
-      Cookies.setCookie(cookieKey, token.toCookieValue(keyId, hmacFunction), tokenLifetimeSeconds, cookieOptions, resp);
-      return validCredentials(username);
+      return cookieSupplier.addCredentials(username, tokenLifetimeSeconds, resp) ?
+              validCredentials(username) : invalidCredentials(username);
    }
 
    @Override
    public void doLogout(final HttpServletResponse resp) {
-      Cookies.removeCookie(cookieKey, resp);
+      cookieSupplier.removeCredentials(resp);
    }
 
    /**
@@ -181,17 +168,7 @@ public abstract class HMACCookieAuthenticator<T> implements LoginAuthenticator<T
    private final BiFunction<String, String, Boolean> checkPasswordFunction;
 
    /**
-    * A function that returns the HMAC key for a username.
+    * The cookie supplier.
     */
-   private final Function<String, String> hmacKeyFunction;
-
-   /**
-    * The cookie options to be set with the authentication token cookie.
-    */
-   private final EnumSet<Cookies.Option> cookieOptions;
-
-   /**
-    * The default cookie options to be set with the authentication token cookie.
-    */
-   public static final EnumSet<Cookies.Option> DEFAULT_COOKIE_OPTIONS = EnumSet.of(Cookies.Option.HTTP_ONLY, Cookies.Option.SECURE_ONLY);
+   private final HMACCookieSupplier cookieSupplier;
 }

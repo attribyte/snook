@@ -56,8 +56,8 @@ public abstract class GroupLoginAuthenticator extends PermissionAuthenticator im
 
    @Override
    public List<GroupProfile> doLogin(final String username, final String password,
-                          final int tokenLifetimeSeconds,
-                          final HttpServletResponse resp) throws IOException {
+                                     final int tokenLifetimeSeconds,
+                                     final HttpServletResponse resp) throws IOException {
       return loginAuthenticator.doLogin(username, password, tokenLifetimeSeconds, resp) != null ? groupsForUser(username) : ImmutableList.of();
    }
 
