@@ -101,8 +101,8 @@ public class TestAuthenticators {
     * @param password The password.
     * @return The authenticator.
     */
-   public static HMACCookieAuthenticator<Boolean> testHMACCookieAuthenticator(final String cookieName,
-                                                                              final String username, final String password) {
+   public static HMACCookieLoginAuthenticator<Boolean> testHMACCookieAuthenticator(final String cookieName,
+                                                                                   final String username, final String password) {
       final byte[] hmacKey = HMACToken.randomKey(new SecureRandom());
       final HashFunction hmacFunction = Hashing.hmacSha256(hmacKey);
       final String keyId = HMACToken.randomKeyId();
