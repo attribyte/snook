@@ -260,17 +260,4 @@ public class Util {
       }
    }
 
-   /**
-    * Generates a QR code (as a PNG).
-    * @param url The embedded URL.
-    * @param os The output stream.
-    * @throws IOException on write error.
-    */
-   public static void generateQRCode(final String url, OutputStream os) throws IOException {
-      QrCode qr0 = QrCode.encodeText(url, QrCode.Ecc.HIGH);
-      BufferedImage img = qr0.toImage(4, 10);
-      OutputStream fos = new BufferedOutputStream(os);
-      ImageIO.write(img, "png", fos);
-      img.flush();
-   }
 }

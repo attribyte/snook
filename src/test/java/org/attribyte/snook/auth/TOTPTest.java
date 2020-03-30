@@ -24,7 +24,7 @@ import javax.crypto.SecretKey;
 import java.io.FileOutputStream;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.attribyte.snook.Util.generateQRCode;
+import static org.attribyte.snook.QRCode.generateQRCode;
 
 public class TOTPTest {
 

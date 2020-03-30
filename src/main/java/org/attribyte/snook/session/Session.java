@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * A thread-safe session.
  */
+@SuppressWarnings("unchecked")
 public class Session {
 
    /**
