@@ -19,7 +19,6 @@
 package org.attribyte.snook.auth;
 
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator;
-import com.google.common.base.Strings;
 import com.google.common.escape.Escaper;
 import com.google.common.io.BaseEncoding;
 import com.google.common.net.UrlEscapers;
@@ -29,7 +28,6 @@ import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -166,26 +164,13 @@ public class TOTP {
    }
 
    /**
-    * Creates a URI.
+    * Creates a URI with an image.
     * @param key The key.
     * @param issuer The issuer name.
     * @param accountName The account name.
     * @return The URI.
     */
    public String uri(final SecretKey key, final String issuer, final String accountName) {
-      return uri(key, issuer, accountName, null);
-   }
-
-   /**
-    * Creates a URI with an image.
-    * @param key The key.
-    * @param issuer The issuer name.
-    * @param accountName The account name.
-    * @param imageURL The image URL (may be null).
-    * @return The URI.
-    */
-   public String uri(final SecretKey key, final String issuer, final String accountName,
-                     final String imageURL) {
 
       if(issuer.contains(":")) {
          throw new IllegalArgumentException("The 'issuer' may not contain ':'");
@@ -196,21 +181,12 @@ public class TOTP {
          throw new IllegalArgumentException("The 'accountName' may not contain ':'");
       }
 
-      return Strings.isNullOrEmpty(imageURL) ?
-              String.format(URI_TEMPLATE,
-                      uriPathEscaper.escape(issuer),
-                      uriPathEscaper.escape(accountName),
-                      keyEncoding.encode(key.getEncoded()),
-                      uriParameterEscaper.escape(issuer),
-                      timeStepSeconds) :
-              String.format(URI_TEMPLATE_WITH_IMAGE,
-                      uriPathEscaper.escape(issuer),
-                      uriPathEscaper.escape(accountName),
-                      keyEncoding.encode(key.getEncoded()),
-                      uriParameterEscaper.escape(issuer),
-                      timeStepSeconds,
-                      uriParameterEscaper.escape(imageURL)
-              );
+      return String.format(URI_TEMPLATE,
+              uriPathEscaper.escape(issuer),
+              uriPathEscaper.escape(accountName),
+              keyEncoding.encode(key.getEncoded()),
+              uriParameterEscaper.escape(issuer),
+              timeStepSeconds);
    }
 
    /**
@@ -232,11 +208,6 @@ public class TOTP {
     * The URI template.
     */
    private static final String URI_TEMPLATE = "otpauth://totp/%s:%s?secret=%s&issuer=%s&period=%d";
-
-   /**
-    * The URI template with an image URL.
-    */
-   private static final String URI_TEMPLATE_WITH_IMAGE = URI_TEMPLATE + "&image=%s";
 
    /**
     * Creates a secret key from key bytes.

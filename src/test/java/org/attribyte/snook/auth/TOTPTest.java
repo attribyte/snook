@@ -37,8 +37,7 @@ public class TOTPTest {
    public void generateURL() throws Exception {
       TOTP totp = TOTP.createSixDigit();
       SecretKey key = totp.generateKey(32);
-      String url = totp.uri(key, "Attribyte", "matt@attribyte.com",
-              "https://attribyte.com/img/sq_logo.png");
+      String url = totp.uri(key, "Attribyte", "matt@attribyte.com");
       System.out.println("URL: " + url);
 
       try(FileOutputStream fos = new FileOutputStream("/home/matt/qr.png")) {
