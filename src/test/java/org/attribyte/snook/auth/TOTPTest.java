@@ -18,25 +18,22 @@
 
 package org.attribyte.snook.auth;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.io.BaseEncoding;
 import org.junit.Test;
 
 import javax.crypto.SecretKey;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.List;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.attribyte.snook.Util.generateQRCode;
-import static org.junit.Assert.*;
 
 public class TOTPTest {
 
    @Test
    public void generateURL() throws Exception {
       TOTP totp = TOTP.createSixDigit();
-      SecretKey key = totp.generateKey(32);
+      SecretKey key = totp.generateKey();
+      System.out.println("Default Key Bytes: " + key.getEncoded().length);
+      System.out.println("Default Encoded Chars: " + totp.encodeKey(key).length());
       String url = totp.uri(key, "Attribyte", "matt@attribyte.com");
       System.out.println("URL: " + url);
 
@@ -46,7 +43,9 @@ public class TOTPTest {
       }
 
       for(int i = 0; i < 20; i++) {
-         System.out.println(totp.generateCurrentPassword(key));
+         System.out.println("Previous: " + totp.previousToken(key));
+         System.out.println("Current: " + totp.currentToken(key));
+         System.out.println("Next: " + totp.nextToken(key));
          Thread.sleep(15000L);
       }
    }

@@ -34,9 +34,14 @@ import java.time.Instant;
 public class TOTP {
 
    /**
-    * The default number of characters in the key encoded for a URL.
+    * The default number of characters in the key encoded for a URL ({@value}).
     */
    public static final int DEFAULT_CHARACTER_COUNT = 32;
+
+   /**
+    * The default number of bytes when a key is encoded with the default character count ({@value}).
+    */
+   public static final int DEFAULT_BYTE_COUNT = 20;
 
    /**
     * The default time stamp in seconds ({@value}).
@@ -66,15 +71,6 @@ public class TOTP {
    }
 
    /**
-    * Creates a seven digit instance with a specified time step.
-    * @param timeStepSeconds The time step in seconds.
-    * @return The instance.
-    */
-   public static TOTP createSevenDigit(int timeStepSeconds) {
-      return new TOTP(timeStepSeconds, 7);
-   }
-
-   /**
     * Creates a eight digit instance with a specified time step.
     * @param timeStepSeconds The time step in seconds.
     * @return The instance.
@@ -88,15 +84,7 @@ public class TOTP {
     * @return The instance.
     */
    public static TOTP createSixDigit() {
-      return new TOTP(DEFAULT_TIME_STEP_SECONDS, 6);
-   }
-
-   /**
-    * Creates a seven digit instance with the default time step.
-    * @return The instance.
-    */
-   public static TOTP createSevenDigit() {
-      return new TOTP(DEFAULT_TIME_STEP_SECONDS, 7);
+      return createSixDigit(DEFAULT_TIME_STEP_SECONDS);
    }
 
    /**
@@ -104,9 +92,14 @@ public class TOTP {
     * @return The instance.
     */
    public static TOTP createEightDigit() {
-      return new TOTP(DEFAULT_TIME_STEP_SECONDS, 8);
+      return createEightDigit(DEFAULT_TIME_STEP_SECONDS);
    }
 
+   /**
+    * Create an instance.
+    * @param timeStepSeconds The time step in seconds.
+    * @param passwordLength The (encoded) password length.
+    */
    private TOTP(final int timeStepSeconds, final int passwordLength) {
       if(timeStepSeconds < 1) {
          throw new IllegalArgumentException("Time step must be positive");
@@ -120,16 +113,10 @@ public class TOTP {
          throw new AssertionError("SHA1 algorithm is unavailable");
       }
 
-      switch(passwordLength) {
-         case 7:
-            this.PASSWORD_TEMPLATE = "%07d";
-            break;
-         case 8:
-            this.PASSWORD_TEMPLATE = "%08d";
-            break;
-         default:
-            this.PASSWORD_TEMPLATE = "%06d";
-            break;
+      if(passwordLength == 8) {
+         this.TOKEN_TEMPLATE = "%08d";
+      } else {
+         this.TOKEN_TEMPLATE = "%06d";
       }
    }
 
@@ -141,7 +128,6 @@ public class TOTP {
       return secretKey(keyBytes(DEFAULT_CHARACTER_COUNT));
    }
 
-
    /**
     * Generates a secret key with a specified number of characters when encoded for a URI.
     * @param numChars The desired number of characters.
@@ -149,13 +135,28 @@ public class TOTP {
     */
    public SecretKey generateKey(int numChars) {
       if(numChars < DEFAULT_CHARACTER_COUNT) {
-         throw new IllegalArgumentException("Number of characters too small");
+         throw new IllegalArgumentException("Too few characters");
       }
       return secretKey(keyBytes(numChars));
    }
 
    /**
-    * Encodes a secret key for a URL.
+    * Generates a secret key with a specified number of bytes.
+    * @param numBytes The desired number of bytes.
+    * @return The key.
+    */
+   public SecretKey generateKeyBytes(int numBytes) {
+      if(numBytes < DEFAULT_BYTE_COUNT) {
+         throw new IllegalArgumentException("Too few bytes");
+      }
+
+      byte[] b = new byte[numBytes];
+      rnd.nextBytes(b);
+      return secretKey(b);
+   }
+
+   /**
+    * Encodes a secret key in the format required for a URL.
     * @param key The key.
     * @return The encoded key.
     */
@@ -164,7 +165,7 @@ public class TOTP {
    }
 
    /**
-    * Creates a URI with an image.
+    * Creates a URI in the format required for a QR code.
     * @param key The key.
     * @param issuer The issuer name.
     * @param accountName The account name.
@@ -190,19 +191,39 @@ public class TOTP {
    }
 
    /**
-    * Generates the current password.
+    * The current token.
     * @param key The secret key.
-    * @return The current password as a string.
+    * @return The current token string.
     * @throws InvalidKeyException if key is invalid.
     */
-   public String generateCurrentPassword(SecretKey key) throws InvalidKeyException  {
-      return String.format(PASSWORD_TEMPLATE, totp.generateOneTimePassword(key, Instant.now()));
+   public String currentToken(SecretKey key) throws InvalidKeyException  {
+      return String.format(TOKEN_TEMPLATE, totp.generateOneTimePassword(key, Instant.now()));
+   }
+
+   /**
+    * The previous token.
+    * @param key The secret key.
+    * @return The previous token string.
+    * @throws InvalidKeyException if key is invalid.
+    */
+   public String previousToken(SecretKey key) throws InvalidKeyException  {
+      return String.format(TOKEN_TEMPLATE, totp.generateOneTimePassword(key, Instant.now().minusSeconds(timeStepSeconds)));
+   }
+
+   /**
+    * The next token.
+    * @param key The secret key.
+    * @return The next token string.
+    * @throws InvalidKeyException if key is invalid.
+    */
+   public String nextToken(SecretKey key) throws InvalidKeyException  {
+      return String.format(TOKEN_TEMPLATE, totp.generateOneTimePassword(key, Instant.now().plusSeconds(timeStepSeconds)));
    }
 
    /**
     * The password format template.
     */
-   private final String PASSWORD_TEMPLATE;
+   private final String TOKEN_TEMPLATE;
 
    /**
     * The URI template.
@@ -258,5 +279,4 @@ public class TOTP {
     * The secure random generator.
     */
    private final SecureRandom rnd = new SecureRandom();
-
 }
