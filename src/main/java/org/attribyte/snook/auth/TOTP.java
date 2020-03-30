@@ -235,7 +235,7 @@ public class TOTP {
     * @param keyBytes The key bytes.
     * @return The secret key.
     */
-   private SecretKeySpec secretKey(final byte[] keyBytes) {
+   public SecretKeySpec secretKey(final byte[] keyBytes) {
       return new SecretKeySpec(keyBytes, totp.getAlgorithm());
    }
 
