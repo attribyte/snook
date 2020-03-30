@@ -23,10 +23,12 @@ import com.google.common.io.BaseEncoding;
 import org.junit.Test;
 
 import javax.crypto.SecretKey;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 
 import static junit.framework.TestCase.assertTrue;
+import static org.attribyte.snook.Util.generateQRCode;
 import static org.junit.Assert.*;
 
 public class TOTPTest {
@@ -35,9 +37,16 @@ public class TOTPTest {
    public void generateURL() throws Exception {
       TOTP totp = TOTP.createSixDigit();
       SecretKey key = totp.generateKey(32);
-      System.out.println("URL IS " + totp.uri(key, "Attribyte", "matt@attribyte.com",
-              "https://attribyte.com/img/sq_logo.png"));
-      for(int i = 0; i < 10; i++) {
+      String url = totp.uri(key, "Attribyte", "matt@attribyte.com",
+              "https://attribyte.com/img/sq_logo.png");
+      System.out.println("URL: " + url);
+
+      try(FileOutputStream fos = new FileOutputStream("/home/matt/qr.png")) {
+         generateQRCode(url, fos);
+         fos.flush();
+      }
+
+      for(int i = 0; i < 20; i++) {
          System.out.println(totp.generateCurrentPassword(key));
          Thread.sleep(15000L);
       }

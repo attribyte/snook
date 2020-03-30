@@ -22,9 +22,14 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.net.InternetDomainName;
+import io.nayuki.qrcodegen.QrCode;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
@@ -253,5 +258,19 @@ public class Util {
       } catch(IllegalArgumentException ie) {
          return null;
       }
+   }
+
+   /**
+    * Generates a QR code (as a PNG).
+    * @param url The embedded URL.
+    * @param os The output stream.
+    * @throws IOException on write error.
+    */
+   public static void generateQRCode(final String url, OutputStream os) throws IOException {
+      QrCode qr0 = QrCode.encodeText(url, QrCode.Ecc.HIGH);
+      BufferedImage img = qr0.toImage(4, 10);
+      OutputStream fos = new BufferedOutputStream(os);
+      ImageIO.write(img, "png", fos);
+      img.flush();
    }
 }
