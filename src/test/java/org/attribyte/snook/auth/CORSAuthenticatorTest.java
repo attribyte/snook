@@ -62,6 +62,35 @@ public class CORSAuthenticatorTest {
    }
 
    @Test
+   public void testAllowAllIP() {
+
+      Properties props = new Properties();
+      props.put(CORSAuthenticator.ALLOW_ORIGIN_HOST_PROP, "*");
+      CORSAuthenticator authenticator = new CORSAuthenticator(props);
+
+      HttpServletRequest request = new TestHttpServletRequest() {
+         public String getHeader(final String s) {
+            switch(s.toLowerCase()) {
+               case "origin":
+                  return "http://192.168.10.123:8080";
+               default:
+                  return null;
+            }
+         }
+      };
+
+      HttpServletResponse response = new TestHttpServletResponse();
+
+      String allowedUsername = authenticator.authorizeRequest(request, response, EnumSet.of(CORSAuthenticator.Option.ALLOW_ANY_ORGIN));
+
+      assertNotNull(allowedUsername);
+      assertEquals("192.168.10.123", allowedUsername);
+      assertTrue(response.containsHeader("Access-Control-Allow-Origin"));
+      assertEquals("*", response.getHeader("Access-Control-Allow-Origin"));
+      assertFalse(response.containsHeader("Access-Control-Allow-Credentials"));
+   }
+
+   @Test
    public void testAllowSpecific() {
 
       Properties props = new Properties();
@@ -72,7 +101,7 @@ public class CORSAuthenticatorTest {
          public String getHeader(final String s) {
             switch(s.toLowerCase()) {
                case "origin":
-                  return "https://attribyte.com";
+                  return "https://attribyte.com:8083";
                default:
                   return null;
             }
@@ -85,9 +114,39 @@ public class CORSAuthenticatorTest {
       assertNotNull(allowedUsername);
 
       assertTrue(response.containsHeader("Access-Control-Allow-Origin"));
-      assertEquals("https://attribyte.com", response.getHeader("Access-Control-Allow-Origin"));
+      assertEquals("https://attribyte.com:8083", response.getHeader("Access-Control-Allow-Origin"));
       assertFalse(response.containsHeader("Access-Control-Allow-Credentials"));
    }
+
+   @Test
+   public void testAllowIP() {
+
+      Properties props = new Properties();
+      props.put(CORSAuthenticator.ALLOW_ORIGIN_HOST_PROP, "127.0.0.1,localhost,192.168.0.14");
+      CORSAuthenticator authenticator = new CORSAuthenticator(props);
+      System.out.println(authenticator.toString());
+
+      HttpServletRequest request = new TestHttpServletRequest() {
+         public String getHeader(final String s) {
+            switch(s.toLowerCase()) {
+               case "origin":
+                  return "http://192.168.0.14:8080";
+               default:
+                  return null;
+            }
+         }
+      };
+
+      HttpServletResponse response = new TestHttpServletResponse();
+
+      String allowedUsername = authenticator.authorizeRequest(request, response, EnumSet.noneOf(CORSAuthenticator.Option.class));
+      assertNotNull(allowedUsername);
+
+      assertTrue(response.containsHeader("Access-Control-Allow-Origin"));
+      assertEquals("http://192.168.0.14:8080", response.getHeader("Access-Control-Allow-Origin"));
+      assertFalse(response.containsHeader("Access-Control-Allow-Credentials"));
+   }
+
 
    @Test
    public void testAllowDomain() {

@@ -21,15 +21,10 @@ package org.attribyte.snook;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.net.InetAddresses;
 import com.google.common.net.InternetDomainName;
-import io.nayuki.qrcodegen.QrCode;
-
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
@@ -236,6 +231,7 @@ public class Util {
     * Gets the (top, private) domain for the link.
     * <p>
     *    For example: {@code test.attribyte.com -> attribyte.com, test.blogspot.com -> test.blogspot.com}.
+    *    If the host is an internet address, the address is returned as the domain.
     * </p>
     * @param link The link.
     * @return The domain or {@code null} if invalid.
@@ -244,6 +240,10 @@ public class Util {
       final String host = host(link);
       if(host == null) {
          return null;
+      }
+
+      if(InetAddresses.isInetAddress(host)) {
+         return host;
       }
 
       try {
