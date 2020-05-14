@@ -37,6 +37,7 @@ public class TOTPTest {
       String url = totp.uri(key, "Attribyte", "matt@attribyte.com");
       System.out.println("URL: " + url);
 
+      /*
       try(FileOutputStream fos = new FileOutputStream("/home/matt/qr.png")) {
          generateQRCode(url, fos);
          fos.flush();
@@ -48,5 +49,6 @@ public class TOTPTest {
          System.out.println("Next: " + totp.nextToken(key));
          Thread.sleep(15000L);
       }
+       */
    }
 }
