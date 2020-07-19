@@ -25,8 +25,8 @@ import com.google.common.net.InetAddresses;
 import com.google.common.net.InternetDomainName;
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -193,8 +193,8 @@ public class Util {
       }
 
       try {
-         return new URL(link).getHost();
-      } catch(MalformedURLException mue) {
+         return new URI(link).getHost();
+      } catch(URISyntaxException mue) {
          return null;
       }
    }
@@ -221,8 +221,8 @@ public class Util {
       }
 
       try {
-         return !relative ? new URL(link).getPath() : new URL(link).getPath().substring(1);
-      } catch(MalformedURLException mue) {
+         return !relative ? new URI(link).getPath() : new URI(link).getPath().substring(1);
+      } catch(URISyntaxException ue) {
          return "";
       }
    }

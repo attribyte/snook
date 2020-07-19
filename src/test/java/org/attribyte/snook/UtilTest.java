@@ -20,7 +20,7 @@ package org.attribyte.snook;
 
 import org.junit.Test;
 
-import static org.attribyte.snook.Util.path;
+import static org.attribyte.snook.Util.*;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -67,5 +67,35 @@ public class UtilTest {
    public void noProtocolRelative() {
       String url = "a/b/c?x=y";
       assertEquals("a/b/c", path(url));
+   }
+
+   @Test
+   public void validHost() {
+      String url = "https://attribyte.com/1/2/3";
+      assertEquals("attribyte.com", host(url));
+   }
+
+   @Test
+   public void validDomain() {
+      String url = "https://something.attribyte.com/1/2/3";
+      assertEquals("attribyte.com", domain(url));
+   }
+
+   @Test
+   public void validDomainBlogspot() {
+      String url = "https://x.blogspot.com/1/2/3";
+      assertEquals("x.blogspot.com", domain(url));
+   }
+
+   @Test
+   public void validHostNoProtocol() {
+      String url = "attribyte.com/1/2/3";
+      assertEquals("attribyte.com", host(url));
+   }
+
+   @Test
+   public void validDomainNoProtocol() {
+      String url = "something.attribyte.com/1/2/3";
+      assertEquals("attribyte.com", domain(url));
    }
 }

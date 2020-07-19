@@ -1,8 +1,9 @@
-server.truststore.File=keystore/cacerts
-server.truststorePassword=changeit
-server.keystore.File=keystore/test.p12
-server.keystorePassword=test1234
-server.connectionSecurity=both
+#server.truststore.File=keystore/cacerts
+#server.truststorePassword=changeit
+#server.keystore.File=keystore/test.p12
+#server.keystorePassword=test1234
+server.connectionSecurity=none
+server.debug=true
 
 # Values that start wtih '$' are resolved from the environment, if possible.
 assets.default.resource.Dir=$HTDOCS
