@@ -80,6 +80,14 @@ public class OriginTest {
       assertNotEquals(origin0, Origin.EMPTY);
    }
 
+   @Test
+   public void testHostAndPort() {
+      String headerValue = "https://attribyte.com:8443";
+      Origin origin0 = new Origin(headerValue);
+      Origin origin1 = new Origin("attribyte.com", 8443, true);
+      assertEquals(origin0, origin1);
+   }
+
    @Test(expected = IllegalArgumentException.class)
    public void testInvalid() throws Exception {
       String headerValue = "attribyte.com:8080";

@@ -58,6 +58,16 @@ public class Origin {
       );
    }
 
+   /**
+    * Create an origin from a known host and port.
+    * @param host The host.
+    * @param port The port.
+    * @param isSecure Is the origin secure?
+    */
+   public Origin(final String host, final int port, final boolean isSecure) {
+      this(HostAndPort.fromParts(host, port), isSecure);
+   }
+
    private static URI preconditions(final URI uri) throws IllegalArgumentException {
       Preconditions.checkNotNull(uri);
       switch(Strings.nullToEmpty(uri.getScheme()).toLowerCase()) {
