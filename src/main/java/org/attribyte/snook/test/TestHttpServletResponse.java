@@ -16,7 +16,7 @@
  * and limitations under the License.
  */
 
-package org.attribyte.snook;
+package org.attribyte.snook.test;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;

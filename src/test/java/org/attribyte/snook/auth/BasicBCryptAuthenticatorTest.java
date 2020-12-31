@@ -23,7 +23,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 import com.google.common.hash.HashCode;
-import org.attribyte.snook.TestHttpServletRequest;
+import org.attribyte.snook.test.TestHttpServletRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Test;
 import org.mindrot.jbcrypt.BCrypt;

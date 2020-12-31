@@ -2,7 +2,7 @@ package org.attribyte.snook.auth;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
-import org.attribyte.snook.TestHttpServletRequest;
+import org.attribyte.snook.test.TestHttpServletRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Test;
 

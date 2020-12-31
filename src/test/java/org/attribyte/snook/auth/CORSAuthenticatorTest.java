@@ -18,8 +18,8 @@
 
 package org.attribyte.snook.auth;
 
-import org.attribyte.snook.TestHttpServletRequest;
-import org.attribyte.snook.TestHttpServletResponse;
+import org.attribyte.snook.test.TestHttpServletRequest;
+import org.attribyte.snook.test.TestHttpServletResponse;
 import org.junit.Test;
 
 import javax.servlet.http.HttpServletRequest;

@@ -18,6 +18,7 @@
 
 package org.attribyte.snook;
 
+import org.attribyte.snook.test.TestHttpServletRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Test;
 

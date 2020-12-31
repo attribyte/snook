@@ -22,8 +22,8 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashCode;
 import org.attribyte.snook.Cookies;
-import org.attribyte.snook.TestHttpServletRequest;
-import org.attribyte.snook.TestHttpServletResponse;
+import org.attribyte.snook.test.TestHttpServletRequest;
+import org.attribyte.snook.test.TestHttpServletResponse;
 import org.junit.Test;
 import org.mindrot.jbcrypt.BCrypt;
 

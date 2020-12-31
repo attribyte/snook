@@ -19,7 +19,7 @@
 package org.attribyte.snook.auth;
 
 import com.google.common.collect.ImmutableMap;
-import org.attribyte.snook.TestHttpServletRequest;
+import org.attribyte.snook.test.TestHttpServletRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Test;
 

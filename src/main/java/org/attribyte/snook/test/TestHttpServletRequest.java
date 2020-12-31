@@ -16,7 +16,7 @@
  * and limitations under the License.
  */
 
-package org.attribyte.snook;
+package org.attribyte.snook.test;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
