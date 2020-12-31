@@ -26,8 +26,10 @@ import com.google.common.collect.Maps;
 import com.google.common.net.HttpHeaders;
 
 import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
@@ -160,12 +162,26 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public ServletOutputStream getOutputStream() throws IOException {
-      return null;
+      return new ServletOutputStream() {
+         @Override
+         public boolean isReady() {
+            return true;
+         }
+
+         @Override
+         public void setWriteListener(final WriteListener writeListener) {
+         }
+
+         @Override
+         public void write(final int b) throws IOException {
+            outputStream.write(b);
+         }
+      };
    }
 
    @Override
    public PrintWriter getWriter() throws IOException {
-      return null;
+      return new PrintWriter(outputStream);
    }
 
    @Override
@@ -187,7 +203,6 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public void setBufferSize(final int i) {
-
    }
 
    @Override
@@ -197,12 +212,12 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public void flushBuffer() throws IOException {
-
+      outputStream.flush();
    }
 
    @Override
    public void resetBuffer() {
-
+      outputStream.reset();
    }
 
    @Override
@@ -212,12 +227,11 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public void reset() {
-
+      outputStream.reset();
    }
 
    @Override
    public void setLocale(final Locale locale) {
-
    }
 
    @Override
@@ -234,6 +248,14 @@ public class TestHttpServletResponse implements HttpServletResponse {
               .toString();
    }
 
+   /**
+    * The output stream.
+    */
+   public final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+   /**
+    * The HTTP status.
+    */
    public int status = 0;
 
    /**
