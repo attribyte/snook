@@ -77,7 +77,8 @@ public class BasicAuthenticatorTest {
          }
       };
 
-      Pair<String, String> upass = basicAuthenticator.usernamePassword(request);
+      Pair<String, String> upass = BasicAuthenticator.usernamePassword(request);
+      assertNotNull(upass);
       assertEquals("test_user", upass.getKey());
       assertEquals("test_password", upass.getValue());
    }
@@ -96,7 +97,8 @@ public class BasicAuthenticatorTest {
          }
       };
 
-      Pair<String, String> upass = basicAuthenticator.usernamePassword(request);
+      Pair<String, String> upass = BasicAuthenticator.usernamePassword(request);
+      assertNotNull(upass);
       assertEquals("test_user", upass.getKey());
       assertTrue(upass.getValue().isEmpty());
    }
