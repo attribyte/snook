@@ -23,6 +23,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.net.HttpHeaders;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -73,22 +74,22 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public void sendError(final int i, final String s) throws IOException {
-
+      this.status = i;
    }
 
    @Override
    public void sendError(final int i) throws IOException {
-
+      this.status = i;
    }
 
    @Override
    public void sendRedirect(final String s) throws IOException {
-
+      this.status = HttpServletResponse.SC_MOVED_PERMANENTLY;
    }
 
    @Override
    public void setDateHeader(final String s, final long l) {
-
+      headers.put(s, Long.toString(l));
    }
 
    @Override
@@ -118,7 +119,7 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public void setStatus(final int i) {
-
+      this.status = i;
    }
 
    @Override
@@ -169,7 +170,6 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public void setCharacterEncoding(final String s) {
-
    }
 
    @Override
@@ -182,6 +182,7 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public void setContentType(final String s) {
+      this.headers.put(HttpHeaders.CONTENT_TYPE, s);
    }
 
    @Override
@@ -244,5 +245,4 @@ public class TestHttpServletResponse implements HttpServletResponse {
     * A list of added cookies.
     */
    public List<Cookie> cookies = Lists.newArrayList();
-
 }
