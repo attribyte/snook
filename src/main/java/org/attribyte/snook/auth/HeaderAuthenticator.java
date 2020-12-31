@@ -18,11 +18,14 @@
 
 package org.attribyte.snook.auth;
 
-import com.google.common.base.Strings;
 import com.google.common.net.HttpHeaders;
 import org.attribyte.api.http.Header;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import javax.servlet.http.HttpServletRequest;
+
+import static com.google.common.base.Strings.isNullOrEmpty;
 
 /**
  * Authenticate based on the value of an HTTP header.
@@ -31,16 +34,77 @@ public abstract class HeaderAuthenticator<T> implements Authenticator<T> {
 
    /**
     * Creates a credentials header to be added to a request.
+    * @param scheme the scheme.
+    * @param credentialsHeader the credentials header name.
     * @param credentialsValue The credentials value.
     * @return The input response builder.
     */
-   public Header requestHeader(final String credentialsValue) {
-      String scheme = scheme();
-      if(Strings.isNullOrEmpty(scheme)) {
-         return new Header(credentialsHeader(), credentialsValue);
+   public static Header requestHeader(@Nullable final String scheme,
+                                      @NonNull final String credentialsHeader,
+                                      final String credentialsValue) {
+      if(isNullOrEmpty(scheme)) {
+         return new Header(credentialsHeader, credentialsValue);
       } else {
-         return new Header(credentialsHeader(), scheme + " " + credentialsValue);
+         return new Header(credentialsHeader, scheme + " " + credentialsValue);
       }
+   }
+
+   /**
+    * Creates a credentials header to be added to a request.
+    * @param credentialsValue The credentials header vaulue.
+    * @return The header.
+    */
+   public Header requestHeader(final String credentialsValue) {
+      return requestHeader(scheme(), credentialsHeader(), credentialsValue);
+   }
+
+   /**
+    * Gets the credentials from the default ({@code Authorization}) header.
+    * @param expectedScheme The expected scheme.
+    * @param request The request.
+    * @return The credentials, or {@code null} if none.
+    */
+   public static String credentials(final String expectedScheme,
+                                    final HttpServletRequest request) {
+      return credentials(expectedScheme, HttpHeaders.AUTHORIZATION, request);
+   }
+
+   /**
+    * Gets the credentials from the request.
+    * @param expectedScheme The expected scheme.
+    * @param credentialsHeader The credentials header name.
+    * @param request The request.
+    * @return The credentials, or {@code null} if none.
+    */
+   public static String credentials(final String expectedScheme,
+                                    final String credentialsHeader,
+                                    final HttpServletRequest request) {
+      final String header = request.getHeader(credentialsHeader);
+
+      if(isNullOrEmpty(header)) {
+         return null;
+      }
+
+      if(isNullOrEmpty(expectedScheme)) {
+         return header;
+      }
+
+      if(header.length() < expectedScheme.length() + 2) {
+         return null;
+      }
+
+      int schemeIndex = header.indexOf(' ');
+
+      if(schemeIndex != expectedScheme.length()) {
+         return null;
+      }
+
+      String checkScheme = header.substring(0, schemeIndex);
+      if(!checkScheme.equalsIgnoreCase(expectedScheme)) {
+         return null;
+      }
+
+      return header.substring(schemeIndex + 1);
    }
 
    /**
@@ -49,29 +113,7 @@ public abstract class HeaderAuthenticator<T> implements Authenticator<T> {
     * @return The credentials, or {@code null} if none.
     */
    public String credentials(final HttpServletRequest request) {
-      final String header = Strings.nullToEmpty(request.getHeader(credentialsHeader()));
-      final String expectedScheme = Strings.emptyToNull(scheme());
-
-      if(expectedScheme == null) {
-         return Strings.emptyToNull(header);
-      } else {
-         if(header.length() < expectedScheme.length() + 2) {
-            return null;
-         }
-
-         int schemeIndex = header.indexOf(' ');
-
-         if(schemeIndex != expectedScheme.length()) {
-            return null;
-         }
-
-         String checkScheme = header.substring(0, schemeIndex);
-         if(!checkScheme.equalsIgnoreCase(expectedScheme)) {
-            return null;
-         }
-
-         return header.substring(schemeIndex + 1);
-      }
+      return credentials(scheme(), credentialsHeader(), request);
    }
 
    /**

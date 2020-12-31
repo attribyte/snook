@@ -23,6 +23,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashCode;
+import com.google.common.net.HttpHeaders;
 import org.attribyte.api.http.Header;
 import org.attribyte.util.Pair;
 
@@ -84,7 +85,17 @@ public abstract class BasicAuthenticator<T> extends HeaderAuthenticator<T> {
    }
 
    /**
-    * Creates a request header.
+    * Creates the standard authorization header to send with a request.
+    * @param username The username.
+    * @param password The password.
+    * @return The header.
+    */
+   public static Header authorizationHeader(final String username, final String password) {
+      return requestHeader(SCHEME, HttpHeaders.AUTHORIZATION, buildCredentials(username, password));
+   }
+
+   /**
+    * Creates the appropriate request header to send with a request.
     * @param username The username.
     * @param password The password.
     * @return The request header.
@@ -115,20 +126,20 @@ public abstract class BasicAuthenticator<T> extends HeaderAuthenticator<T> {
    }
 
    /**
-    * Gets the username and password from previously extracted credentials.
-    * @param credentials The credentials.
+    * Gets the username and password from previously extracted header value.
+    * @param headerValue The header value.
     * @return The username and password or {@code null} if none.
     */
-   public static Pair<String, String> usernamePassword(final Credentials credentials) {
-      if(Strings.isNullOrEmpty(credentials.value)) {
+   public static Pair<String, String> usernamePassword(final String headerValue) {
+      if(Strings.isNullOrEmpty(headerValue)) {
          return null;
       }
-      
-      String upass = new String(base64Encoding.decode(credentials.value));
+
+      String upass = new String(base64Encoding.decode(headerValue));
       int userIndex = upass.indexOf(':');
       if(userIndex < 1) {
          return null;
-      } else if(userIndex < upass.length() -1 ){
+      } else if(userIndex < upass.length() - 1) {
          return new Pair<>(upass.substring(0, userIndex), upass.substring(userIndex + 1));
       } else {
          return new Pair<>(upass.substring(0, userIndex), "");
@@ -136,16 +147,25 @@ public abstract class BasicAuthenticator<T> extends HeaderAuthenticator<T> {
    }
 
    /**
+    * Gets the username and password from previously extracted credentials.
+    * @param credentials The credentials.
+    * @return The username and password or {@code null} if none.
+    */
+   public static Pair<String, String> usernamePassword(final Credentials credentials) {
+      return credentials != null ? usernamePassword(credentials.value) : null;
+   }
+
+   /**
     * Gets a pair containing the username and password sent with the request or {@code null} if none.
     * @param request The request.
     * @return The username/password pair.
     */
-   public Pair<String, String> usernamePassword(final HttpServletRequest request) {
-      String credentials = credentials(request);
+   public static Pair<String, String> usernamePassword(final HttpServletRequest request) {
+      String credentials = credentials(SCHEME, request);
       if(credentials == null) {
          return null;
       }
-      return usernamePassword(new Credentials("Basic", credentials));
+      return usernamePassword(credentials);
    }
 
    public String username(final HttpServletRequest request) {
@@ -169,9 +189,14 @@ public abstract class BasicAuthenticator<T> extends HeaderAuthenticator<T> {
       return base64Encoding.encode((Strings.nullToEmpty(username) + ":" + Strings.nullToEmpty(password)).getBytes(Charsets.UTF_8));
    }
 
+   /**
+    * The scheme name ({@value}).
+    */
+   public static final String SCHEME = "Basic";
+
    @Override
    protected String scheme() {
-      return "Basic";
+      return SCHEME;
    }
 
    @Override
