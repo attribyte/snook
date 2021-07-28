@@ -73,7 +73,8 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
        * @param logger A logger. May be {@code null};
        */
       public void write(HttpServletRequest request, PrintWriter writer, int code, String message,
-                        Throwable cause, boolean withStackTrace, Logger logger);
+                        Throwable cause, boolean withStackTrace, boolean withServletName,
+                        Logger logger);
 
 
       /**
@@ -95,7 +96,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          if(withStackTrace && cause == null) {
             cause = new Exception("");
          }
-         write(request, response.getWriter(), code, message, cause, withStackTrace, logger);
+         write(request, response.getWriter(), code, message, cause, withStackTrace, false, logger);
          response.flushBuffer();
       }
 
@@ -161,9 +162,28 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
                        final boolean withStackTrace,
                        final Logger logger,
                        final Collection<Map.Entry<String, Writer>> overrideWriters) {
+      this(cacheControlHeader, defaultWriter, withStackTrace, false, logger, overrideWriters);
+   }
+
+
+   /**
+    * Creates an error handler with a list of overrides.
+    * @param cacheControlHeader The cache control header value.
+    * @param defaultWriter The default writer.
+    * @param withStackTrace Should stack traces be sent to the client?
+    * @param logger A logger.
+    * @param overrideWriters A list of prefix, writers to override output type for paths. May be {@code null}.
+    */
+   public ErrorHandler(final String cacheControlHeader,
+                       final Writer defaultWriter,
+                       final boolean withStackTrace,
+                       final boolean withServletName,
+                       final Logger logger,
+                       final Collection<Map.Entry<String, Writer>> overrideWriters) {
       this.cacheControlHeader = cacheControlHeader;
       this.defaultWriter = defaultWriter;
       this.withStackTrace = withStackTrace;
+      this.withServletName = withServletName;
       this.logger = logger;
       this.overrideWriters = overrideWriters != null ? ImmutableList.copyOf(overrideWriters) : ImmutableList.of();
    }
@@ -172,7 +192,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * Creates an error handler with default values.
     */
    public ErrorHandler() {
-      this(DEFAULT_CACHE_CONTROL_HEADER, TEXT_WRITER, true, null, ImmutableList.of());
+      this(DEFAULT_CACHE_CONTROL_HEADER, TEXT_WRITER, true, false, null, ImmutableList.of());
    }
 
    /**
@@ -180,7 +200,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * @return The error handler.
     */
    public ErrorHandler enableStackTrace() {
-      return new ErrorHandler(cacheControlHeader, defaultWriter, true, logger, overrideWriters);
+      return new ErrorHandler(cacheControlHeader, defaultWriter, true, withServletName, logger, overrideWriters);
    }
 
    /**
@@ -188,7 +208,23 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * @return The new error handler.
     */
    public ErrorHandler disableStackTrace() {
-      return new ErrorHandler(cacheControlHeader, defaultWriter, false, logger, overrideWriters);
+      return new ErrorHandler(cacheControlHeader, defaultWriter, false, withServletName, logger, overrideWriters);
+   }
+
+   /**
+    * Creates an error handler with servlet name enabled.
+    * @return The error handler.
+    */
+   public ErrorHandler enableServletName() {
+      return new ErrorHandler(cacheControlHeader, defaultWriter, withStackTrace, true, logger, overrideWriters);
+   }
+
+   /**
+    * Creates an error handler with servlet name disabled.
+    * @return The new error handler.
+    */
+   public ErrorHandler disableServletName() {
+      return new ErrorHandler(cacheControlHeader, defaultWriter, withStackTrace, false, logger, overrideWriters);
    }
 
    /**
@@ -269,7 +305,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
                ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
                PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(out, useCharset(baseRequest, writer.contentType())));
                writer.write(request, printWriter, response.getStatus(), message,
-                       getCause(request), useStackTrace, logger);
+                       getCause(request), useStackTrace, withServletName, logger);
                printWriter.flush();
                break;
             } catch(BufferOverflowException e) {
@@ -480,6 +516,11 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    public final boolean withStackTrace;
 
    /**
+    * Should the servlet name be included?
+    */
+   public final boolean withServletName;
+
+   /**
     * An optional logger.
     */
    public final Logger logger;
@@ -502,7 +543,8 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    public static final Writer TEXT_WRITER = new Writer() {
       @Override
       public void write(final HttpServletRequest request, final PrintWriter writer, final int code, final String message,
-                        final Throwable cause, final boolean withStackTrace, final Logger logger) {
+                        final Throwable cause, final boolean withStackTrace,
+                        final boolean withServletName, final Logger logger) {
          if(logger != null && cause != null) {
             String idMessage = String.format("REF ID: %s", randomString(8));
             writer.println(idMessage);
@@ -511,7 +553,9 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          writer.printf("HTTP ERROR: %d %s%n", code, StringUtil.sanitizeXmlString(message));
          writer.printf("STATUS: %s%n", code);
          writer.printf("MESSAGE: %s%n", message);
-         writer.printf("SERVLET: %s%n", getServletName(request));
+         if(withServletName) {
+            writer.printf("SERVLET: %s%n", getServletName(request));
+         }
          if(cause != null && withStackTrace) {
             writer.println("CAUSE:");
             writer.println();
@@ -534,7 +578,8 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    public static final Writer HTML_WRITER = new Writer() {
       @Override
       public void write(final HttpServletRequest request, final PrintWriter writer, final int code, String message,
-                        final Throwable cause, final boolean withStackTrace, final Logger logger) {
+                        final Throwable cause, final boolean withStackTrace,
+                        final boolean withServletName, final Logger logger) {
 
          if(message == null) {
             message = HttpStatus.getMessage(code);
@@ -550,7 +595,9 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          writer.write("</title></head><body>");
          writer.printf("%n<h2>%d %s</h2>%n", code, StringUtil.sanitizeXmlString(message));
          writer.printf("<h3>%s</h3>%n", ISODateTimeFormat.basicDateTimeNoMillis().print(System.currentTimeMillis()));
-         writer.printf("<h3>%s</h3>%n", getServletName(request));
+         if(withServletName) {
+            writer.printf("<h3>%s</h3>%n", getServletName(request));
+         }
 
          if(logger != null && cause != null) {
             String idMessage = String.format("REF ID: %s", randomString(8));
@@ -581,12 +628,16 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    public static final Writer JSON_WRITER = new Writer() {
       @Override
       public void write(final HttpServletRequest request, final PrintWriter writer, final int code, String message,
-                        final Throwable cause, final boolean withStackTrace, final Logger logger) {
+                        final Throwable cause, final boolean withStackTrace,
+                        final boolean withServletName,
+                        final Logger logger) {
          Map<String, String> json = Maps.newLinkedHashMap();
          json.put("url", request.getRequestURI());
          json.put("status", Integer.toString(code));
          json.put("message", message);
-         json.put("servlet", getServletName(request));
+         if(withServletName) {
+            json.put("servlet", getServletName(request));
+         }
 
          if(logger != null && cause != null) {
             String id = randomString(8);
