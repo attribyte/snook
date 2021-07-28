@@ -265,7 +265,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
 
          while(true) {
             try {
-               ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().acquireBuffer();
+               ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getBuffer();
                ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
                PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(out, useCharset(baseRequest, writer.contentType())));
                writer.write(request, printWriter, response.getStatus(), message,
