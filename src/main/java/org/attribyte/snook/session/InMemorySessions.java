@@ -34,7 +34,23 @@ import java.util.stream.Collectors;
 public class InMemorySessions extends Sessions {
 
    /**
-    * Creates an in-memory session store.
+    * Creates an in-memory session store with a specific same-site option.
+    * @param cookieKey The key for the session cookie.
+    * @param cookieOptions The cookie options when setting the session cookie.
+    * @param sameSiteOption The same-site option for the session cookie.
+    * @param maxAgeSeconds The maximum cookie age in seconds.
+    * @param cleanIntervalSeconds The cookie clean interval in seconds. If &lt; 1, no cleaning is scheduled.
+    */
+   public InMemorySessions(final Cookies.CookieKey cookieKey,
+                           final EnumSet<Cookies.Option> cookieOptions,
+                           final Cookies.SameSiteOption sameSiteOption,
+                           final int maxAgeSeconds,
+                           final int cleanIntervalSeconds) {
+      super(cookieKey, cookieOptions, sameSiteOption, maxAgeSeconds, cleanIntervalSeconds);
+   }
+
+   /**
+    * Creates an in-memory session store with the default same-site option.
     * @param cookieKey The key for the session cookie.
     * @param cookieOptions The cookie options when setting the session cookie.
     * @param maxAgeSeconds The maximum cookie age in seconds.
@@ -44,7 +60,7 @@ public class InMemorySessions extends Sessions {
                            final EnumSet<Cookies.Option> cookieOptions,
                            final int maxAgeSeconds,
                            final int cleanIntervalSeconds) {
-      super(cookieKey, cookieOptions, maxAgeSeconds, cleanIntervalSeconds);
+      super(cookieKey, cookieOptions, Sessions.DEFAULT_SAME_SITE_OPTION, maxAgeSeconds, cleanIntervalSeconds);
    }
 
    @Override

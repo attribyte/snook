@@ -45,18 +45,26 @@ import java.util.concurrent.TimeUnit;
 public abstract class Sessions implements MetricSet {
 
    /**
+    * The default same-site option for the session cookie ({@value}).
+    */
+   public static final Cookies.SameSiteOption DEFAULT_SAME_SITE_OPTION = Cookies.SameSiteOption.SAME_SITE_LAX;
+
+   /**
     * Creates a sessions store.
     * @param cookieKey The key for the session cookie.
     * @param cookieOptions The cookie options when setting the session cookie.
+    * @param sameSiteOption The same-site option for the session cookie.
     * @param maxAgeSeconds The maximum cookie age in seconds.
     * @param cleanIntervalSeconds The cookie clean interval in seconds. If &lt; 1, no cleaning is scheduled.
     */
    protected Sessions(final Cookies.CookieKey cookieKey,
                       final EnumSet<Cookies.Option> cookieOptions,
+                      final Cookies.SameSiteOption sameSiteOption,
                       final int maxAgeSeconds,
                       final int cleanIntervalSeconds) {
       this.cookieKey = cookieKey;
       this.cookieOptions = Sets.immutableEnumSet(cookieOptions);
+      this.sameSiteOption = sameSiteOption;
       if(cleanIntervalSeconds > 0) {
          this.cleaningService =
                  MoreExecutors.getExitingScheduledExecutorService(new ScheduledThreadPoolExecutor(1,
@@ -107,7 +115,8 @@ public abstract class Sessions implements MetricSet {
          Session session = new Session(data);
          if(save(session)) {
             newSessions.mark();
-            Cookies.setSessionCookie(cookieKey, session.token.toString(), Sets.newEnumSet(cookieOptions, Cookies.Option.class), resp);
+            Cookies.setSessionCookie(cookieKey, session.token.toString(),
+                    Sets.newEnumSet(cookieOptions, Cookies.Option.class), sameSiteOption, resp);
          } else {
             failedSaves.mark();
          }
@@ -156,6 +165,11 @@ public abstract class Sessions implements MetricSet {
     * The cookie options.
     */
    public final ImmutableSet<Cookies.Option> cookieOptions;
+
+   /**
+    * The same-site cookie option.
+    */
+   public final Cookies.SameSiteOption sameSiteOption;
 
    @Override
    public final Map<String, Metric> getMetrics() {
