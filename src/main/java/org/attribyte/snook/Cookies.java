@@ -27,6 +27,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.EnumSet;
 
+import static org.eclipse.jetty.http.HttpCookie.SAME_SITE_LAX_COMMENT;
+import static org.eclipse.jetty.http.HttpCookie.SAME_SITE_NONE_COMMENT;
+import static org.eclipse.jetty.http.HttpCookie.SAME_SITE_STRICT_COMMENT;
+
 /**
  * "Cookie" operations.
  */
@@ -45,7 +49,29 @@ public class Cookies {
       /**
        * Cookie is not accessible to browser scripts.
        */
-      HTTP_ONLY
+      HTTP_ONLY,
+   }
+
+   /**
+    * Cookie "same site" options.
+    */
+   public enum SameSiteOption {
+
+      /**
+       * Cookie Same-Site set to "None".
+       * See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
+       */
+      SAME_SITE_NONE,
+
+      /**
+       * Cookie Same-Site set to "Strict".
+       */
+      SAME_SITE_STRICT,
+
+      /**
+       * Cookie Same-Site set to "Lax".
+       */
+      SAME_SITE_LAX;
    }
 
    /**
@@ -156,6 +182,22 @@ public class Cookies {
     */
    public static Cookie createCookie(final CookieKey cookieKey, final String cookieValue,
                                      final int maxAgeSeconds, final EnumSet<Option> options) {
+      return createCookie(cookieKey, cookieValue, maxAgeSeconds, options, null);
+   }
+
+   /**
+    * Creates a cookie.
+    * @param cookieKey The key.
+    * @param cookieValue The value.
+    * @param maxAgeSeconds The maximum age in seconds. If {@code < 0}, cookie is temporary.
+    *   If {@code 0}, cookie is deleted, if it exists.
+    * @param options The cookie options.
+    * @param sameSiteOption The cooke same-site option.
+    * @return The cookie.
+    */
+   public static Cookie createCookie(final CookieKey cookieKey, final String cookieValue,
+                                     final int maxAgeSeconds, final EnumSet<Option> options,
+                                     final SameSiteOption sameSiteOption) {
       Cookie cookie = cookieKey.cookie(cookieValue);
       cookie.setMaxAge(maxAgeSeconds);
 
@@ -165,6 +207,23 @@ public class Cookies {
 
       if(options.contains(Option.HTTP_ONLY)) {
          cookie.setHttpOnly(true);
+      }
+
+      if(sameSiteOption != null) {
+         switch(sameSiteOption) {
+            case SAME_SITE_NONE:
+               cookie.setComment(SAME_SITE_NONE_COMMENT);
+               cookie.setSecure(true); //Required...
+               break;
+            case SAME_SITE_LAX:
+               cookie.setComment(SAME_SITE_LAX_COMMENT);
+               break;
+            case SAME_SITE_STRICT:
+            default: {
+               cookie.setComment(SAME_SITE_STRICT_COMMENT);
+               break;
+            }
+         }
       }
 
       return cookie;
@@ -179,7 +238,20 @@ public class Cookies {
     */
    public static Cookie createSessionCookie(final CookieKey cookieKey, final String cookieValue,
                                             final EnumSet<Option> options) {
-      return createCookie(cookieKey, cookieValue, -1, options);
+      return createCookie(cookieKey, cookieValue, -1, options, null);
+   }
+
+   /**
+    * Creates a session (temporary) cookie with a same-site option.
+    * @param cookieKey The key.
+    * @param cookieValue The value.
+    * @param options The cookie options.
+    * @param sameSiteOption The same-site option.
+    * @return The cookie.
+    */
+   public static Cookie createSessionCookie(final CookieKey cookieKey, final String cookieValue,
+                                            final EnumSet<Option> options, SameSiteOption sameSiteOption) {
+      return createCookie(cookieKey, cookieValue, -1, options, sameSiteOption);
    }
 
    /**
@@ -194,7 +266,24 @@ public class Cookies {
    public static void setCookie(final CookieKey cookieKey, final String cookieValue,
                                 final int maxAgeSeconds, final EnumSet<Option> options,
                                 final HttpServletResponse resp) {
-      resp.addCookie(createCookie(cookieKey, cookieValue, maxAgeSeconds, options));
+      setCookie(cookieKey, cookieValue, maxAgeSeconds, options, null, resp);
+   }
+
+   /**
+    * Sets a cookie with a same-site option.
+    * @param cookieKey The key.
+    * @param cookieValue The value.
+    * @param maxAgeSeconds The maximum age in seconds. If {@code < 0}, cookie is temporary.
+    *   If {@code 0}, cookie is deleted, if it exists.
+    * @param options The cookie options.
+    * @param sameSiteOption The same-site option.
+    * @param resp The response.
+    */
+   public static void setCookie(final CookieKey cookieKey, final String cookieValue,
+                                final int maxAgeSeconds, final EnumSet<Option> options,
+                                final SameSiteOption sameSiteOption,
+                                final HttpServletResponse resp) {
+      resp.addCookie(createCookie(cookieKey, cookieValue, maxAgeSeconds, options, sameSiteOption));
    }
 
    /**
@@ -213,6 +302,23 @@ public class Cookies {
    }
 
    /**
+    * Sets a cookie that applies to the current domain and any path with a same-site option.
+    * @param cookieName The name.
+    * @param cookieValue The value.
+    * @param maxAgeSeconds The maximum age in seconds. If {@code < 0}, cookie is temporary.
+    *   If {@code 0}, cookie is deleted, if it exists.
+    * @param options The cookie options.
+    * @param sameSiteOption The same-site option.
+    * @param resp The response.
+    */
+   public static void setCookie(final String cookieName, final String cookieValue,
+                                final int maxAgeSeconds, final EnumSet<Option> options,
+                                final SameSiteOption sameSiteOption,
+                                final HttpServletResponse resp) {
+      setCookie(new CookieKey(cookieName), cookieValue, maxAgeSeconds, options, sameSiteOption, resp);
+   }
+
+   /**
     * Sets a session (temporary) cookie.
     * @param cookieKey The key.
     * @param cookieValue The value.
@@ -226,6 +332,21 @@ public class Cookies {
    }
 
    /**
+    * Sets a session (temporary) cookie with a same-site option.
+    * @param cookieKey The key.
+    * @param cookieValue The value.
+    * @param options The cookie options.
+    * @param sameSiteOption The same-site option.
+    * @param resp The response.
+    */
+   public static void setSessionCookie(final CookieKey cookieKey, final String cookieValue,
+                                       final EnumSet<Option> options,
+                                       final SameSiteOption sameSiteOption,
+                                       final HttpServletResponse resp) {
+      resp.addCookie(createSessionCookie(cookieKey, cookieValue, options, sameSiteOption));
+   }
+
+   /**
     * Sets a session (temporary) cookie that applies to the current domain and any path.
     * @param cookieName The name.
     * @param cookieValue The value.
@@ -235,6 +356,20 @@ public class Cookies {
    public static void setSessionCookie(final String cookieName, final String cookieValue,
                                        final EnumSet<Option> options, final HttpServletResponse resp) {
       setSessionCookie(new CookieKey(cookieName), cookieValue, options, resp);
+   }
+
+   /**
+    * Sets a session (temporary) cookie that applies to the current domain and any path.
+    * @param cookieName The name.
+    * @param cookieValue The value.
+    * @param options The cookie options.
+    * @param sameSiteOption The same-site option.
+    * @param resp The response.
+    */
+   public static void setSessionCookie(final String cookieName, final String cookieValue,
+                                       final EnumSet<Option> options, final SameSiteOption sameSiteOption,
+                                       final HttpServletResponse resp) {
+      setSessionCookie(new CookieKey(cookieName), cookieValue, options, sameSiteOption, resp);
    }
 
    /**
