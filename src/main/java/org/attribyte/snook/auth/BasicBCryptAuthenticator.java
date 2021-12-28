@@ -104,7 +104,7 @@ public abstract class BasicBCryptAuthenticator<T> extends HeaderAuthenticator<T>
    }
 
    /**
-    * Clears any cached credentials.
+    * Clears cached credentials after matching the request credentials.
     * @param request The request.
     * @return Were the credentials cleared?
     */
@@ -124,10 +124,28 @@ public abstract class BasicBCryptAuthenticator<T> extends HeaderAuthenticator<T>
       if(upass == null) {
          return false;
       }
+      return clearCachedCredentials(credentials.hashCredentials());
+   }
 
-      HashCode hashedCredentials = credentials.hashCredentials();
-      validCredentials.invalidate(hashedCredentials);
-      return true;
+   /**
+    * Clears cached credentials for a hash.
+    * @param hashedCredentials The hashed credentials.
+    * @return Were the credentials cleared?
+    */
+   public boolean clearCachedCredentials(final HashCode hashedCredentials) {
+      if(hashedCredentials != null) {
+         validCredentials.invalidate(hashedCredentials);
+         return true;
+      } else {
+         return false;
+      }
+   }
+
+   /**
+    * Clears all cached credentials.
+    */
+   public void clearAllCachedCredentials() {
+      validCredentials.invalidateAll();
    }
 
    @Override
