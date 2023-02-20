@@ -36,8 +36,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.RequestLogWriter;
 import org.eclipse.jetty.server.Slf4jRequestLogWriter;
-import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
-import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -113,7 +112,7 @@ public abstract class Server {
       }
       this.rootContext = rootContext(withGzip);
       if(this.serverConfiguration.allowSymlinks) {
-         this.rootContext.addAliasCheck(new AllowSymLinkAliasChecker());
+         this.rootContext.addAliasCheck(new SymlinkAllowedResourceAliasChecker(rootContext));
       }
       initAssets();
    }
@@ -167,7 +166,7 @@ public abstract class Server {
       }
       this.rootContext = rootContext(withGzip);
       if(this.serverConfiguration.allowSymlinks) {
-         this.rootContext.addAliasCheck(new AllowSymLinkAliasChecker());
+         this.rootContext.addAliasCheck(new SymlinkAllowedResourceAliasChecker(rootContext));
       }
       initAssets();
    }
@@ -213,7 +212,7 @@ public abstract class Server {
          this.httpServer.setErrorHandler(this.serverConfiguration.customErrorHandler.withLogger(logger));
       }
       if(this.serverConfiguration.allowSymlinks) {
-         this.rootContext.addAliasCheck(new AllowSymLinkAliasChecker());
+         this.rootContext.addAliasCheck(new SymlinkAllowedResourceAliasChecker(rootContext));
       }
       initAssets();
    }
@@ -391,7 +390,7 @@ public abstract class Server {
 
       org.eclipse.jetty.server.Server httpServer = serverConfiguration.buildServer();
 
-      httpServer.addLifeCycleListener(new LifeCycle.Listener() {
+      httpServer.addEventListener(new LifeCycle.Listener() {
          public void lifeCycleFailure(LifeCycle event, Throwable cause) {
             logError("Failure", cause);
          }
@@ -433,7 +432,6 @@ public abstract class Server {
       ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SECURITY);
       rootContext.setContextPath("/");
       rootContext.setBaseResource(Resource.newResource("/"));
-      rootContext.addAliasCheck(new ContextHandler.ApproveAliases());
       rootContext.setMaxFormContentSize(serverConfiguration.maxFormContentSize);
       boolean withSecureRedirect = serverConfiguration.connectionSecurity == ServerConfiguration.ConnectionSecurity.REDIRECT;
       if(withGzip) {

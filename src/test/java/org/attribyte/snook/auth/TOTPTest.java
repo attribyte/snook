@@ -18,15 +18,32 @@
 
 package org.attribyte.snook.auth;
 
+import junit.framework.TestCase;
 import org.junit.Test;
 
 import javax.crypto.SecretKey;
 import java.io.FileOutputStream;
+import java.util.Arrays;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.attribyte.snook.QRCode.generateQRCode;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class TOTPTest {
+
+   @Test
+   public void generateSecretKey() throws Exception {
+      TOTP totp = TOTP.createEightDigit();
+      SecretKey key = totp.generateKey();
+      byte[] keyBytes = key.getEncoded();
+      SecretKey testKey = totp.secretKey(keyBytes);
+      assertArrayEquals(testKey.getEncoded(), key.getEncoded());
+      System.out.println(totp.previousToken(testKey));
+      System.out.println(totp.currentToken(testKey));
+      System.out.println(totp.nextToken(testKey));
+
+   }
 
    @Test
    public void generateURL() throws Exception {

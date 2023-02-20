@@ -155,7 +155,7 @@ public class ServerConfiguration {
       String truststorePassword = init.getProperty(TRUSTSTORE_PASSWORD_PROPERTY, "").trim();
       this.trustStorePasswordWasSpecified = !truststorePassword.isEmpty();
       if(!keyStorePath.isEmpty()) {
-         SslContextFactory contextFactory = new SslContextFactory.Server();
+         SslContextFactory.Server contextFactory = new SslContextFactory.Server();
          contextFactory.setKeyStorePath(keyStorePath);
          if(!keystorePassword.isEmpty()) {
             contextFactory.setKeyStorePassword(keystorePassword);
@@ -469,7 +469,7 @@ public class ServerConfiguration {
    /**
     * The SSL context factory, if any.
     */
-   final Optional<SslContextFactory> sslContextFactory;
+   final Optional<SslContextFactory.Server> sslContextFactory;
 
    /**
     * Allow the use of symlinks when resolving static assets.
@@ -552,6 +552,7 @@ public class ServerConfiguration {
          if(enableForwardedRequestCustomizer) {
             httpsConfig.addCustomizer(new ForwardedRequestCustomizer());
          }
+
 
          ServerConnector httpsConnector = new ServerConnector(httpServer,
                  new SslConnectionFactory(sslContextFactory.get(), HttpVersion.HTTP_1_1.asString()),

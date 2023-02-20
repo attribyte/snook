@@ -26,12 +26,12 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.attribyte</groupId>
     <artifactId>snook</artifactId>
-    <version>0.1.15</version>
+    <version>0.1.16</version>
     <packaging>jar</packaging>
     <name>Snook HTTP Server Utilities</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jettyVersion>9.4.44.v20210927</jettyVersion>
+        <jettyVersion>10.0.13</jettyVersion>
         <metricsVersion>4.0.7</metricsVersion>
     </properties>
     <description>
