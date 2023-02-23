@@ -4,10 +4,11 @@
 #server.keystorePassword=test1234
 server.connectionSecurity=none
 server.debug=true
+server.allowSymlinks=true
 
 # Values that start wtih '$' are resolved from the environment, if possible.
 assets.default.resource.Dir=$HTDOCS
-assets.default.paths=/test.html,/x/*
+assets.default.paths=/test.html,/subdir/*
 assets.default.etags=true
 assets.default.gzip=true
 assets.default.directoryAllowed=false

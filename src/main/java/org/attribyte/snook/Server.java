@@ -36,7 +36,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.RequestLogWriter;
 import org.eclipse.jetty.server.Slf4jRequestLogWriter;
-import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -111,9 +110,6 @@ public abstract class Server {
          this.httpServer.setErrorHandler(this.serverConfiguration.customErrorHandler.withLogger(this.logger));
       }
       this.rootContext = rootContext(withGzip);
-      if(this.serverConfiguration.allowSymlinks) {
-         this.rootContext.addAliasCheck(new SymlinkAllowedResourceAliasChecker(rootContext));
-      }
       initAssets();
    }
 
@@ -165,9 +161,6 @@ public abstract class Server {
          this.httpServer.setErrorHandler(this.serverConfiguration.customErrorHandler.withLogger(logger));
       }
       this.rootContext = rootContext(withGzip);
-      if(this.serverConfiguration.allowSymlinks) {
-         this.rootContext.addAliasCheck(new SymlinkAllowedResourceAliasChecker(rootContext));
-      }
       initAssets();
    }
 
@@ -210,9 +203,6 @@ public abstract class Server {
       this.rootContext = rootContext(withGzip);
       if(this.serverConfiguration.customErrorHandler != null) {
          this.httpServer.setErrorHandler(this.serverConfiguration.customErrorHandler.withLogger(logger));
-      }
-      if(this.serverConfiguration.allowSymlinks) {
-         this.rootContext.addAliasCheck(new SymlinkAllowedResourceAliasChecker(rootContext));
       }
       initAssets();
    }
@@ -432,6 +422,10 @@ public abstract class Server {
       ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SECURITY);
       rootContext.setContextPath("/");
       rootContext.setBaseResource(Resource.newResource("/"));
+      if(serverConfiguration.allowSymlinks) {
+         rootContext.addAliasCheck((s, resource) -> true);
+      }
+
       rootContext.setMaxFormContentSize(serverConfiguration.maxFormContentSize);
       boolean withSecureRedirect = serverConfiguration.connectionSecurity == ServerConfiguration.ConnectionSecurity.REDIRECT;
       if(withGzip) {
