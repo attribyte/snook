@@ -182,7 +182,7 @@ public class ServerConfiguration {
       }
 
       this.connectionSecurity = ConnectionSecurity.fromString(init.getProperty(CONNECTION_SECURITY_PROPERTY, DEFAULT_CONNECTION_SECURITY));
-      if(connectionSecurity != ConnectionSecurity.NONE && !sslContextFactory.isPresent()) {
+      if(connectionSecurity != ConnectionSecurity.NONE && sslContextFactory.isEmpty()) {
          throw new InitializationException(String.format("A '%s' must be specified with 'connectionSecurity', %s", KEYSTORE_FILE_PROPERTY, connectionSecurity));
       }
       this.enableForwardedRequestCustomizer =
