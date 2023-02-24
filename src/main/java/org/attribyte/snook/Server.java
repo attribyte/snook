@@ -54,7 +54,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.attribyte.snook.Util.commandLineParameters;
 import static org.attribyte.snook.Util.resolveEnvironmentVariables;
@@ -665,11 +664,6 @@ public abstract class Server {
     * Is the server running in "debug" mode?
     */
    protected final boolean debug;
-
-   /**
-    * The last time the keystore was modified.
-    */
-   private AtomicLong lastKeystoreModTime = new AtomicLong(0L);
 
    /**
     * The key store monitor.
