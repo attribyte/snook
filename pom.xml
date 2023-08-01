@@ -26,7 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.attribyte</groupId>
     <artifactId>snook</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
     <packaging>jar</packaging>
     <name>Snook HTTP Server Utilities</name>
     <properties>
@@ -145,7 +145,7 @@
         <dependency>
             <groupId>io.nayuki</groupId>
             <artifactId>qrcodegen</artifactId>
-            <version>1.6.0</version>
+            <version>1.8.0</version>
         </dependency>
         <dependency>
             <groupId>com.eatthepath</groupId>
