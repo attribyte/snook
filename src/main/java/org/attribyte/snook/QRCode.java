@@ -28,11 +28,13 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 
 /**
  * Generate QR codes.
@@ -50,8 +52,20 @@ public class QRCode {
       Map<String, String> parameterMap = Maps.newHashMap();
       args = Util.commandLineParameters(args, parameterMap);
       if(args.length < 1) {
-         System.err.println("The text to encode must be specified as the last argument!");
+         System.err.println("Usage: [property file] <text to encode>)");
          System.exit(1);
+      }
+
+      final String text = args[0];
+
+      if(parameterMap.containsKey("properties")) {
+         Properties properties = new Properties();
+         try(FileInputStream fis = new FileInputStream(parameterMap.get("properties"))) {
+            properties.load(fis);
+         }
+         properties.forEach((k,v) -> {
+            parameterMap.put(k.toString(),v.toString());
+         });
       }
 
       Options.Builder options = Options.builder();
@@ -63,12 +77,25 @@ public class QRCode {
          options.setScale(Integer.parseInt(parameterMap.get("border")));
       }
 
+      if(parameterMap.containsKey("reverseColor")) {
+         options.setDarkColor(DEFAULT_LIGHT);
+         options.setLightColor(DEFAULT_DARK);
+      }
+
+      final boolean transparentBackground;
+      if(parameterMap.containsKey("transparentBackground")) {
+         transparentBackground = parameterMap.get("transparentBackground").equalsIgnoreCase("true");
+         options.setTransparentBackground(transparentBackground);
+      } else {
+         transparentBackground = DEFAULT_TRANSPARENT_BACKGROUND;
+      }
+
       if(parameterMap.containsKey("lightColor")) {
-         options.setLightColor(parseColor(parameterMap.get("lightColor")));
+         options.setLightColor(parseColor(parameterMap.get("lightColor"), transparentBackground));
       }
 
       if(parameterMap.containsKey("darkColor")) {
-         options.setLightColor(parseColor(parameterMap.get("darkColor")));
+         options.setLightColor(parseColor(parameterMap.get("darkColor"), transparentBackground));
       }
 
       if(parameterMap.containsKey("mask")) {
@@ -102,16 +129,20 @@ public class QRCode {
 
       if(parameterMap.containsKey("outputFile")) {
          try(final FileOutputStream fos = new FileOutputStream(parameterMap.get("outputFile"))) {
-            generateQRCode(args[0], options.build(), fos);
+            generateQRCode(text, options.build(), fos);
          }
       } else {
-         generateQRCode(args[0], options.build(), System.out);
+         generateQRCode(text, options.build(), System.out);
       }
    }
 
-   private static int parseColor(final String text) {
+   private static int parseColor(final String text, final boolean transparentBackground) {
       if(text.startsWith("0x")) {
-         return Integer.parseInt(text.substring(2), 16);
+         String toParse = text.substring(2);
+         if(transparentBackground) {
+            toParse = "FF" + toParse;
+         }
+         return Integer.parseInt(toParse, 16);
       } else {
          return Integer.parseInt(text);
       }
@@ -131,6 +162,11 @@ public class QRCode {
     * The default dark color ({@value}).
     */
    public static final int DEFAULT_DARK = 0x000000;
+
+   /**
+    * The default dark color ({@value}).
+    */
+   public static final int DEFAULT_DARK_TRANSPARENT = 0xFF000000;
 
    /**
     * The default light color ({@value}).
@@ -156,6 +192,11 @@ public class QRCode {
     * The default ECL boost ({@value}).
     */
    public static final boolean DEFAULT_BOOST_ECL = true;
+
+   /**
+    * The default transparent background ({@value}).
+    */
+   public static final boolean DEFAULT_TRANSPARENT_BACKGROUND = true;
 
    /**
     * The error correction level.
@@ -188,7 +229,8 @@ public class QRCode {
        */
       public static final Options DEFAULT =
               new Options(ECC.MEDIUM, DEFAULT_SCALE, DEFAULT_BORDER, DEFAULT_DARK, DEFAULT_LIGHT,
-                      DEFAULT_MIN_VERSION, DEFAULT_MAX_VERSION, DEFAULT_MASK, DEFAULT_BOOST_ECL);
+                      DEFAULT_MIN_VERSION, DEFAULT_MAX_VERSION, DEFAULT_MASK, DEFAULT_BOOST_ECL,
+                      DEFAULT_TRANSPARENT_BACKGROUND);
 
       public static class Builder {
 
@@ -272,12 +314,22 @@ public class QRCode {
             return this;
          }
 
+         public boolean isTransparentBackground() {
+            return transparentBackground;
+         }
+
+         public Builder setTransparentBackground(final boolean transparentBackground) {
+            this.transparentBackground = transparentBackground;
+            return this;
+         }
+
          /**
           * Builds immutable options.
           * @return The options.
           */
          public Options build() {
-            return new Options(ecc, scale, border, darkColor, lightColor, minVersion, maxVersion, mask, boostEcl);
+            return new Options(ecc, scale, border, darkColor, lightColor, minVersion, maxVersion, mask,
+                    boostEcl, transparentBackground);
          }
 
          private ECC ecc = ECC.MEDIUM;
@@ -289,6 +341,7 @@ public class QRCode {
          private int maxVersion = DEFAULT_MAX_VERSION;
          private int mask = DEFAULT_MASK;
          private boolean boostEcl = DEFAULT_BOOST_ECL;
+         private boolean transparentBackground = DEFAULT_TRANSPARENT_BACKGROUND;
       }
 
 
@@ -303,7 +356,8 @@ public class QRCode {
       public Options(final ECC ecc, final int scale, final int border,
                      final int darkColor, final int lightColor,
                      final int minVersion, final int maxVersion,
-                     final int mask, final boolean boostEcl) {
+                     final int mask, final boolean boostEcl,
+                     final boolean transparentBackground) {
          this.ecc = ecc;
          this.scale = scale;
          this.border = border;
@@ -313,6 +367,7 @@ public class QRCode {
          this.maxVersion = maxVersion;
          this.mask = mask;
          this.boostEcl = boostEcl;
+         this.transparentBackground = transparentBackground;
       }
 
       /**
@@ -322,7 +377,8 @@ public class QRCode {
        * @return The options with scale and border changed.
        */
       public Options withScaleAndBorder(final int scale, final int border) {
-         return new Options(ecc, scale, border, darkColor, lightColor, minVersion, maxVersion, mask, boostEcl);
+         return new Options(ecc, scale, border, darkColor, lightColor, minVersion, maxVersion, mask, boostEcl,
+                 transparentBackground);
       }
 
       @Override
@@ -337,6 +393,7 @@ public class QRCode {
                  .add("maxVersion", maxVersion)
                  .add("mask", mask)
                  .add("boostEcl", boostEcl)
+                 .add("transparentBackground", transparentBackground)
                  .toString();
       }
 
@@ -372,6 +429,8 @@ public class QRCode {
       public final int mask;
 
       public final boolean boostEcl;
+
+      public final boolean transparentBackground;
    }
 
    /**
@@ -432,11 +491,19 @@ public class QRCode {
       Preconditions.checkArgument(options.scale > 0);
       Preconditions.checkArgument(options.border >= 0);
       BufferedImage result = new BufferedImage((qr.size + options.border * 2) * options.scale, (qr.size + options.border * 2) * options.scale,
-              BufferedImage.TYPE_INT_RGB);
+              options.transparentBackground ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB);
       for (int y = 0; y < result.getHeight(); y++) {
          for (int x = 0; x < result.getWidth(); x++) {
             boolean color = qr.getModule(x / options.scale - options.border, y / options.scale - options.border);
-            result.setRGB(x, y, color ? options.darkColor : options.lightColor);
+            if(options.transparentBackground && color) {
+               if(options.darkColor == DEFAULT_DARK) {
+                  result.setRGB(x, y, DEFAULT_DARK_TRANSPARENT);
+               } else {
+                  result.setRGB(x, y, options.darkColor);
+               }
+            } else {
+               result.setRGB(x, y, color ? options.darkColor : options.lightColor);
+            }
          }
       }
       return result;
