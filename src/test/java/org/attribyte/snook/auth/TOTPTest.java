@@ -18,17 +18,11 @@
 
 package org.attribyte.snook.auth;
 
-import junit.framework.TestCase;
 import org.junit.Test;
 
 import javax.crypto.SecretKey;
-import java.io.FileOutputStream;
-import java.util.Arrays;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.attribyte.snook.QRCode.generateQRCode;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 public class TOTPTest {
 

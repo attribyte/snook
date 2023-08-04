@@ -21,6 +21,7 @@ package org.attribyte.snook;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import com.google.protobuf.ByteString;
 import io.nayuki.qrcodegen.QrCode;
 import io.nayuki.qrcodegen.QrSegment;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -28,10 +29,12 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Base64;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
@@ -132,10 +135,10 @@ public class QRCode {
 
       if(parameterMap.containsKey("outputFile")) {
          try(final FileOutputStream fos = new FileOutputStream(parameterMap.get("outputFile"))) {
-            generateQRCode(text, options.build(), fos);
+            generate(text, options.build(), fos);
          }
       } else {
-         generateQRCode(text, options.build(), System.out);
+         generate(text, options.build(), System.out);
       }
    }
 
@@ -454,9 +457,9 @@ public class QRCode {
     * @param os The output stream.
     * @throws IOException on write error.
     */
-   public static void generateQRCode(final String text,
-                                     final OutputStream os) throws IOException {
-      generateQRCode(text, Options.DEFAULT, os);
+   public static void generate(final String text,
+                               final OutputStream os) throws IOException {
+      generate(text, Options.DEFAULT, os);
    }
 
    /**
@@ -466,12 +469,49 @@ public class QRCode {
     * @param os The output stream (not closed).
     * @throws IOException on write error.
     */
-   public static void generateQRCode(final String text, final Options options,
+   public static void generate(final String text, final Options options,
                                      final OutputStream os) throws IOException {
       BufferedImage img = toImage(encodeText(text, options), options);
       OutputStream bos = new BufferedOutputStream(os);
       ImageIO.write(img, "png", bos);
       img.flush();
+   }
+
+   /**
+    * Generate a QR code to an immutable byte string.
+    * @param text The text.
+    * @param options The generation options.
+    * @return The byte string.
+    * @throws IOException on write error.
+    */
+   public static ByteString generate(final String text, final Options options) throws IOException {
+      try(final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+         generate(text, options, baos);
+         return ByteString.copyFrom(baos.toByteArray());
+      }
+   }
+
+   /**
+    * Generates a QR code encoded as base64.
+    * @param text The text.
+    * @param options The generation options.
+    * @return The base64 string.
+    * @throws IOException on write error.
+    */
+   public static String generateHex(final String text, final Options options) throws IOException {
+      ByteString code = generate(text, options);
+      return Base64.getEncoder().encodeToString(code.toByteArray());
+   }
+
+   /**
+    * Generates the value for display as an HTML {@code img.src} attribute.
+    * @param text The text.
+    * @param options The generation options.
+    * @return The {@code src} value.
+    * @throws IOException on write error.
+    */
+   public static String generateImageData(final String text, final Options options) throws IOException {
+      return "data:image/png;base64," + generateHex(text, options);
    }
 
    /**
