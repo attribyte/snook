@@ -25,8 +25,10 @@ import com.google.protobuf.ByteString;
 import io.nayuki.qrcodegen.QrCode;
 import io.nayuki.qrcodegen.QrSegment;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.units.qual.C;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -80,16 +82,21 @@ public class QRCode {
       }
    }
 
-   private static int parseColor(final String text, final boolean transparentBackground) {
-      if(text.startsWith("0x")) {
-         String toParse = text.substring(2);
-         if(transparentBackground && text.length() == 6) {
-            toParse = "FF" + toParse;
-         }
-         return Integer.parseInt(toParse, 16);
-      } else {
-         return Integer.parseInt(text);
+   private static int parseColor(final String toParse, final boolean transparentBackground) {
+      if(toParse.length() < 6) {
+         throw new UnsupportedOperationException("Invalid color");
       }
+      int r = Integer.parseInt(toParse.substring(0,2), 16);
+      int g = Integer.parseInt(toParse.substring(2, 4), 16);
+      int b = Integer.parseInt(toParse.substring(4, 6), 16);
+      final int alpha;
+      if(toParse.length() == 8) {
+         alpha = Integer.parseInt(toParse.substring(6, 8), 16);
+      } else {
+         alpha = 255;
+      }
+      Color color = transparentBackground ? new Color(r,g,b,alpha) : new Color(r,g,b);
+      return color.getRGB();
    }
 
    /**
@@ -110,7 +117,7 @@ public class QRCode {
    /**
     * The default dark color ({@value}).
     */
-   public static final int DEFAULT_DARK_TRANSPARENT = 0xFF000000;
+   public static final int DEFAULT_DARK_TRANSPARENT = new Color(0,0,0,255).getRGB();
 
    /**
     * The default light color ({@value}).
