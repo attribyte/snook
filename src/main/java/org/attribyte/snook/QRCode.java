@@ -52,14 +52,12 @@ public class QRCode {
     */
    public static void main(String [] args) throws IOException {
 
-      Map<String, String> parameterMap = Maps.newHashMap();
+      final Map<String, String> parameterMap = Maps.newHashMap();
       args = Util.commandLineParameters(args, parameterMap);
       if(args.length < 1) {
          System.err.println("Usage: [property file] <text to encode>)");
          System.exit(1);
       }
-
-      final String text = args[0];
 
       if(parameterMap.containsKey("properties")) {
          Properties properties = new Properties();
@@ -71,74 +69,14 @@ public class QRCode {
          });
       }
 
-      Options.Builder options = Options.builder();
-      if(parameterMap.containsKey("scale")) {
-         options.setScale(Integer.parseInt(parameterMap.get("scale")));
-      }
-
-      if(parameterMap.containsKey("border")) {
-         options.setScale(Integer.parseInt(parameterMap.get("border")));
-      }
-
-      if(parameterMap.containsKey("reverseColor")) {
-         options.setDarkColor(DEFAULT_LIGHT);
-         options.setLightColor(DEFAULT_DARK);
-      }
-
-      boolean transparentBackground;
-      if(parameterMap.containsKey("transparentBackground")) {
-         transparentBackground = parameterMap.get("transparentBackground").equalsIgnoreCase("true");
-         options.setTransparentBackground(transparentBackground);
-      } else {
-         transparentBackground = DEFAULT_TRANSPARENT_BACKGROUND;
-      }
-
-      if(parameterMap.containsKey("lightColor")) {
-         options.setLightColor(parseColor(parameterMap.get("lightColor"), transparentBackground));
-         if(options.lightColor == -1) {
-            transparentBackground = true;
-         }
-      }
-
-      if(parameterMap.containsKey("darkColor")) {
-         options.setDarkColor(parseColor(parameterMap.get("darkColor"), transparentBackground));
-      }
-
-      if(parameterMap.containsKey("mask")) {
-         options.setMask(Integer.parseInt(parameterMap.get("mask")));
-      }
-
-      if(parameterMap.containsKey("minVersion")) {
-         options.setMask(Integer.parseInt(parameterMap.get("minVersion")));
-      }
-
-      if(parameterMap.containsKey("maxVersion")) {
-         options.setMask(Integer.parseInt(parameterMap.get("maxVersion")));
-      }
-
-      if(parameterMap.containsKey("boostEcl")) {
-         options.setBoostEcl(parameterMap.get("boostEcl").equalsIgnoreCase("true"));
-      }
-
-      if(parameterMap.containsKey("ecc")) {
-         switch(parameterMap.get("ecc").toLowerCase().trim()) {
-            case "low":
-               options.setEcc(ECC.LOW);
-               break;
-            case "med":
-               options.setEcc(ECC.MEDIUM);
-               break;
-            case "high":
-               options.setEcc(ECC.HIGH);
-         }
-      }
+      Options.Builder options = Options.builderFromMap(parameterMap);
 
       if(parameterMap.containsKey("outputFile")) {
          try(final FileOutputStream fos = new FileOutputStream(parameterMap.get("outputFile"))) {
-            generate(text, options.build(), fos);
+            generate(args[0], options.build(), fos);
          }
       } else {
-         generate(text, options.build(), System.out);
+         generate(args[0], options.build(), System.out);
       }
    }
 
@@ -202,7 +140,7 @@ public class QRCode {
    /**
     * The default transparent background ({@value}).
     */
-   public static final boolean DEFAULT_TRANSPARENT_BACKGROUND = true;
+   public static final boolean DEFAULT_TRANSPARENT_BACKGROUND = false;
 
    /**
     * The error correction level.
@@ -365,6 +303,77 @@ public class QRCode {
        */
       public static Builder builder() {
          return new Builder();
+      }
+
+      /**
+       * Creates a builder from a map of (string) parameters.
+       * @param parameterMap The parameter map.
+       * @return The builder.
+       */
+      public static Builder builderFromMap(final Map<String, String> parameterMap) {
+
+         Options.Builder options = Options.builder();
+         if(parameterMap.containsKey("scale")) {
+            options.setScale(Integer.parseInt(parameterMap.get("scale")));
+         }
+
+         if(parameterMap.containsKey("border")) {
+            options.setScale(Integer.parseInt(parameterMap.get("border")));
+         }
+
+         if(parameterMap.containsKey("reverseColor")) {
+            options.setDarkColor(DEFAULT_LIGHT);
+            options.setLightColor(DEFAULT_DARK);
+         }
+
+         boolean transparentBackground;
+         if(parameterMap.containsKey("transparentBackground")) {
+            transparentBackground = parameterMap.get("transparentBackground").equalsIgnoreCase("true");
+            options.setTransparentBackground(transparentBackground);
+         } else {
+            transparentBackground = DEFAULT_TRANSPARENT_BACKGROUND;
+         }
+
+         if(parameterMap.containsKey("lightColor")) {
+            options.setLightColor(parseColor(parameterMap.get("lightColor"), transparentBackground));
+            if(options.lightColor == -1) {
+               transparentBackground = true;
+            }
+         }
+
+         if(parameterMap.containsKey("darkColor")) {
+            options.setDarkColor(parseColor(parameterMap.get("darkColor"), transparentBackground));
+         }
+
+         if(parameterMap.containsKey("mask")) {
+            options.setMask(Integer.parseInt(parameterMap.get("mask")));
+         }
+
+         if(parameterMap.containsKey("minVersion")) {
+            options.setMask(Integer.parseInt(parameterMap.get("minVersion")));
+         }
+
+         if(parameterMap.containsKey("maxVersion")) {
+            options.setMask(Integer.parseInt(parameterMap.get("maxVersion")));
+         }
+
+         if(parameterMap.containsKey("boostEcl")) {
+            options.setBoostEcl(parameterMap.get("boostEcl").equalsIgnoreCase("true"));
+         }
+
+         if(parameterMap.containsKey("ecc")) {
+            switch(parameterMap.get("ecc").toLowerCase().trim()) {
+               case "low":
+                  options.setEcc(ECC.LOW);
+                  break;
+               case "med":
+                  options.setEcc(ECC.MEDIUM);
+                  break;
+               case "high":
+                  options.setEcc(ECC.HIGH);
+            }
+         }
+         return options;
       }
 
       public Options(final ECC ecc, final int scale, final int border,
