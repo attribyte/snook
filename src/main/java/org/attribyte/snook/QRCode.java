@@ -235,6 +235,14 @@ public class QRCode {
                       DEFAULT_MIN_VERSION, DEFAULT_MAX_VERSION, DEFAULT_MASK, DEFAULT_BOOST_ECL,
                       DEFAULT_TRANSPARENT_BACKGROUND);
 
+      /**
+       * Black on transparent background with all other default settings.
+       */
+      public static final Options STANDARD_TRANSPARENT =
+              new Options(ECC.MEDIUM, DEFAULT_SCALE, DEFAULT_BORDER, DEFAULT_DARK_TRANSPARENT, DEFAULT_LIGHT,
+                      DEFAULT_MIN_VERSION, DEFAULT_MAX_VERSION, DEFAULT_MASK, DEFAULT_BOOST_ECL,
+                      true);
+
       public static class Builder {
 
          public ECC getEcc() {
