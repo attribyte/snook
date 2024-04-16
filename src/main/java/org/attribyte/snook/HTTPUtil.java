@@ -116,8 +116,7 @@ public class HTTPUtil {
    public static void sendBasicUnauthorized(final HttpServletResponse response,
                                             final String authRealm,
                                             final String message) throws IOException {
-      response.setHeader(HttpHeaders.WWW_AUTHENTICATE, String.format(WWW_AUTHENTICATE_BASIC, Strings.nullToEmpty(authRealm)));
-      response.setStatus(Response.Code.UNAUTHORIZED);
+      setBasicUnauthorized(response, authRealm);
       if(!Strings.isNullOrEmpty(message)) {
          response.getOutputStream().print(message);
       } else {

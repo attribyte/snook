@@ -18,7 +18,6 @@
 
 package org.attribyte.snook.auth;
 
-import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
@@ -26,13 +25,11 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import org.attribyte.snook.Cookies;
 
-import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.EnumSet;
-import java.util.function.BiFunction;
 
 /**
  * A simple authenticator for testing.

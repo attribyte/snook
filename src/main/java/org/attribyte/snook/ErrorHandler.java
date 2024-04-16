@@ -371,8 +371,6 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          case "text/*":
          case "*/*":
             return HTML_WRITER;
-         case "text/plain":
-            return TEXT_WRITER;
          case "text/json":
          case "application/json":
             return JSON_WRITER;

@@ -31,7 +31,7 @@
     <name>Snook HTTP Server Utilities</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jettyVersion>10.0.13</jettyVersion>
+        <jettyVersion>10.0.20</jettyVersion>
         <metricsVersion>4.0.7</metricsVersion>
     </properties>
     <description>

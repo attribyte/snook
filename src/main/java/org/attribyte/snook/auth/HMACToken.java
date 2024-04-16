@@ -81,7 +81,7 @@ public class HMACToken {
 
       File outputFile = new File(args[0]);
       if(outputFile.exists()) {
-         System.err.println(String.format("The output file, '%s' exists!", outputFile.getAbsolutePath()));
+         System.err.printf("The output file, '%s' exists!%n", outputFile.getAbsolutePath());
          System.exit(1);
       }
 
@@ -91,28 +91,28 @@ public class HMACToken {
       if(keyFile.exists()) {
          sigKey = Files.toByteArray(keyFile);
          if(sigKey.length != KEY_SIZE) {
-            System.err.println(String.format("The key file, '%s' is invalid", keyFile.getAbsolutePath()));
+            System.err.printf("The key file, '%s' is invalid%n", keyFile.getAbsolutePath());
             System.exit(1);
          } else {
-            System.out.println(String.format("Using existing key file, '%s'", keyFile.getAbsolutePath()));
+            System.out.printf("Using existing key file, '%s'%n", keyFile.getAbsolutePath());
          }
          generatedKeyFile = null;
       } else {
          sigKey = randomKey(new SecureRandom());
-         System.out.println(String.format("Writing key file, '%s'...", keyFile.getAbsolutePath()));
+         System.out.printf("Writing key file, '%s'...%n", keyFile.getAbsolutePath());
          Files.write(sigKey, keyFile);
          generatedKeyFile = keyFile;
       }
 
       File sigFile = new File(args[0] + ".sig");
       if(sigFile.exists()) {
-         System.err.println(String.format("The signature file, '%s' exists!", sigFile.getAbsolutePath()));
+         System.err.printf("The signature file, '%s' exists!%n", sigFile.getAbsolutePath());
          System.exit(1);
       }
 
       File idsFile = new File(args[0] + ".ids");
       if(idsFile.exists()) {
-         System.err.println(String.format("The ids file, '%s' exists!", idsFile.getAbsolutePath()));
+         System.err.printf("The ids file, '%s' exists!%n", idsFile.getAbsolutePath());
          System.exit(1);
       }
 
@@ -122,12 +122,12 @@ public class HMACToken {
          System.exit(1);
       }
 
-      System.out.println(String.format("Generating and writing '%s' with %d keys...", outputFile.getAbsolutePath(), size));
+      System.out.printf("Generating and writing '%s' with %d keys...%n", outputFile.getAbsolutePath(), size);
 
       try {
          generateKeys(outputFile, size);
          HashCode hashCode = hashKeysFile(outputFile, sigKey);
-         System.out.println(String.format("Writing signature file, '%s'...", sigFile.getAbsolutePath()));
+         System.out.printf("Writing signature file, '%s'...%n", sigFile.getAbsolutePath());
          Files.write(hashCode.asBytes(), sigFile);
          System.out.println("Checking signature...");
          if(!checkSigFile(sigFile, outputFile, sigKey)) {
@@ -136,7 +136,7 @@ public class HMACToken {
             System.exit(1);
          }
 
-         System.out.println(String.format("Writing ids file, '%s'...", idsFile.getAbsolutePath()));
+         System.out.printf("Writing ids file, '%s'...%n", idsFile.getAbsolutePath());
          try(PrintWriter writer = new PrintWriter(new FileWriter(idsFile))) {
             for(String id : loadIds(outputFile)) {
                writer.println(id);
@@ -523,5 +523,5 @@ public class HMACToken {
    /**
     * The token splitter.
     */
-   private static Splitter tokenSplitter = Splitter.on(',').limit(2);
+   private static final Splitter tokenSplitter = Splitter.on(',').limit(2);
 }

@@ -668,5 +668,5 @@ public abstract class Server {
    /**
     * The key store monitor.
     */
-   private KeyStoreMonitor keyStoreMonitor = new KeyStoreMonitor();
+   private final KeyStoreMonitor keyStoreMonitor = new KeyStoreMonitor();
 }

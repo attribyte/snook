@@ -714,6 +714,6 @@ public class CORSAuthenticator implements Authenticator<Boolean> {
    private final String exposeHeaders;
    private final String allowMethods;
    private final String maxAgeSeconds;
-   private static Splitter recordSplitter = Splitter.on(',').trimResults().omitEmptyStrings();
-   private static Joiner recordJoiner = Joiner.on(',').skipNulls();
+   private static final Splitter recordSplitter = Splitter.on(',').trimResults().omitEmptyStrings();
+   private static final Joiner recordJoiner = Joiner.on(',').skipNulls();
 }

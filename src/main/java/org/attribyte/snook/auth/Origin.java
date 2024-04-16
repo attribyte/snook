@@ -34,7 +34,7 @@ public class Origin {
    /**
     * The empty origin.
     */
-   public static final Origin EMPTY = new Origin((HostAndPort)null, false);
+   public static final Origin EMPTY = new Origin(null, false);
 
    /**
     * Creates an origin from a string that must be a valid URI.

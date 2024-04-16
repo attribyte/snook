@@ -261,10 +261,10 @@ public class TestHttpServletResponse implements HttpServletResponse {
    /**
     * A map of headers.
     */
-   public Map<String, String> headers = Maps.newHashMap();
+   public final Map<String, String> headers = Maps.newHashMap();
 
    /**
     * A list of added cookies.
     */
-   public List<Cookie> cookies = Lists.newArrayList();
+   public final List<Cookie> cookies = Lists.newArrayList();
 }
