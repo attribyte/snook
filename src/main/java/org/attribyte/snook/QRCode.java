@@ -25,7 +25,6 @@ import com.google.protobuf.ByteString;
 import io.nayuki.qrcodegen.QrCode;
 import io.nayuki.qrcodegen.QrSegment;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.units.qual.C;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
