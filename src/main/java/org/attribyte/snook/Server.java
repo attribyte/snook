@@ -165,8 +165,8 @@ public abstract class Server {
 
    private final Properties props(final String propsResourceName, final String[] args) throws IOException {
       Map<String, String> parameterMap = Maps.newHashMap();
-      commandLineParameters(args, parameterMap);
-      return loadProperties(propsResourceName, args, parameterMap);
+      String[] useArgs = commandLineParameters(args, parameterMap);
+      return loadProperties(propsResourceName, useArgs, parameterMap);
    }
 
    /**
