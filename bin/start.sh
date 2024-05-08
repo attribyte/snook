@@ -50,7 +50,9 @@ LOCAL_CONFIG="${INSTALL_DIR}/config/${SERVER_NAME}.local.props"
 CONSOLE_LOG="${INSTALL_DIR}/logs/${SERVER_NAME}.log"
 PID_FILE="${SERVER_NAME}.pid"
 source "$INSTALL_DIR/config/$CONFIG_FILE"
-CLASSPATH="${INSTALL_DIR}/target/${SERVER_JAR}:${INSTALL_DIR}/target/dependency/*"
+export CLASSPATH="${INSTALL_DIR}/target/${SERVER_JAR}:${INSTALL_DIR}/target/dependency/*"
+
+echo "CLASSPATH: $CLASSPATH"
 
 if [ -z $2 ]
 then
