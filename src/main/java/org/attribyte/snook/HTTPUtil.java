@@ -27,6 +27,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collections;
+
+import static com.google.common.base.Strings.nullToEmpty;
 
 /**
  * HTTP-related utilities.
@@ -169,5 +172,36 @@ public class HTTPUtil {
       response.setHeader(HttpHeaders.WWW_AUTHENTICATE, buf.toString());
       response.setContentLength(0);
       response.flushBuffer();
+   }
+
+   /**
+    * A splitter for the path.
+    */
+   private static final Splitter pathSplitter = Splitter.on('/').omitEmptyStrings().limit(8).trimResults();
+
+   /**
+    * Splits the path components.
+    * @param request The request.
+    * @return The list of components, or empty list if none.
+    */
+   public static final Iterable<String> splitPath(final HttpServletRequest request) {
+      return splitPath(request.getPathInfo());
+   }
+
+   /**
+    * Splits the path components.
+    * @param pathInfo The path info.
+    * @return The list of components, or empty list if none.
+    */
+   public static final Iterable<String> splitPath(String pathInfo) {
+      pathInfo = nullToEmpty(pathInfo).trim();
+      if(pathInfo.isEmpty() || pathInfo.equals("/")) {
+         return Collections.emptyList();
+      } else {
+         if(pathInfo.endsWith("/")) {
+            pathInfo = pathInfo.substring(0, pathInfo.length() - 1);
+         }
+         return pathSplitter.split(pathInfo);
+      }
    }
 }

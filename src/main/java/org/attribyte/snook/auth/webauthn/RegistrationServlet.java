@@ -22,25 +22,55 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Iterator;
+
+import static org.attribyte.snook.HTTPUtil.splitPath;
 
 /**
  * A servlet that handles webauthn registration.
  */
-public class RegistrationChallengeServlet extends HttpServlet {
+public class RegistrationServlet extends HttpServlet {
    @Override
    protected final void doGet(final HttpServletRequest request,
                               final HttpServletResponse response) throws IOException {
-      request(request, response);
+      respond(request, response);
    }
 
    @Override
    protected final void doPost(final HttpServletRequest request,
                                final HttpServletResponse response) throws IOException {
-      request(request, response);
+      respond(request, response);
    }
 
-   protected final void request(final HttpServletRequest request,
-                                final HttpServletResponse response) throws IOException {
+   private void respond(final HttpServletRequest request,
+                               final HttpServletResponse response) throws IOException {
+      Iterator<String> path = splitPath(request).iterator();
+      final String op;
+      if(path.hasNext()) {
+         op = path.next();
+      } else {
+         response.sendError(400, "Expecting an operation");
+         return;
+      }
 
+      switch(op) {
+         case "challenge": {
+            System.out.println("GOT CHALLENGE");
+            if(!path.hasNext()) {
+               response.sendError(400, "Expecting a username");
+               return;
+            }
+            final String username = path.next();
+            System.out.println("GOT USERNAME: " + username);
+            System.out.println("Challenge...");
+
+         }
+         break;
+         default:
+            response.sendError(400, "Invalid operation");
+
+      }
+
+      response.sendError(500, "ERROR");
    }
 }
