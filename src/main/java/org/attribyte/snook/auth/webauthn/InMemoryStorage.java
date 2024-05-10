@@ -8,27 +8,27 @@ import com.yubico.webauthn.CredentialRepository;
 import com.yubico.webauthn.RegisteredCredential;
 import com.yubico.webauthn.data.ByteArray;
 import com.yubico.webauthn.data.PublicKeyCredentialDescriptor;
+import com.yubico.webauthn.data.UserIdentity;
 import org.attribyte.api.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-public class InMemoryStorage implements CredentialRepository {
-
-   private static final org.slf4j.Logger log = LoggerFactory.getLogger(InMemoryStorage.class);
+public class InMemoryStorage implements Storage {
 
    /**
     * Create credential storage with a logger.
-    * @param logger The logger.
     * @param maximumCacheSize The maximum cache size.
     * @param expireTimeHours Time users expire from the cache if not accessed.
+    * @param logger The logger.
     */
-   public InMemoryStorage(final Logger logger,
-                          final int maximumCacheSize,
-                          final int expireTimeHours) {
+   public InMemoryStorage(final int maximumCacheSize,
+                          final int expireTimeHours,
+                          final Logger logger) {
       this.logger = logger;
       registrationStorage = CacheBuilder.newBuilder().maximumSize(maximumCacheSize)
               .expireAfterAccess(expireTimeHours, TimeUnit.HOURS).build();
@@ -91,30 +91,24 @@ public class InMemoryStorage implements CredentialRepository {
    @Override
    public Set<RegisteredCredential> lookupAll(final ByteArray credentialId) {
       final Set<RegisteredCredential> credentials = Sets.newHashSetWithExpectedSize(4);
-      registrationStorage.asMap().values().forEach(registrations -> {
-         registrations.forEach(registration -> {
-            if(registration.credential.getCredentialId().equals(credentialId)) {
-               credentials.add(
-                       RegisteredCredential.builder()
-                               .credentialId(registration.credential.getCredentialId())
-                               .userHandle(registration.userIdentity.getId())
-                               .publicKeyCose(registration.credential.getPublicKeyCose())
-                               .signatureCount(registration.credential.getSignatureCount())
-                               .build()
-               );
-            }
-         });
-      });
+      registrationStorage.asMap().values().forEach(registrations ->
+              registrations.forEach(registration -> {
+         if(registration.credential.getCredentialId().equals(credentialId)) {
+            credentials.add(
+                    RegisteredCredential.builder()
+                            .credentialId(registration.credential.getCredentialId())
+                            .userHandle(registration.userIdentity.getId())
+                            .publicKeyCose(registration.credential.getPublicKeyCose())
+                            .signatureCount(registration.credential.getSignatureCount())
+                            .build()
+            );
+         }
+      }));
 
       return credentials;
    }
 
-   /**
-    * Adds registration for a user.
-    * @param username The username.
-    * @param registration The registration.
-    * @return Was the registration previously added?
-    */
+   @Override
    public boolean addRegistration(final String username, final CredentialRegistration registration) {
       try {
          return registrationStorage.get(username, Sets::newHashSet).add(registration);
@@ -122,6 +116,19 @@ public class InMemoryStorage implements CredentialRepository {
          logger.error(String.format("Failed to add registration for '%s'", username), e);
          throw new RuntimeException(e);
       }
+   }
+
+   public Collection<CredentialRegistration> registrationsByUsername(String username) {
+      try {
+         return registrationStorage.get(username, Sets::newHashSet);
+      } catch (ExecutionException e) {
+         logger.error(String.format("Registration lookup failed for '%s'", username), e);
+         throw new RuntimeException(e);
+      }
+   }
+
+   public UserIdentity user(final String username) {
+      return null;
    }
 
    /**
