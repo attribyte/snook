@@ -22,9 +22,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import com.google.common.cache.Cache;
@@ -51,11 +52,9 @@ public class RegistrationServlet extends HttpServlet {
                               final Storage storage,
                               final Sessions sessions,
                               final Cache<ByteArray, RegistrationRequest> registrationRequestCache,
-                              final Logger logger) {
-      this.relayingParty = relayingParty;
-      this.storage = storage;
-      this.sessions = sessions;
-      this.registrationRequestCache = registrationRequestCache;
+                              final Logger logger) throws MalformedURLException {
+      this.ops = new RegistrationOperations(relayingParty, storage, sessions,
+              registrationRequestCache, logger, new URL("http://localhost:8081/register"));
       this.logger = logger;
    }
 
@@ -104,83 +103,12 @@ public class RegistrationServlet extends HttpServlet {
    }
 
    /**
-    * Start a registration.
-    * @param username The username.
-    * @param displayName The display name.
-    * @param credentialNickname The optional credential nickname.
-    * @param residentKeyRequirement The resident key requirement.
-    * @param sessionToken The session token.
-    * @return The request or {@code null} if user with name exists.
+    * The registration operations.
     */
-   public RegistrationRequest startRegistration(
-           @NonNull String username,
-           @Nullable String displayName,
-           @Nullable String credentialNickname,
-           ResidentKeyRequirement residentKeyRequirement,
-           @Nullable ByteArray sessionToken) throws ExecutionException {
-      final Collection<CredentialRegistration> registrations =
-              storage.registrationsByUsername(username);
-      final UserIdentity registeringUser;
-      final boolean permissionGranted;
-      if(registrations.isEmpty()) {
-         registeringUser = UserIdentity.builder()
-                 .name(username)
-                 .displayName(displayName)
-                 .id(randomBytes(32))
-                 .build();
-         permissionGranted = true;
-      } else {
-         registeringUser = registrations.iterator().next().userIdentity;
-         CredentialRegistration registration = registrations.iterator().next();
-         permissionGranted = sessions.isSessionForUser(registeringUser.getId(), sessionToken);
-      }
-
-      if(!permissionGranted) {
-         logger.warn("Registration request received for already registered user ('%s')", username);
-         return null;
-      }
-
-      RegistrationRequest request =
-              new RegistrationRequest(
-                      username,
-                      credentialNickname,
-                      randomBytes(32),
-                      relayingParty.startRegistration(
-                              StartRegistrationOptions.builder()
-                                      .user(registeringUser)
-                                      .authenticatorSelection(
-                                              AuthenticatorSelectionCriteria.builder()
-                                                      .residentKey(residentKeyRequirement)
-                                                      .build())
-                                      .build()),
-                      sessions.createSession(registeringUser.getId()));
-      registrationRequestCache.put(request.requestId, request);
-      return request;
-   }
+   private final RegistrationOperations ops;
 
    /**
     * The logger.
     */
    private final Logger logger;
-
-   /**
-    * The relaying party.
-    */
-   private final RelyingParty relayingParty;
-
-   /**
-    * The storage.
-    */
-   private final Storage storage;
-
-   /**
-    * Registration sessions.
-    */
-   private final Sessions sessions;
-
-   /**
-    * The registration request cache.
-    */
-   private final Cache<ByteArray, RegistrationRequest> registrationRequestCache;
-
 }

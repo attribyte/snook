@@ -62,5 +62,5 @@ function bufferEncode(value) {
     return btoa(String.fromCharCode.apply(null, new Uint8Array(value)))
         .replace(/\+/g, "-")
         .replace(/\//g, "_")
-        .replace(/=/g, "");;
+        .replace(/=/g, "");
 }

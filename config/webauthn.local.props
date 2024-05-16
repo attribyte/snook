@@ -3,7 +3,7 @@ server.debug=true
 server.allowSymlinks=true
 
 assets.default.resource.Dir=$HTDOCS
-assets.default.paths=/index.html,/js/*
+assets.default.paths=/index.html,/js/*,/lib/*,/css/*
 assets.default.etags=true
 assets.default.gzip=true
 assets.default.directoryAllowed=false
