@@ -1,6 +1,7 @@
 package org.attribyte.snook.auth.webauthn;
 
 import com.yubico.webauthn.CredentialRepository;
+import org.attribyte.snook.auth.webauthn.data.CredentialRegistration;
 
 import java.util.Collection;
 
@@ -19,4 +20,9 @@ public interface Storage extends CredentialRepository {
     * @return The set of registrations.
     */
    public Collection<CredentialRegistration> registrationsByUsername(String username);
+
+   /**
+    * @return Does the user exist?
+    */
+   public boolean userExists(String username);
 }

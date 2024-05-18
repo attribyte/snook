@@ -8,7 +8,7 @@ public class VersionOperations extends Operations {
    }
 
    VersionOperations() {
-      super(null);
+      super(null, true);
    }
 
    static final VersionResponse VERSION = new VersionResponse();

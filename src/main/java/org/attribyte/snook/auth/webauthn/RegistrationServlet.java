@@ -24,24 +24,17 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.concurrent.ExecutionException;
 
 import com.google.common.cache.Cache;
 import com.yubico.webauthn.RelyingParty;
-import com.yubico.webauthn.StartRegistrationOptions;
-import com.yubico.webauthn.data.AuthenticatorSelectionCriteria;
 import com.yubico.webauthn.data.ByteArray;
-import com.yubico.webauthn.data.ResidentKeyRequirement;
-import com.yubico.webauthn.data.UserIdentity;
 import org.attribyte.api.Logger;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.attribyte.snook.auth.webauthn.data.RegistrationRequest;
 
 
+import static com.google.common.base.Strings.nullToEmpty;
 import static org.attribyte.snook.HTTPUtil.splitPath;
-import static org.attribyte.snook.auth.webauthn.Util.randomBytes;
 
 /**
  * A servlet that handles webauthn registration.
@@ -52,9 +45,11 @@ public class RegistrationServlet extends HttpServlet {
                               final Storage storage,
                               final Sessions sessions,
                               final Cache<ByteArray, RegistrationRequest> registrationRequestCache,
+                              final MetadataService metadataService,
                               final Logger logger) throws MalformedURLException {
       this.ops = new RegistrationOperations(relayingParty, storage, sessions,
-              registrationRequestCache, logger, new URL("http://localhost:8081/register"));
+              registrationRequestCache, metadataService,
+              logger, new URL("http://localhost:8081/api/"), true);
       this.logger = logger;
    }
 
@@ -82,16 +77,14 @@ public class RegistrationServlet extends HttpServlet {
       }
 
       switch(op) {
-         case "challenge": {
-            System.out.println("GOT CHALLENGE");
-            if(!path.hasNext()) {
-               response.sendError(400, "Expecting a username");
-               return;
-            }
-            final String username = path.next();
-            System.out.println("GOT USERNAME: " + username);
-            System.out.println("Challenge...");
-
+         case "register": {
+            String username = nullToEmpty(request.getParameter("username")).trim();
+            String displayName = nullToEmpty(request.getParameter("displayName")).trim();
+            String credentialNickname = nullToEmpty(request.getParameter("credentialNickname")).trim();
+            String requireResidentKey = nullToEmpty(request.getParameter("requireResidentKey")).trim();
+            String sessionTokenBase64 = nullToEmpty(request.getParameter("sessionToken")).trim();
+            ops.startRegistration(username, displayName, credentialNickname,
+                    requireResidentKey, sessionTokenBase64, response);
          }
          break;
          default:

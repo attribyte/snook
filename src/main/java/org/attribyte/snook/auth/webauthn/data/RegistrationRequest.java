@@ -1,4 +1,4 @@
-package org.attribyte.snook.auth.webauthn;
+package org.attribyte.snook.auth.webauthn.data;
 
 import com.google.common.base.MoreObjects;
 import com.yubico.webauthn.data.ByteArray;
@@ -7,6 +7,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.google.common.base.Strings.emptyToNull;
 
@@ -16,7 +17,7 @@ public class RegistrationRequest {
                               @Nullable final String credentialNickname,
                               @NonNull final ByteArray requestId,
                               @NonNull final PublicKeyCredentialCreationOptions publicKeyCredentialCreationOptions,
-                              @NonNull final ByteArray sessionToken) {
+                              @NonNull final Optional<ByteArray> sessionToken) {
       this.username = username;
       this.credentialNickname = emptyToNull(credentialNickname);
       this.requestId = requestId;
@@ -51,9 +52,9 @@ public class RegistrationRequest {
               .toString();
    }
 
-   final String username;
-   final String credentialNickname;
-   final ByteArray requestId;
-   final PublicKeyCredentialCreationOptions publicKeyCredentialCreationOptions;
-   final ByteArray sessionToken;
+   public final String username;
+   public final String credentialNickname;
+   public final ByteArray requestId;
+   public final PublicKeyCredentialCreationOptions publicKeyCredentialCreationOptions;
+   public final Optional<ByteArray> sessionToken;
 }

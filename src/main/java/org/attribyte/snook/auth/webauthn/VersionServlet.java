@@ -10,7 +10,7 @@ public class VersionServlet extends HttpServlet {
    @Override
    protected final void doGet(final HttpServletRequest request,
                               final HttpServletResponse response) throws IOException {
-      ops.writeResponse(VersionOperations.VERSION, true, response);
+      ops.writeResponse(VersionOperations.VERSION, response);
    }
 
    private final VersionOperations ops = new VersionOperations();

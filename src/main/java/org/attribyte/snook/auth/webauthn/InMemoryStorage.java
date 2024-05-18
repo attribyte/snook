@@ -4,13 +4,12 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.yubico.webauthn.CredentialRepository;
 import com.yubico.webauthn.RegisteredCredential;
 import com.yubico.webauthn.data.ByteArray;
 import com.yubico.webauthn.data.PublicKeyCredentialDescriptor;
 import com.yubico.webauthn.data.UserIdentity;
 import org.attribyte.api.Logger;
-import org.slf4j.LoggerFactory;
+import org.attribyte.snook.auth.webauthn.data.CredentialRegistration;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -125,6 +124,10 @@ public class InMemoryStorage implements Storage {
          logger.error(String.format("Registration lookup failed for '%s'", username), e);
          throw new RuntimeException(e);
       }
+   }
+
+   public boolean userExists(String username) {
+      return !registrationsByUsername(username).isEmpty();
    }
 
    public UserIdentity user(final String username) {

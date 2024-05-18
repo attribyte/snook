@@ -1,4 +1,4 @@
-package org.attribyte.snook.auth.webauthn;
+package org.attribyte.snook.auth.webauthn.data;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

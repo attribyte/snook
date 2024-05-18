@@ -1,6 +1,8 @@
 package org.attribyte.snook.auth.webauthn;
 
 
+import org.attribyte.snook.auth.webauthn.data.RegistrationRequest;
+
 import java.net.URL;
 
 class StartRegistrationResponse {
