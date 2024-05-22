@@ -170,7 +170,7 @@ class RegistrationOperations extends Operations {
                                   final HttpServletResponse response) throws IOException {
 
       String responseJson = new String(request.getInputStream().readAllBytes(), Charsets.UTF_8);
-      RegistrationResponse registrationResponse = null;
+      RegistrationResponse registrationResponse;
       try {
          registrationResponse = jsonMapper.readValue(responseJson, RegistrationResponse.class);
       } catch (IOException e) {
@@ -184,7 +184,7 @@ class RegistrationOperations extends Operations {
          writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Finish registration failed");
       } else {
          try {
-            com.yubico.webauthn.RegistrationResult registration =
+            RegistrationResult registration =
                     relayingParty.finishRegistration(
                             FinishRegistrationOptions.builder()
                                     .request(registrationRequest.publicKeyCredentialCreationOptions)
@@ -273,8 +273,6 @@ class RegistrationOperations extends Operations {
       storage.addRegistration(userIdentity.getName(), reg);
       return reg;
    }
-
-
 
    /**
     * The logger.

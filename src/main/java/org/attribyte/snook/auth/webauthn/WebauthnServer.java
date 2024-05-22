@@ -11,6 +11,7 @@ import com.yubico.webauthn.data.ByteArray;
 import com.yubico.webauthn.data.RelyingPartyIdentity;
 import com.yubico.webauthn.data.exception.Base64UrlException;
 import org.attribyte.snook.Server;
+import org.attribyte.snook.auth.webauthn.attestation.YubicoJsonMetadataService;
 import org.attribyte.snook.auth.webauthn.data.RegistrationRequest;
 import org.eclipse.jetty.servlet.ServletHolder;
 
@@ -62,6 +63,44 @@ public class WebauthnServer extends Server {
               .expireAfterAccess(10, TimeUnit.MINUTES)
               .build(); //TODO
       this.metadataService = buildMetadataService();
+      this.useFidoMds = props.getProperty("useFidoMds", "false").equalsIgnoreCase("true");
+   }
+
+   private MetadataService getMetadataService()
+           throws CertPathValidatorException,
+           InvalidAlgorithmParameterException,
+           Base64UrlException,
+           DigestException,
+           FidoMetadataDownloaderException,
+           CertificateException,
+           UnexpectedLegalHeader,
+           IOException,
+           NoSuchAlgorithmException,
+           SignatureException,
+           InvalidKeyException {
+      if (useFidoMds) {
+         logger.info("Using combination of Yubico JSON file and FIDO MDS for attestation metadata.");
+         return new CompositeMetadataService(
+                 new YubicoJsonMetadataService(),
+                 new FidoMetadataServiceAdapter(
+                         FidoMetadataService.builder()
+                                 .useBlob(
+                                         FidoMetadataDownloader.builder()
+                                                 .expectLegalHeader(
+                                                         "Retrieval and use of this BLOB indicates acceptance of the appropriate agreement located at https://fidoalliance.org/metadata/metadata-legal-terms/")
+                                                 .useDefaultTrustRoot()
+                                                 .useTrustRootCacheFile(
+                                                         new File("webauthn-server-demo-fido-mds-trust-root-cache.bin"))
+                                                 .useDefaultBlob()
+                                                 .useBlobCacheFile(
+                                                         new File("webauthn-server-demo-fido-mds-blob-cache.bin"))
+                                                 .build()
+                                                 .loadCachedBlob())
+                                 .build()));
+      } else {
+         logger.info("Using only Yubico JSON file for attestation metadata.");
+         return new YubicoJsonMetadataService();
+      }
    }
 
    private MetadataService buildMetadataService()
@@ -123,5 +162,10 @@ public class WebauthnServer extends Server {
     * The metadata service.
     */
    private final MetadataService metadataService;
+
+   /**
+    * Use FIDO mds.
+    */
+   private final boolean useFidoMds;
 
 }

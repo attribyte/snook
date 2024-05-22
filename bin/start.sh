@@ -70,15 +70,15 @@ fi
 if [ $DEBUG == "debug" ]
 then
  if [ -f "$LOCAL_CONFIG" ]; then
-  $JAVA_EXE -cp "${CLASSPATH}" -Dserver.debug=true -Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS $LOCAL_CONFIG
+  $JAVA_EXE -cp "${CLASSPATH}" -Dcom.sun.security.enableCRLDP=true -Dserver.debug=true -Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS $LOCAL_CONFIG
  else
-  $JAVA_EXE -cp "${CLASSPATH}" -Dserver.debug=true -Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS
+  $JAVA_EXE -cp "${CLASSPATH}" -Dcom.sun.security.enableCRLDP=true -Dserver.debug=true -Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS
  fi
 else
  if [ -f "$LOCAL_CONFIG" ]; then
-  nohup $JAVA_EXE -cp "${CLASSPATH}" -Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS $LOCAL_CONFIG 1> $CONSOLE_LOG 2>&1 &
+  nohup $JAVA_EXE -cp "${CLASSPATH}" -Dcom.sun.security.enableCRLDP=true -Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS $LOCAL_CONFIG 1> $CONSOLE_LOG 2>&1 &
  else
-  nohup $JAVA_EXE -cp "${CLASSPATH}" -Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS 1> $CONSOLE_LOG 2>&1 &
+  nohup $JAVA_EXE -cp "${CLASSPATH}" -Dcom.sun.security.enableCRLDP=true -Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS 1> $CONSOLE_LOG 2>&1 &
  fi
  echo $! > $INSTALL_DIR/run/$PID_FILE
 fi

@@ -7,3 +7,7 @@ assets.default.paths=/index.html,/js/*,/lib/*,/css/*
 assets.default.etags=true
 assets.default.gzip=true
 assets.default.directoryAllowed=false
+
+rp.id=localhost
+rp.name=Test Server
+useFidoMds=true
