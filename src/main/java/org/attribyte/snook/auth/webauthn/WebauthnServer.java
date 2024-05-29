@@ -62,7 +62,7 @@ public class WebauthnServer extends Server {
               .maximumSize(100)
               .expireAfterAccess(10, TimeUnit.MINUTES)
               .build(); //TODO
-      this.metadataService = buildMetadataService();
+      this.metadataService = getMetadataService();
       this.useFidoMds = props.getProperty("useFidoMds", "false").equalsIgnoreCase("true");
    }
 
@@ -101,35 +101,6 @@ public class WebauthnServer extends Server {
          logger.info("Using only Yubico JSON file for attestation metadata.");
          return new YubicoJsonMetadataService();
       }
-   }
-
-   private MetadataService buildMetadataService()
-           throws CertPathValidatorException,
-           InvalidAlgorithmParameterException,
-           Base64UrlException,
-           DigestException,
-           FidoMetadataDownloaderException,
-           CertificateException,
-           UnexpectedLegalHeader,
-           IOException,
-           NoSuchAlgorithmException,
-           SignatureException,
-           InvalidKeyException {
-      return new FidoMetadataServiceAdapter(
-              FidoMetadataService.builder()
-                      .useBlob(
-                              FidoMetadataDownloader.builder()
-                                      .expectLegalHeader(
-                                              "Retrieval and use of this BLOB indicates acceptance of the appropriate agreement located at https://fidoalliance.org/metadata/metadata-legal-terms/")
-                                      .useDefaultTrustRoot()
-                                      .useTrustRootCacheFile(
-                                              new File("webauthn-server-demo-fido-mds-trust-root-cache.bin"))
-                                      .useDefaultBlob()
-                                      .useBlobCacheFile(
-                                              new File("webauthn-server-demo-fido-mds-blob-cache.bin"))
-                                      .build()
-                                      .loadCachedBlob())
-                      .build());
    }
 
    /**
