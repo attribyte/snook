@@ -71,13 +71,22 @@ public class RegistrationServlet extends HttpServlet {
       final String op;
       if(path.hasNext()) {
          op = path.next();
+         if(!op.equalsIgnoreCase("finish")) {
+            response.sendError(400, "Expecting the 'finish' operation");
+            return;
+         }
       } else {
-         response.sendError(400, "Expecting an operation");
-         return;
+         op = "";
       }
 
       switch(op) {
-         case "register": {
+         case "finish": {
+            System.out.println("GOT FINISH");
+            ops.finishRegistration(request, response);
+         }
+         break;
+         default: {
+            System.out.println("GOT REGISTER");
             String username = nullToEmpty(request.getParameter("username")).trim();
             String displayName = nullToEmpty(request.getParameter("displayName")).trim();
             String credentialNickname = nullToEmpty(request.getParameter("credentialNickname")).trim();
@@ -87,12 +96,7 @@ public class RegistrationServlet extends HttpServlet {
                     requireResidentKey, sessionTokenBase64, response);
          }
          break;
-         default:
-            response.sendError(400, "Invalid operation");
-
       }
-
-      response.sendError(500, "ERROR");
    }
 
    /**

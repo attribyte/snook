@@ -33,7 +33,8 @@ public class WebauthnServer extends Server {
       server.rootContext.addServlet(new ServletHolder(new RegistrationServlet(server.relayingParty, server.storage,
                       server.sessions, server.registrationRequestCache, server.metadataService, server.logger))
               , "/api/register/*");
-      server.rootContext.addServlet(new ServletHolder(new VersionServlet()), "/api/version");
+      server.rootContext.addServlet(new ServletHolder(new VersionServlet()), "/api/version/*");
+      server.rootContext.addServlet(new ServletHolder(new RestIndexServlet()), "/api/v1/*");
       server.httpServer.start();
       server.httpServer.join();
    }

@@ -82,7 +82,7 @@ class RegistrationOperations extends Operations {
          return;
       }
 
-      final URL finishPath = new URL(baseURL, "/finish");
+      final URL finishPath = new URL(baseURL, "/api/register/finish");
       final StartRegistrationResponse registrationResponse = new StartRegistrationResponse(registrationRequest, finishPath);
       writeResponse(registrationResponse, response);
    }
@@ -173,6 +173,7 @@ class RegistrationOperations extends Operations {
       RegistrationResponse registrationResponse;
       try {
          registrationResponse = jsonMapper.readValue(responseJson, RegistrationResponse.class);
+         System.out.println("GOT REGISTRATION RESPONSE");
       } catch (IOException e) {
          writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid JSON");
          return;
@@ -181,8 +182,10 @@ class RegistrationOperations extends Operations {
       RegistrationRequest registrationRequest = registrationRequestCache.getIfPresent(registrationResponse.requestId);
       registrationRequestCache.invalidate(registrationResponse.requestId);
       if (registrationRequest == null) {
+         System.out.println("REGISTRATION REQUEST WAS NULL");
          writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Finish registration failed");
       } else {
+         System.out.println("PROCESSING REGISTRATION REQUEST");
          try {
             RegistrationResult registration =
                     relayingParty.finishRegistration(
@@ -204,6 +207,8 @@ class RegistrationOperations extends Operations {
                                                        token))
                                .orElse(false);
 
+               System.out.println("IS VALID SESSION");
+
                logger.debug("Session token: {}", registrationRequest.sessionToken);
                logger.debug("Valid session: {}", isValidSession);
 
@@ -217,11 +222,14 @@ class RegistrationOperations extends Operations {
                logger.debug("permissionGranted: {}", permissionGranted);
 
                if (!permissionGranted) {
+                  System.out.println("PERMISSION DENIED");
                   throw new RegistrationFailedException(
                           new IllegalArgumentException(
                                   String.format("User %s already exists", registrationRequest.username)));
                }
             }
+
+            System.out.println("MADE IT HERE");
 
             SuccessfulRegistrationResult successfulRegistrationResult =
                     new SuccessfulRegistrationResult(
@@ -234,9 +242,14 @@ class RegistrationOperations extends Operations {
                             registration.isAttestationTrusted(),
                             sessions.createSession(
                                     registrationRequest.publicKeyCredentialCreationOptions.getUser().getId()));
+            writeResponse(successfulRegistrationResult, response);
          } catch (RegistrationFailedException e) {
+            System.out.println("REGISTRATION FAILED");
+            e.printStackTrace();
             logger.debug("fail finishRegistration responseJson: {}", responseJson, e);
          } catch (Exception e) {
+            System.out.println("REGISTRATION FAILED 2");
+            e.printStackTrace();
             logger.error("fail finishRegistration responseJson: {}", responseJson, e);
          }
       }
