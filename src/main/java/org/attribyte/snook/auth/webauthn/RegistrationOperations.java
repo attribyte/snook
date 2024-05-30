@@ -173,7 +173,6 @@ class RegistrationOperations extends Operations {
       RegistrationResponse registrationResponse;
       try {
          registrationResponse = jsonMapper.readValue(responseJson, RegistrationResponse.class);
-         System.out.println("GOT REGISTRATION RESPONSE");
       } catch (IOException e) {
          writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid JSON");
          return;
@@ -182,10 +181,8 @@ class RegistrationOperations extends Operations {
       RegistrationRequest registrationRequest = registrationRequestCache.getIfPresent(registrationResponse.requestId);
       registrationRequestCache.invalidate(registrationResponse.requestId);
       if (registrationRequest == null) {
-         System.out.println("REGISTRATION REQUEST WAS NULL");
          writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Finish registration failed");
       } else {
-         System.out.println("PROCESSING REGISTRATION REQUEST");
          try {
             RegistrationResult registration =
                     relayingParty.finishRegistration(
@@ -228,8 +225,6 @@ class RegistrationOperations extends Operations {
                                   String.format("User %s already exists", registrationRequest.username)));
                }
             }
-
-            System.out.println("MADE IT HERE");
 
             SuccessfulRegistrationResult successfulRegistrationResult =
                     new SuccessfulRegistrationResult(

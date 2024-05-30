@@ -10,4 +10,5 @@ assets.default.directoryAllowed=false
 
 rp.id=localhost
 rp.name=Test Server
+rp.origins=http://localhost:8081,http://localhost:8080,http://localhost
 useFidoMds=true

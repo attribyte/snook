@@ -1,5 +1,6 @@
 package org.attribyte.snook.auth.webauthn;
 
+import com.google.common.base.Splitter;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
@@ -12,6 +13,7 @@ import com.yubico.webauthn.data.ByteArray;
 import com.yubico.webauthn.data.RelyingPartyIdentity;
 import com.yubico.webauthn.data.exception.Base64UrlException;
 import org.attribyte.snook.Server;
+import org.attribyte.snook.auth.Origin;
 import org.attribyte.snook.auth.webauthn.attestation.YubicoJsonMetadataService;
 import org.attribyte.snook.auth.webauthn.data.RegistrationRequest;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -25,6 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.cert.CertPathValidatorException;
 import java.security.cert.CertificateException;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class WebauthnServer extends Server {
@@ -55,12 +58,15 @@ public class WebauthnServer extends Server {
               .id(rpId)
               .name(rpName).build();
 
+      String originsProp = props.getProperty("rp.origins");
+      Set<String> origins = ImmutableSet.copyOf(Splitter.on(',').trimResults().splitToList(originsProp));
+
       this.sessions = new Sessions(1000, 5); //TODO
       this.storage = new InMemoryStorage(1000, 24, logger);
       this.relayingParty = RelyingParty.builder()
               .identity(rpIdentity)
               .credentialRepository(this.storage)
-              .origins(ImmutableSet.of("http://localhost:8081")) //TODO
+              .origins(origins)
               .build();
       this.registrationRequestCache = CacheBuilder.newBuilder()
               .maximumSize(100)
