@@ -2,6 +2,7 @@ package org.attribyte.snook.auth.webauthn;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableSet;
 import com.yubico.fido.metadata.FidoMetadataDownloader;
 import com.yubico.fido.metadata.FidoMetadataDownloaderException;
 import com.yubico.fido.metadata.FidoMetadataService;
@@ -58,7 +59,9 @@ public class WebauthnServer extends Server {
       this.storage = new InMemoryStorage(1000, 24, logger);
       this.relayingParty = RelyingParty.builder()
               .identity(rpIdentity)
-              .credentialRepository(this.storage).build();
+              .credentialRepository(this.storage)
+              .origins(ImmutableSet.of("http://localhost:8081")) //TODO
+              .build();
       this.registrationRequestCache = CacheBuilder.newBuilder()
               .maximumSize(100)
               .expireAfterAccess(10, TimeUnit.MINUTES)
