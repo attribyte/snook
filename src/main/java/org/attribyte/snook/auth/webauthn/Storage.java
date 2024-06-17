@@ -1,5 +1,6 @@
 package org.attribyte.snook.auth.webauthn;
 
+import com.yubico.webauthn.AssertionResult;
 import com.yubico.webauthn.CredentialRepository;
 import org.attribyte.snook.auth.webauthn.data.CredentialRegistration;
 
@@ -25,4 +26,10 @@ public interface Storage extends CredentialRepository {
     * @return Does the user exist?
     */
    public boolean userExists(String username);
+
+   /**
+    * Update the signature count.
+    * @param result The assertion result.
+    */
+   public void updateSignatureCount(AssertionResult result);
 }

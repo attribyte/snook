@@ -15,6 +15,7 @@ import com.yubico.webauthn.data.exception.Base64UrlException;
 import org.attribyte.snook.Server;
 import org.attribyte.snook.auth.Origin;
 import org.attribyte.snook.auth.webauthn.attestation.YubicoJsonMetadataService;
+import org.attribyte.snook.auth.webauthn.data.AssertionRequestWrapper;
 import org.attribyte.snook.auth.webauthn.data.RegistrationRequest;
 import org.eclipse.jetty.servlet.ServletHolder;
 
@@ -37,6 +38,9 @@ public class WebauthnServer extends Server {
       server.rootContext.addServlet(new ServletHolder(new RegistrationServlet(server.relayingParty, server.storage,
                       server.sessions, server.registrationRequestCache, server.metadataService, server.logger))
               , "/api/register/*");
+      server.rootContext.addServlet(new ServletHolder(new AuthenticationServlet(server.relayingParty, server.storage,
+                      server.sessions, server.assertRequestCache, server.metadataService, server.logger))
+              , "/api/authenticate/*");
       server.rootContext.addServlet(new ServletHolder(new VersionServlet()), "/api/version/*");
       server.rootContext.addServlet(new ServletHolder(new RestIndexServlet()), "/api/v1/*");
       server.httpServer.start();
@@ -69,6 +73,10 @@ public class WebauthnServer extends Server {
               .origins(origins)
               .build();
       this.registrationRequestCache = CacheBuilder.newBuilder()
+              .maximumSize(100)
+              .expireAfterAccess(10, TimeUnit.MINUTES)
+              .build(); //TODO
+      this.assertRequestCache = CacheBuilder.newBuilder()
               .maximumSize(100)
               .expireAfterAccess(10, TimeUnit.MINUTES)
               .build(); //TODO
@@ -138,6 +146,11 @@ public class WebauthnServer extends Server {
     * The in-memory cache for registration requests.
     */
    private final Cache<ByteArray, RegistrationRequest> registrationRequestCache;
+
+   /**
+    * The in-memory cache for assert (login) requests.
+    */
+   private final Cache<ByteArray, AssertionRequestWrapper> assertRequestCache;
 
    /**
     * The metadata service.

@@ -18,6 +18,13 @@
 
 package org.attribyte.snook.auth.webauthn;
 
+import com.google.common.cache.Cache;
+import com.yubico.webauthn.RelyingParty;
+import com.yubico.webauthn.data.ByteArray;
+import org.attribyte.api.Logger;
+import org.attribyte.snook.auth.webauthn.data.AssertionRequestWrapper;
+import org.attribyte.snook.auth.webauthn.data.RegistrationRequest;
+
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,29 +33,22 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Iterator;
 
-import com.google.common.cache.Cache;
-import com.yubico.webauthn.RelyingParty;
-import com.yubico.webauthn.data.ByteArray;
-import org.attribyte.api.Logger;
-import org.attribyte.snook.auth.webauthn.data.RegistrationRequest;
-
-
 import static com.google.common.base.Strings.nullToEmpty;
 import static org.attribyte.snook.HTTPUtil.splitPath;
 
 /**
  * A servlet that handles webauthn registration.
  */
-public class RegistrationServlet extends HttpServlet {
+public class AuthenticationServlet extends HttpServlet {
 
-   public RegistrationServlet(final RelyingParty relayingParty,
-                              final Storage storage,
-                              final Sessions sessions,
-                              final Cache<ByteArray, RegistrationRequest> registrationRequestCache,
-                              final MetadataService metadataService,
-                              final Logger logger) throws MalformedURLException {
-      this.ops = new RegistrationOperations(relayingParty, storage, sessions,
-              registrationRequestCache, metadataService,
+   public AuthenticationServlet(final RelyingParty relayingParty,
+                                final Storage storage,
+                                final Sessions sessions,
+                                final Cache<ByteArray, AssertionRequestWrapper> assertationRequestCache,
+                                final MetadataService metadataService,
+                                final Logger logger) throws MalformedURLException {
+      this.ops = new AuthenticationOperations(relayingParty, storage, sessions,
+              assertationRequestCache, metadataService,
               logger, new URL("http://localhost:8081/api/"), true);
       this.logger = logger;
    }
@@ -81,17 +81,12 @@ public class RegistrationServlet extends HttpServlet {
 
       switch(op) {
          case "finish": {
-            ops.finishRegistration(request, response);
+            ops.finishAuthentication(request, response);
          }
          break;
          default: {
             String username = nullToEmpty(request.getParameter("username")).trim();
-            String displayName = nullToEmpty(request.getParameter("displayName")).trim();
-            String credentialNickname = nullToEmpty(request.getParameter("credentialNickname")).trim();
-            String requireResidentKey = nullToEmpty(request.getParameter("requireResidentKey")).trim();
-            String sessionTokenBase64 = nullToEmpty(request.getParameter("sessionToken")).trim();
-            ops.startRegistration(username, displayName, credentialNickname,
-                    requireResidentKey, sessionTokenBase64, response);
+            ops.startAuthentication(username, response);
          }
          break;
       }
@@ -100,7 +95,7 @@ public class RegistrationServlet extends HttpServlet {
    /**
     * The registration operations.
     */
-   private final RegistrationOperations ops;
+   private final AuthenticationOperations ops;
 
    /**
     * The logger.

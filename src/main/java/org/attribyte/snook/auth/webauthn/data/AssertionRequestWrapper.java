@@ -43,14 +43,14 @@ public class AssertionRequestWrapper {
   }
 
   @NonNull
-  private final ByteArray requestId;
+  public final ByteArray requestId;
 
   @NonNull
-  private final PublicKeyCredentialRequestOptions publicKeyCredentialRequestOptions;
+  public final PublicKeyCredentialRequestOptions publicKeyCredentialRequestOptions;
 
   @NonNull
-  private final Optional<String> username;
+  public final Optional<String> username;
 
   @JsonIgnore
-  private final transient AssertionRequest request;
+  public final transient AssertionRequest request;
 }

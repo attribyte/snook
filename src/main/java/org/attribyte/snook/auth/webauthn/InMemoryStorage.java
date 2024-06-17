@@ -4,6 +4,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.yubico.webauthn.AssertionResult;
 import com.yubico.webauthn.RegisteredCredential;
 import com.yubico.webauthn.data.ByteArray;
 import com.yubico.webauthn.data.PublicKeyCredentialDescriptor;
@@ -12,6 +13,7 @@ import org.attribyte.api.Logger;
 import org.attribyte.snook.auth.webauthn.data.CredentialRegistration;
 
 import java.util.Collection;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -124,6 +126,38 @@ public class InMemoryStorage implements Storage {
          logger.error(String.format("Registration lookup failed for '%s'", username), e);
          throw new RuntimeException(e);
       }
+   }
+
+   public Optional<CredentialRegistration> getRegistrationByUsernameAndCredentialId(
+           String username, ByteArray id) {
+      try {
+         return registrationStorage.get(username, java.util.HashSet::new).stream()
+                 .filter(credReg -> id.equals(credReg.credential.getCredentialId()))
+                 .findFirst();
+      } catch (ExecutionException e) {
+         logger.error("Registration lookup failed", e);
+         throw new RuntimeException(e);
+      }
+   }
+
+   public void updateSignatureCount(AssertionResult result) {
+      CredentialRegistration registration =
+              getRegistrationByUsernameAndCredentialId(
+                      result.getUsername(), result.getCredential().getCredentialId())
+                      .orElseThrow(
+                              () ->
+                                      new NoSuchElementException(
+                                              String.format(
+                                                      "Credential \"%s\" is not registered to user \"%s\"",
+                                                      result.getCredential().getCredentialId(), result.getUsername())));
+
+      Set<CredentialRegistration> regs = registrationStorage.getIfPresent(result.getUsername());
+      regs.remove(registration);
+      regs.add(
+              registration.withCredential(
+                      registration.credential.toBuilder()
+                              .signatureCount(result.getSignatureCount())
+                              .build()));
    }
 
    public boolean userExists(String username) {

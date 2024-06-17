@@ -42,6 +42,6 @@ public class AssertionResponse {
     this.credential = credential;
   }
 
-  private final ByteArray requestId;
-  private final PublicKeyCredential<AuthenticatorAssertionResponse, ClientAssertionExtensionOutputs> credential;
+  public final ByteArray requestId;
+  public final PublicKeyCredential<AuthenticatorAssertionResponse, ClientAssertionExtensionOutputs> credential;
 }

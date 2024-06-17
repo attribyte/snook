@@ -28,6 +28,16 @@ public class CredentialRegistration {
    }
 
    /**
+    * Change the credential.
+    * @param credential The credential.
+    * @return The registration with new credential.
+    */
+   public CredentialRegistration withCredential(final RegisteredCredential credential) {
+      return new CredentialRegistration(userIdentity, credentialNickname, transports,
+              registrationTime, credential, attestationMetadata);
+   }
+
+   /**
     * @return An immutable set of the transports.
     */
    public ImmutableSet<AuthenticatorTransport> transports() {
