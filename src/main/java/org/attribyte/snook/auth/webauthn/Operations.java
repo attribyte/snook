@@ -49,15 +49,11 @@ public class Operations {
     * @param response The HTTP response.
     */
    protected void writeResponse(final Object o, final HttpServletResponse response)
-           throws JsonProcessingException, IOException {
-      try {
+           throws IOException {
          response.setContentType(JSON_CONTENT_TYPE);
          response.setStatus(HttpServletResponse.SC_OK);
          response.getOutputStream().write(toJSON(o, pretty).getBytes(StandardCharsets.UTF_8));
          response.flushBuffer();
-      } catch(Throwable t) {
-         t.printStackTrace();
-      }
    }
 
    /**
