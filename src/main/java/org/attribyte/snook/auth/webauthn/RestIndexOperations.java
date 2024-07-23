@@ -1,5 +1,4 @@
 package org.attribyte.snook.auth.webauthn;
-import com.yubico.webauthn.meta.VersionInfo;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -8,8 +7,12 @@ import java.net.URL;
 
 public class RestIndexOperations extends Operations {
 
+   public RestIndexOperations(final URL baseURL, final boolean pretty) {
+      super(baseURL, pretty);
+   }
+
    RestIndexOperations() throws MalformedURLException {
-      super(new URL("http://localhost:8081/api/"), true);
+      this(new URL("http://localhost:8081/api/"), true);
    }
 
    public final class IndexResponse {

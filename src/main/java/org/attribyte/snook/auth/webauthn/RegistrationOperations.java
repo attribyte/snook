@@ -34,7 +34,7 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.attribyte.snook.auth.webauthn.Util.randomBytes;
 
-class RegistrationOperations extends Operations {
+public class RegistrationOperations extends Operations {
 
    public RegistrationOperations(final RelyingParty relayingParty,
                                  final Storage storage,

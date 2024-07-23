@@ -3,13 +3,13 @@ import com.yubico.webauthn.meta.VersionInfo;
 
 public class VersionOperations extends Operations {
 
-   static final class VersionResponse {
+   public static final class VersionResponse {
       public final VersionInfo version = VersionInfo.getInstance();
    }
 
-   VersionOperations() {
+   public VersionOperations() {
       super(null, true);
    }
 
-   static final VersionResponse VERSION = new VersionResponse();
+   public static final VersionResponse VERSION = new VersionResponse();
 }

@@ -8,7 +8,7 @@ import com.yubico.webauthn.data.AuthenticatorData;
 
 import java.io.IOException;
 
-class AuthDataSerializer extends JsonSerializer<AuthenticatorData> {
+public class AuthDataSerializer extends JsonSerializer<AuthenticatorData> {
    @Override
    public void serialize(
            AuthenticatorData value, JsonGenerator gen, SerializerProvider serializers)

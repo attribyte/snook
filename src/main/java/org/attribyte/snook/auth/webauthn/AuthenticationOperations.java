@@ -11,7 +11,6 @@ import com.yubico.webauthn.exception.AssertionFailedException;
 import org.attribyte.api.Logger;
 import org.attribyte.snook.auth.webauthn.data.AssertionRequestWrapper;
 import org.attribyte.snook.auth.webauthn.data.AssertionResponse;
-import org.attribyte.snook.auth.webauthn.data.RegistrationResponse;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -21,7 +20,7 @@ import java.net.URL;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.attribyte.snook.auth.webauthn.Util.randomBytes;
 
-class AuthenticationOperations extends Operations {
+public class AuthenticationOperations extends Operations {
 
    public AuthenticationOperations(final RelyingParty relayingParty,
                                    final Storage storage,
