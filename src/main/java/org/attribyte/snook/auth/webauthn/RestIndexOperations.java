@@ -21,11 +21,6 @@ public class RestIndexOperations extends Operations {
 
       public final Index actions = new Index();
       public final Info info = new Info();
-      public final Blah blah = new Blah();
-   }
-
-   public final class Blah {
-      public final String thisisit = "thisis it";
    }
 
    public final class Index {
