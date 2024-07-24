@@ -3,7 +3,6 @@ package org.attribyte.snook.auth.webauthn;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.ImmutableList;
 import com.yubico.internal.util.JacksonCodecs;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -48,12 +47,12 @@ public class Operations {
     * @param o The object to write as JSON.
     * @param response The HTTP response.
     */
-   protected void writeResponse(final Object o, final HttpServletResponse response)
+   public void writeResponse(final Object o, final HttpServletResponse response)
            throws IOException {
-         response.setContentType(JSON_CONTENT_TYPE);
-         response.setStatus(HttpServletResponse.SC_OK);
-         response.getOutputStream().write(toJSON(o, pretty).getBytes(StandardCharsets.UTF_8));
-         response.flushBuffer();
+      response.setContentType(JSON_CONTENT_TYPE);
+      response.setStatus(HttpServletResponse.SC_OK);
+      response.getOutputStream().write(toJSON(o, pretty).getBytes(StandardCharsets.UTF_8));
+      response.flushBuffer();
    }
 
    /**
@@ -63,9 +62,9 @@ public class Operations {
     * @param message The message.
     * @throws IOException on write error.
     */
-   protected void writeErrorResponse(final HttpServletResponse response,
-                                     final int code,
-                                     final String message) throws IOException {
+   public void writeErrorResponse(final HttpServletResponse response,
+                                  final int code,
+                                  final String message) throws IOException {
       writeErrorResponse(response, code, ImmutableList.of(message));
    }
 
@@ -76,9 +75,9 @@ public class Operations {
     * @param messages The messages.
     * @throws IOException on write error.
     */
-   protected void writeErrorResponse(final HttpServletResponse response,
-                                     final int code,
-                                     final List<String> messages)
+   public void writeErrorResponse(final HttpServletResponse response,
+                                  final int code,
+                                  final List<String> messages)
            throws IOException {
       response.setContentType(JSON_CONTENT_TYPE);
       response.setStatus(code);
