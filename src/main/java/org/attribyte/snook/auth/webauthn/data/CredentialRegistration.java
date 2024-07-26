@@ -18,6 +18,7 @@ public class CredentialRegistration {
                                  final Collection<AuthenticatorTransport> transports,
                                  final long registrationTime,
                                  final RegisteredCredential credential,
+                                 final boolean discoverable,
                                  final Optional<Object> attestationMetadata) {
       this.userIdentity = userIdentity;
       this.credentialNickname = credentialNickname;
@@ -25,6 +26,7 @@ public class CredentialRegistration {
       this.registrationTime = registrationTime;
       this.credential = credential;
       this.attestationMetadata = attestationMetadata;
+      this.discoverable = discoverable;
    }
 
    /**
@@ -34,7 +36,7 @@ public class CredentialRegistration {
     */
    public CredentialRegistration withCredential(final RegisteredCredential credential) {
       return new CredentialRegistration(userIdentity, credentialNickname, transports,
-              registrationTime, credential, attestationMetadata);
+              registrationTime, credential, discoverable, attestationMetadata);
    }
 
    /**
@@ -48,13 +50,21 @@ public class CredentialRegistration {
     * The user identity.
     */
    public final UserIdentity userIdentity;
+
    public final Optional<String> credentialNickname;
+
    public final ImmutableSet<AuthenticatorTransport> transports;
+
    @JsonIgnore public final long registrationTime;
+
    public final RegisteredCredential credential;
+
    public final Optional<Object> attestationMetadata;
+
    @JsonProperty("registrationTime")
    public String getRegistrationTimestamp() {
       return Long.toString(registrationTime);
    }
+
+   @JsonIgnore public final boolean discoverable;
 }

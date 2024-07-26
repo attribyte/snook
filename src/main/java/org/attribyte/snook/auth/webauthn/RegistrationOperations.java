@@ -204,8 +204,6 @@ public class RegistrationOperations extends Operations {
                                                        token))
                                .orElse(false);
 
-               System.out.println("IS VALID SESSION");
-
                logger.debug("Session token: {}", registrationRequest.sessionToken);
                logger.debug("Valid session: {}", isValidSession);
 
@@ -219,7 +217,6 @@ public class RegistrationOperations extends Operations {
                logger.debug("permissionGranted: {}", permissionGranted);
 
                if (!permissionGranted) {
-                  System.out.println("PERMISSION DENIED");
                   throw new RegistrationFailedException(
                           new IllegalArgumentException(
                                   String.format("User %s already exists", registrationRequest.username)));
@@ -239,11 +236,9 @@ public class RegistrationOperations extends Operations {
                                     registrationRequest.publicKeyCredentialCreationOptions.getUser().getId()));
             writeResponse(successfulRegistrationResult, response);
          } catch (RegistrationFailedException e) {
-            System.out.println("REGISTRATION FAILED");
             e.printStackTrace();
             logger.debug("fail finishRegistration responseJson: {}", responseJson, e);
          } catch (Exception e) {
-            System.out.println("REGISTRATION FAILED 2");
             e.printStackTrace();
             logger.error("fail finishRegistration responseJson: {}", responseJson, e);
          }
@@ -251,7 +246,9 @@ public class RegistrationOperations extends Operations {
    }
 
    private CredentialRegistration addRegistration(
-           UserIdentity userIdentity, Optional<String> nickname, RegistrationResult result) {
+           UserIdentity userIdentity,
+           Optional<String> nickname,
+           RegistrationResult result) {
       return addRegistration(
               userIdentity,
               nickname,
@@ -261,6 +258,7 @@ public class RegistrationOperations extends Operations {
                       .publicKeyCose(result.getPublicKeyCose())
                       .signatureCount(result.getSignatureCount())
                       .build(),
+              result.isDiscoverable().orElse(Boolean.FALSE),
               result.getKeyId().getTransports().orElseGet(TreeSet::new),
               metadataService.findEntries(result).stream().findAny());
    }
@@ -269,10 +267,12 @@ public class RegistrationOperations extends Operations {
            UserIdentity userIdentity,
            Optional<String> nickname,
            RegisteredCredential credential,
+           boolean discoverable,
            SortedSet<AuthenticatorTransport> transports,
            Optional<Object> attestationMetadata) {
       CredentialRegistration reg = new CredentialRegistration(
-              userIdentity, nickname, transports, System.currentTimeMillis(), credential, attestationMetadata);
+              userIdentity, nickname, transports, System.currentTimeMillis(), credential, discoverable,
+              attestationMetadata);
       logger.debug(
               "Adding registration: user: {}, nickname: {}, credential: {}",
               userIdentity,
