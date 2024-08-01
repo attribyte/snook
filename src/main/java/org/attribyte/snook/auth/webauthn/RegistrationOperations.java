@@ -1,6 +1,7 @@
 package org.attribyte.snook.auth.webauthn;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Throwables;
 import com.google.common.cache.Cache;
 import com.yubico.webauthn.FinishRegistrationOptions;
 import com.yubico.webauthn.RegisteredCredential;
@@ -189,7 +190,6 @@ public class RegistrationOperations extends Operations {
          writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid JSON");
          return;
       }
-
       RegistrationRequest registrationRequest = registrationRequestCache.getIfPresent(registrationResponse.requestId);
       registrationRequestCache.invalidate(registrationResponse.requestId);
       if (registrationRequest == null) {
@@ -197,6 +197,7 @@ public class RegistrationOperations extends Operations {
          writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Finish registration failed");
       } else {
          try {
+            logger.info("Sending 'finishRegistration' to RP...");
             RegistrationResult registration =
                     relayingParty.finishRegistration(
                             FinishRegistrationOptions.builder()
@@ -231,6 +232,7 @@ public class RegistrationOperations extends Operations {
                logger.info("Permission granted %s", permissionGranted);
 
                if (!permissionGranted) {
+                  logger.info("Webauthn registration failed - user %s already exists", registrationRequest.username);
                   throw new RegistrationFailedException(
                           new IllegalArgumentException(
                                   String.format("User %s already exists", registrationRequest.username)));
@@ -252,11 +254,11 @@ public class RegistrationOperations extends Operations {
                                     registrationRequest.publicKeyCredentialCreationOptions.getUser().getId()));
             writeResponse(successfulRegistrationResult, response);
          } catch (RegistrationFailedException e) {
-            e.printStackTrace();
             logger.info("Finish registration failed: responseJson: %s", responseJson, e);
+            logger.info(Throwables.getStackTraceAsString(e));
          } catch (Exception e) {
-            e.printStackTrace();
-            logger.info("Finish registration failed: responseJson: %s", responseJson, e);
+            logger.info("Finish registration failed with generic exception: responseJson: %s", responseJson, e);
+            logger.info(Throwables.getStackTraceAsString(e));
          }
       }
    }
