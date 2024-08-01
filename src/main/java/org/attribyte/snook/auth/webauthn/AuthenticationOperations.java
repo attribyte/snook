@@ -71,6 +71,7 @@ public class AuthenticationOperations extends Operations {
       try {
          assertionResponse = jsonMapper.readValue(responseJson, AssertionResponse.class);
       } catch (IOException e) {
+         logger.info("Invalid JSON during 'finishAuthentication", e);
          writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid JSON");
          return;
       }

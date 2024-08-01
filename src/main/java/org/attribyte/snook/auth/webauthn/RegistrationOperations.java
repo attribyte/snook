@@ -70,7 +70,10 @@ public class RegistrationOperations extends Operations {
            final HttpServletResponse response) throws IOException {
       final RegistrationRequest registrationRequest;
 
+      logger.info("Start registration for %s", username);
+
       try {
+         logger.info("Building registration request for %s", username);
          registrationRequest = buildRegistrationRequest(username, displayName, credentialNickname,
                  requireResidentKey, sessionTokenBase64, response);
          if(registrationRequest == null) {
@@ -106,6 +109,7 @@ public class RegistrationOperations extends Operations {
            final HttpServletResponse response) throws IOException, ExecutionException {
 
       if(username.isEmpty()) {
+         logger.info("Build registration request failed (no 'username')");
          writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "A 'username' is required");
          return null;
       }
@@ -115,6 +119,7 @@ public class RegistrationOperations extends Operations {
       try {
          sessionToken = sessionTokenBase64.isEmpty() ? null : ByteArray.fromBase64Url(sessionTokenBase64);
       } catch(Base64UrlException e) {
+         logger.info("Build registration request failed (session token empty or decoding failure)");
          writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST,"Session token is invalid Base 64");
          return null;
       }
@@ -131,6 +136,7 @@ public class RegistrationOperations extends Operations {
       final UserIdentity registeringUser;
       final boolean permissionGranted;
       if(registrations.isEmpty()) {
+         logger.info("Creating new registered user for %s", username);
          registeringUser = UserIdentity.builder()
                  .name(username)
                  .displayName(displayName)
@@ -138,11 +144,13 @@ public class RegistrationOperations extends Operations {
                  .build();
          permissionGranted = true;
       } else {
+         logger.info("Using existing registered user for %s", username);
          registeringUser = registrations.iterator().next().userIdentity;
          permissionGranted = sessions.isSessionForUser(registeringUser.getId(), sessionToken);
       }
 
       if(!permissionGranted) {
+         logger.info("Permission was not granted for %s", username);
          writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST,
                  String.format("Registration request received for already registered user ('%s')", username));
          return null;
@@ -162,6 +170,7 @@ public class RegistrationOperations extends Operations {
                                                       .build())
                                       .build()),
                       Optional.ofNullable(sessions.createSession(registeringUser.getId())));
+      logger.info("Created registration request for %s with id %s", username, request.requestId.toString());
       registrationRequestCache.put(request.requestId, request);
       return request;
    }
@@ -172,8 +181,11 @@ public class RegistrationOperations extends Operations {
       String responseJson = new String(request.getInputStream().readAllBytes(), Charsets.UTF_8);
       RegistrationResponse registrationResponse;
       try {
+         logger.info("Reading registration response JSON...");
+         logger.info(responseJson);
          registrationResponse = jsonMapper.readValue(responseJson, RegistrationResponse.class);
       } catch (IOException e) {
+         logger.info("Invalid JSON during 'finishRegistration", e);
          writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid JSON");
          return;
       }
@@ -181,6 +193,7 @@ public class RegistrationOperations extends Operations {
       RegistrationRequest registrationRequest = registrationRequestCache.getIfPresent(registrationResponse.requestId);
       registrationRequestCache.invalidate(registrationResponse.requestId);
       if (registrationRequest == null) {
+         logger.info("Registration request not found for %s", registrationResponse.requestId.toString());
          writeErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Finish registration failed");
       } else {
          try {
@@ -190,6 +203,8 @@ public class RegistrationOperations extends Operations {
                                     .request(registrationRequest.publicKeyCredentialCreationOptions)
                                     .response(registrationResponse.credential)
                                     .build());
+
+            logger.info("Starting finish registration for %s", registrationRequest.username);
 
             if (storage.userExists(registrationRequest.username)) {
                boolean permissionGranted = false;
@@ -204,23 +219,24 @@ public class RegistrationOperations extends Operations {
                                                        token))
                                .orElse(false);
 
-               logger.debug("Session token: {}", registrationRequest.sessionToken);
-               logger.debug("Valid session: {}", isValidSession);
+               logger.info("Session token: %s", registrationRequest.sessionToken);
+               logger.info("Valid session: %s", isValidSession);
 
                if (isValidSession) {
                   permissionGranted = true;
-                  logger.info(
-                          "Session token accepted for user {}",
+                  logger.info("Session token accepted for user %s",
                           registrationRequest.publicKeyCredentialCreationOptions.getUser().getId());
                }
 
-               logger.debug("permissionGranted: {}", permissionGranted);
+               logger.info("Permission granted %s", permissionGranted);
 
                if (!permissionGranted) {
                   throw new RegistrationFailedException(
                           new IllegalArgumentException(
                                   String.format("User %s already exists", registrationRequest.username)));
                }
+            } else {
+               logger.info("User does not exist in storage during finish registration (%s)", registrationRequest.username);
             }
 
             SuccessfulRegistrationResult successfulRegistrationResult =
@@ -237,10 +253,10 @@ public class RegistrationOperations extends Operations {
             writeResponse(successfulRegistrationResult, response);
          } catch (RegistrationFailedException e) {
             e.printStackTrace();
-            logger.debug("fail finishRegistration responseJson: {}", responseJson, e);
+            logger.info("Finish registration failed: responseJson: %s", responseJson, e);
          } catch (Exception e) {
             e.printStackTrace();
-            logger.error("fail finishRegistration responseJson: {}", responseJson, e);
+            logger.info("Finish registration failed: responseJson: %s", responseJson, e);
          }
       }
    }
