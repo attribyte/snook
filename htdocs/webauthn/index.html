@@ -61,6 +61,9 @@ let ceremonyState = {};
 let session = {
 };
 
+let apiPath = 'http://localhost:8080/webauthn';
+//let apiPath = '/api';
+
 function extend(obj, more) {
   return Object.assign({}, obj, more);
 }
@@ -212,7 +215,7 @@ function resetDisplays() {
 }
 
 function getIndexActions() {
-  return fetch('api/v1/')
+  return fetch(apiPath + '/v1/')
     .then(response => response.json())
     .then(data => data.actions)
   ;
