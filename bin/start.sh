@@ -70,9 +70,9 @@ fi
 if [ $DEBUG == "debug" ]
 then
  if [ -f "$LOCAL_CONFIG" ]; then
-  $JAVA_EXE -cp "${CLASSPATH}" -Dcom.sun.security.enableCRLDP=true -Dserver.debug=true -Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS $LOCAL_CONFIG
+  $JAVA_EXE -cp "${CLASSPATH}" -Dserver.debug=true -Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS $LOCAL_CONFIG
  else
-  $JAVA_EXE -cp "${CLASSPATH}" -Dcom.sun.security.enableCRLDP=true -Dserver.debug=true -Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS
+  $JAVA_EXE -cp "${CLASSPATH}" -Dserver.debug=true -Dserver.install.dir="$INSTALL_DIR" $SERVER_CLASS
  fi
 else
  if [ -f "$LOCAL_CONFIG" ]; then
