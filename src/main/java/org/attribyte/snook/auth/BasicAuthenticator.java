@@ -18,7 +18,7 @@
 
 package org.attribyte.snook.auth;
 
-import com.google.common.base.Charsets;
+import java.nio.charset.StandardCharsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -116,7 +116,7 @@ public abstract class BasicAuthenticator<T> extends HeaderAuthenticator<T> {
          return null;
       }
 
-      HashCode hashedCredentials = credentialHasher.hashString(credentials, Charsets.US_ASCII);
+      HashCode hashedCredentials = credentialHasher.hashString(credentials, StandardCharsets.US_ASCII);
       if(validCredentials.contains(hashedCredentials)) {
          return username;
       }
@@ -186,7 +186,7 @@ public abstract class BasicAuthenticator<T> extends HeaderAuthenticator<T> {
     * @return The credentials.
     */
    public static String buildCredentials(final String username, final String password) {
-      return base64Encoding.encode((Strings.nullToEmpty(username) + ":" + Strings.nullToEmpty(password)).getBytes(Charsets.UTF_8));
+      return base64Encoding.encode((Strings.nullToEmpty(username) + ":" + Strings.nullToEmpty(password)).getBytes(StandardCharsets.UTF_8));
    }
 
    /**

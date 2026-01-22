@@ -18,7 +18,7 @@
 
 package org.attribyte.snook;
 
-import com.google.common.base.Charsets;
+import java.nio.charset.StandardCharsets;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -414,7 +414,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
       List<String> acceptableCharsets = baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
       for(String name : acceptableCharsets) {
          if(name.equals("*")) {
-            return Charsets.UTF_8;
+            return StandardCharsets.UTF_8;
          } else {
             try {
                return Charset.forName(name);
@@ -438,7 +438,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
       switch(Strings.nullToEmpty(contentType).toLowerCase().trim()) {
          case "text/json":
          case "application/json":
-            return Charsets.UTF_8;
+            return StandardCharsets.UTF_8;
          default:
             return DEFAULT_CHARSET;
       }
@@ -536,7 +536,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    /**
     * The default charset.
     */
-   public static final Charset DEFAULT_CHARSET = Charsets.ISO_8859_1;
+   public static final Charset DEFAULT_CHARSET = StandardCharsets.ISO_8859_1;
 
    public static final Writer TEXT_WRITER = new Writer() {
       @Override

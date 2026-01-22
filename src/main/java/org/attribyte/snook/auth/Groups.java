@@ -15,7 +15,7 @@
 
 package org.attribyte.snook.auth;
 
-import com.google.common.base.Charsets;
+import java.nio.charset.StandardCharsets;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -81,7 +81,7 @@ public class Groups {
     * @throws IOException on read exception.
     */
    public Groups(final InputStream is) throws IOException {
-      this(parse(CharStreams.readLines(new InputStreamReader(is, Charsets.UTF_8))));
+      this(parse(CharStreams.readLines(new InputStreamReader(is, StandardCharsets.UTF_8))));
    }
 
    /**

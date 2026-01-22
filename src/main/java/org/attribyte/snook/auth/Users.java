@@ -18,7 +18,7 @@
 
 package org.attribyte.snook.auth;
 
-import com.google.common.base.Charsets;
+import java.nio.charset.StandardCharsets;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
@@ -92,7 +92,7 @@ public class Users {
     * @throws IOException on read error or invalid file.
     */
    public Users(final InputStream is) throws IOException {
-      this(parse(CharStreams.readLines(new InputStreamReader(is, Charsets.UTF_8)), false));
+      this(parse(CharStreams.readLines(new InputStreamReader(is, StandardCharsets.UTF_8)), false));
    }
 
    /**
@@ -130,7 +130,7 @@ public class Users {
          }
       }
 
-      List<Record> records = parse(CharStreams.readLines(new InputStreamReader(is, Charsets.UTF_8)), true);
+      List<Record> records = parse(CharStreams.readLines(new InputStreamReader(is, StandardCharsets.UTF_8)), true);
       long genTime = System.currentTimeMillis();
       try(PrintWriter writer = new PrintWriter(new FileWriter(insecureFile))) {
          writer.println("# " + ISODateTimeFormat.basicDateTimeNoMillis().print(genTime));
@@ -287,7 +287,7 @@ public class Users {
             }
          } else {
             if(isNullOrEmpty(value)) {
-               buf.append(new String(hashCode.asBytes(), Charsets.US_ASCII));
+               buf.append(new String(hashCode.asBytes(), StandardCharsets.US_ASCII));
             } else {
                buf.append("$password$").append(nullToEmpty(value));
             }
@@ -345,7 +345,7 @@ public class Users {
          final Record record;
 
          if(hash.startsWith("$2a")) {
-            record = new Record(username, HashType.BCRYPT, HashCode.fromBytes(hash.getBytes(Charsets.US_ASCII)));
+            record = new Record(username, HashType.BCRYPT, HashCode.fromBytes(hash.getBytes(StandardCharsets.US_ASCII)));
          } else if(hash.startsWith("$sha256$")) {
             String hashString = hash.substring(8);
             if(hashString.length() != 64) {
@@ -375,13 +375,13 @@ public class Users {
             }
             record = new Record(username, HashType.BCRYPT,
                     HashCode.fromBytes(BCrypt.hashpw(password, BCrypt.gensalt(DEFAULT_BCRYPT_ROUNDS))
-                            .getBytes(Charsets.US_ASCII)), password);
+                            .getBytes(StandardCharsets.US_ASCII)), password);
          } else if(hash.startsWith("$basic$")) {
             String token = hash.substring(7);
             if(token.isEmpty()) {
                token = AuthenticationToken.randomToken().toString();
             }
-            String credentials = HeaderAuthenticator.base64Encoding.encode((username + ":" + token).getBytes(Charsets.UTF_8));
+            String credentials = HeaderAuthenticator.base64Encoding.encode((username + ":" + token).getBytes(StandardCharsets.UTF_8));
             record = new Record(username, HashType.SHA256_BASIC, Authenticator.hashCredentials(credentials), token);
          } else {
             throw new IOException(String.format("Expecting '$2a', '$sha256$, '$token$', '$password$' or '$basic$' at line %d", lineNumber));
@@ -446,7 +446,7 @@ public class Users {
    /**
     * A BCrypt hash code generated for a random password.
     */
-   public static final HashCode RANDOM_BCRYPT_HASH = HashCode.fromBytes(RANDOM_BCRYPT_STRING.getBytes(Charsets.US_ASCII));
+   public static final HashCode RANDOM_BCRYPT_HASH = HashCode.fromBytes(RANDOM_BCRYPT_STRING.getBytes(StandardCharsets.US_ASCII));
 
    /**
     * Splits lines for records.

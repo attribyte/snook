@@ -18,7 +18,7 @@
 
 package org.attribyte.snook.auth;
 
-import com.google.common.base.Charsets;
+import java.nio.charset.StandardCharsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import org.attribyte.snook.Cookies;
@@ -185,7 +185,7 @@ public abstract class BCryptAuthenticator<T> extends CookieAuthenticator<T> impl
          return false;
       }
 
-      String hashed = new String(passwordHash.asBytes(), Charsets.US_ASCII);
+      String hashed = new String(passwordHash.asBytes(), StandardCharsets.US_ASCII);
       return BCrypt.checkpw(password, hashed);
    }
 

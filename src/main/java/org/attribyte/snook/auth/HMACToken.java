@@ -19,7 +19,7 @@
 package org.attribyte.snook.auth;
 
 import com.google.common.base.CharMatcher;
-import com.google.common.base.Charsets;
+import java.nio.charset.StandardCharsets;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
@@ -242,7 +242,7 @@ public class HMACToken {
     * @throws IOException on read error or invalid file.
     */
    public static Map<String, HashFunction> loadFunctionMap(final File inputFile) throws IOException {
-      return loadFunctionMap(Files.readLines(inputFile, Charsets.US_ASCII));
+      return loadFunctionMap(Files.readLines(inputFile, StandardCharsets.US_ASCII));
    }
 
    /**
@@ -252,7 +252,7 @@ public class HMACToken {
     * @throws IOException on read error or invalid file.
     */
    public static Map<String, HashFunction> loadFunctionMap(final InputStream is) throws IOException {
-      return loadFunctionMap(CharStreams.readLines(new InputStreamReader(is, Charsets.US_ASCII)));
+      return loadFunctionMap(CharStreams.readLines(new InputStreamReader(is, StandardCharsets.US_ASCII)));
    }
 
    /**
@@ -262,7 +262,7 @@ public class HMACToken {
     * @throws IOException on read error or invalid file.
     */
    public static Set<String> loadIds(final InputStream is) throws IOException {
-      return loadIds(CharStreams.readLines(new InputStreamReader(is, Charsets.US_ASCII)));
+      return loadIds(CharStreams.readLines(new InputStreamReader(is, StandardCharsets.US_ASCII)));
    }
 
 
@@ -273,7 +273,7 @@ public class HMACToken {
     * @throws IOException on read error or invalid file.
     */
    public static Set<String> loadIds(final File inputFile) throws IOException {
-      return loadIds(Files.readLines(inputFile, Charsets.US_ASCII));
+      return loadIds(Files.readLines(inputFile, StandardCharsets.US_ASCII));
    }
 
    /**
@@ -353,8 +353,8 @@ public class HMACToken {
       String tokenValue = cookieValue.substring(PREFIX_SIZE);
 
       HashCode expectedCode = hmacFunction.newHasher()
-              .putString(keyId, Charsets.UTF_8)
-              .putString(tokenValue, Charsets.UTF_8)
+              .putString(keyId, StandardCharsets.UTF_8)
+              .putString(tokenValue, StandardCharsets.UTF_8)
               .hash();
 
       if(!sentCode.equals(expectedCode)) {
@@ -429,8 +429,8 @@ public class HMACToken {
 
       String tokenValue = expireTimestampSeconds + "," + username;
       HashCode hmac = hmacFunction.newHasher()
-              .putString(keyId, Charsets.UTF_8)
-              .putString(tokenValue, Charsets.UTF_8)
+              .putString(keyId, StandardCharsets.UTF_8)
+              .putString(tokenValue, StandardCharsets.UTF_8)
               .hash();
 
       return keyId + BASE_64_ENCODING.encode(hmac.asBytes()) + tokenValue;

@@ -620,7 +620,7 @@ public abstract class Server {
     * @param paths The path list.
     * @return A self-reference.
     */
-   protected Server addStaticAssets(final StaticAssetsConfig config, final List<String> paths) {
+   protected final Server addStaticAssets(final StaticAssetsConfig config, final List<String> paths) {
       ServletHolder holder = new ServletHolder();
       holder.setInitParameter("resourceBase", config.resourceDirectory);
       holder.setInitParameter("dirAllowed", config.directoryAllowed ? "true" : "false");

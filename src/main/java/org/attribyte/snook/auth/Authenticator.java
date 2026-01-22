@@ -1,6 +1,6 @@
 package org.attribyte.snook.auth;
 
-import com.google.common.base.Charsets;
+import java.nio.charset.StandardCharsets;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
@@ -54,6 +54,6 @@ public interface Authenticator<T> {
     * @return The hash code.
     */
    public static HashCode hashCredentials(final String credentials) {
-      return credentialHasher.hashString(credentials, Charsets.UTF_8);
+      return credentialHasher.hashString(credentials, StandardCharsets.UTF_8);
    }
 }

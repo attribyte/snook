@@ -18,7 +18,7 @@
 
 package org.attribyte.snook.auth;
 
-import com.google.common.base.Charsets;
+import java.nio.charset.StandardCharsets;
 import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.hash.HashCode;
@@ -76,7 +76,7 @@ public abstract class BasicBCryptAuthenticator<T> extends HeaderAuthenticator<T>
                                    final Users credentialsFile) {
       this(validCredentialsCache, s -> {
          HashCode hash = credentialsFile.bcryptHashes.get(s);
-         return hash != null ? new String(hash.asBytes(), Charsets.US_ASCII) :
+         return hash != null ? new String(hash.asBytes(), StandardCharsets.US_ASCII) :
                  null;
       });
    }

@@ -26,7 +26,6 @@ import com.google.common.net.UrlEscapers;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
@@ -107,11 +106,7 @@ public class TOTP {
 
       this.timeStepSeconds = timeStepSeconds;
 
-      try {
-         totp = new TimeBasedOneTimePasswordGenerator(Duration.ofSeconds(timeStepSeconds), passwordLength);
-      } catch(NoSuchAlgorithmException noe) {
-         throw new AssertionError("SHA1 algorithm is unavailable");
-      }
+      totp = new TimeBasedOneTimePasswordGenerator(Duration.ofSeconds(timeStepSeconds), passwordLength);
 
       if(passwordLength == 8) {
          this.TOKEN_TEMPLATE = "%08d";
