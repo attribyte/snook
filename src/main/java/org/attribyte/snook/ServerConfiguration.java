@@ -493,6 +493,70 @@ public class ServerConfiguration {
     */
    final ErrorHandler customErrorHandler;
 
+   /**
+    * Returns formatted documentation of all server configuration properties.
+    * @return The property documentation string.
+    */
+   public static String propertyDocumentation() {
+      StringBuilder sb = new StringBuilder();
+      sb.append("Usage: <config-file> [<config-file>...] [-property=value ...] [-help]\n\n");
+      sb.append("  Configuration files are loaded in order, with later files overriding earlier ones.\n");
+      sb.append("  Properties may also be set on the command line with -property=value.\n");
+      sb.append("  Property values starting with '$' resolve to environment variables (e.g. $DB_HOST||default).\n");
+      sb.append("  Properties ending with .file, .dir, or .path are resolved relative to server.install.dir.\n\n");
+
+      sb.append("Server Properties (prefix: server.)\n");
+      sb.append("------------------------------------\n");
+      sb.append(String.format("  %-40s Listen IP address (default: %s)%n", LISTEN_IP_PROPERTY, DEFAULT_LISTEN_IP));
+      sb.append(String.format("  %-40s HTTP port (default: %d)%n", LISTEN_PORT_PROPERTY, DEFAULT_LISTEN_PORT));
+      sb.append(String.format("  %-40s HTTPS port (default: %d)%n", SECURE_LISTEN_PORT_PROPERTY, DEFAULT_SECURE_LISTEN_PORT));
+      sb.append(String.format("  %-40s Output buffer size in bytes (default: %d)%n", OUTPUT_BUFFER_SIZE_PROPERTY, DEFAULT_OUTPUT_BUFFER_SIZE));
+      sb.append(String.format("  %-40s Max request header size in bytes (default: %d)%n", MAX_REQUEST_HEADER_PROPERTY, DEFAULT_MAX_REQUEST_HEADER_SIZE));
+      sb.append(String.format("  %-40s Max response header size in bytes (default: %d)%n", MAX_RESPONSE_HEADER_PROPERTY, DEFAULT_MAX_RESPONSE_HEADER_SIZE));
+      sb.append(String.format("  %-40s Send server version header (default: %s)%n", SEND_SERVER_VERSION_PROPERTY, DEFAULT_SEND_SERVER_VERSION));
+      sb.append(String.format("  %-40s Send date header (default: %s)%n", SEND_DATE_HEADER_PROPERTY, DEFAULT_SEND_DATE_HEADER));
+      sb.append(String.format("  %-40s Idle connection timeout (default: %s)%n", IDLE_TIMEOUT_PROPERTY, DEFAULT_IDLE_TIMEOUT));
+      sb.append(String.format("  %-40s Max form content size in bytes (default: %d)%n", MAX_FORM_CONTENT_SIZE_PROPERTY, DEFAULT_MAX_FORM_CONTENT_SIZE));
+      sb.append(String.format("  %-40s Enable debug mode (default: %s)%n", DEBUG_PROPERTY, DEFAULT_DEBUG_MODE));
+      sb.append(String.format("  %-40s Allow symlinks for static assets (default: %s)%n", ALLOW_SYMLINKS_PROPERTY, DEFAULT_ALLOW_SYMLINKS));
+      sb.append(String.format("  %-40s Connection security: none|both|secure_only|redirect (default: %s)%n", CONNECTION_SECURITY_PROPERTY, DEFAULT_CONNECTION_SECURITY));
+      sb.append(String.format("  %-40s Enable X-Forwarded-For support (default: false)%n", ENABLE_FORWARDED_REQUEST_CUSTOMIZER_PROPERTY));
+      sb.append(String.format("  %-40s Suppress stack traces in error responses (default: false)%n", SUPPRESS_STACK_TRACE_PROPERTY));
+      sb.append("\n");
+
+      sb.append("SSL/TLS Properties (prefix: server.)\n");
+      sb.append("-------------------------------------\n");
+      sb.append(String.format("  %-40s Path to the keystore file%n", KEYSTORE_FILE_PROPERTY));
+      sb.append(String.format("  %-40s Keystore password%n", KEYSTORE_PASSWORD_PROPERTY));
+      sb.append(String.format("  %-40s Keystore provider (e.g. PKCS12)%n", KEYSTORE_PROVIDER_PROPERTY));
+      sb.append(String.format("  %-40s Interval to check keystore for changes (e.g. 30s, 5m)%n", KEYSTORE_CHECK_PROPERTY));
+      sb.append(String.format("  %-40s Path to the truststore file%n", TRUSTSTORE_FILE_PROPERTY));
+      sb.append(String.format("  %-40s Truststore resource URL%n", TRUSTSTORE_RESOURCE_PROPERTY));
+      sb.append(String.format("  %-40s Truststore password%n", TRUSTSTORE_PASSWORD_PROPERTY));
+      sb.append("\n");
+
+      sb.append("Request Log Properties\n");
+      sb.append("----------------------\n");
+      sb.append(String.format("  %-40s Output target: 'console', 'slf4j', or unset for file%n", "requestLogOutput"));
+      sb.append(String.format("  %-40s Request log directory%n", "requestLog.Dir"));
+      sb.append(String.format("  %-40s Log file base name (default: server)%n", "requestLogBase"));
+      sb.append(String.format("  %-40s Days to retain log files (default: 180)%n", "requestLogRetainDays"));
+      sb.append(String.format("  %-40s Use extended NCSA format (default: true)%n", "requestLogExtended"));
+      sb.append(String.format("  %-40s Time zone for log timestamps%n", "requestLogTimeZone"));
+      sb.append("\n");
+
+      sb.append("Static Assets Properties (prefix: assets.<name>.)\n");
+      sb.append("--------------------------------------------------\n");
+      sb.append(String.format("  %-40s Directory containing static resources (required)%n", "resource.Dir"));
+      sb.append(String.format("  %-40s Comma-separated list of URL paths (required)%n", "paths"));
+      sb.append(String.format("  %-40s Allow directory listing (default: false)%n", "directoryAllowed"));
+      sb.append(String.format("  %-40s Enable gzip (default: true)%n", "gzip"));
+      sb.append(String.format("  %-40s Enable weak ETags (default: false)%n", "etags"));
+      sb.append(String.format("  %-40s Cache-Control header value%n", "cacheControl"));
+
+      return sb.toString();
+   }
+
    @Override
    public String toString() {
       return MoreObjects.toStringHelper(this)

@@ -164,6 +164,10 @@ public abstract class Server {
    private final Properties props(final String propsResourceName, final String[] args) throws IOException {
       Map<String, String> parameterMap = Maps.newHashMap();
       String[] useArgs = commandLineParameters(args, parameterMap);
+      if(parameterMap.containsKey("help")) {
+         System.out.println(ServerConfiguration.propertyDocumentation());
+         System.exit(0);
+      }
       return loadProperties(propsResourceName, useArgs, parameterMap);
    }
 
