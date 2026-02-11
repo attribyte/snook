@@ -1,0 +1,16 @@
+# Logging configuration for development/debug.
+#
+# All loggers output to the console at DEBUG level.
+# Include this file on the command line to activate:
+#   java ... config/server.props config/logging-debug.props
+
+log.rootLevel=DEBUG
+log.consolePattern=%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n
+
+logger.app.name=theseus
+logger.app.level=DEBUG
+logger.app.appender=console
+
+logger.jetty.name=org.eclipse.jetty
+logger.jetty.level=INFO
+logger.jetty.appender=console

@@ -1,0 +1,20 @@
+# Logging configuration for production.
+#
+# Application logs go to rolling files; jetty logs go to a separate file.
+# Include this file on the command line to activate:
+#   java ... config/server.props config/logging-prod.props
+
+log.Dir=/var/log/theseus
+log.rootLevel=ERROR
+log.maxFileSize=250 MB
+log.filePattern=%d %p %c{1.} [%t] %m%n
+
+logger.app.name=theseus
+logger.app.level=INFO
+logger.app.appender=file
+logger.app.fileName=theseus.log
+
+logger.jetty.name=org.eclipse.jetty
+logger.jetty.level=WARN
+logger.jetty.appender=file
+logger.jetty.fileName=jetty.log

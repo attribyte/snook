@@ -545,6 +545,24 @@ public class ServerConfiguration {
       sb.append(String.format("  %-40s Time zone for log timestamps%n", "requestLogTimeZone"));
       sb.append("\n");
 
+      sb.append("Logging Properties\n");
+      sb.append("------------------\n");
+      sb.append("  If any logger.* properties are present, log4j2 is configured programmatically.\n");
+      sb.append("  Otherwise, log4j's normal XML/classpath discovery is used.\n\n");
+      sb.append("  Global:\n");
+      sb.append(String.format("  %-40s Log file directory (resolved relative to server.install.dir)%n", "log.Dir"));
+      sb.append(String.format("  %-40s Root logger level (default: ERROR)%n", "log.rootLevel"));
+      sb.append(String.format("  %-40s Max file size before rolling (default: 250 MB)%n", "log.maxFileSize"));
+      sb.append(String.format("  %-40s Console appender pattern layout%n", "log.consolePattern"));
+      sb.append(String.format("  %-40s File appender pattern layout%n", "log.filePattern"));
+      sb.append("\n");
+      sb.append("  Per-Logger (prefix: logger.<name>.):\n");
+      sb.append(String.format("  %-40s Logger name, e.g. 'myapp' or 'org.eclipse.jetty' (required)%n", "name"));
+      sb.append(String.format("  %-40s Level: TRACE/DEBUG/INFO/WARN/ERROR/OFF (default: INFO)%n", "level"));
+      sb.append(String.format("  %-40s Appender type: console or file (default: file)%n", "appender"));
+      sb.append(String.format("  %-40s File name relative to log.Dir (default: <name>.log)%n", "fileName"));
+      sb.append("\n");
+
       sb.append("Static Assets Properties (prefix: assets.<name>.)\n");
       sb.append("--------------------------------------------------\n");
       sb.append(String.format("  %-40s Directory containing static resources (required)%n", "resource.Dir"));

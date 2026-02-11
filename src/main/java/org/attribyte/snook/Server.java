@@ -29,6 +29,7 @@ import com.google.common.collect.Maps;
 import org.apache.logging.log4j.Level;
 import org.attribyte.api.InitializationException;
 import org.attribyte.api.Logger;
+import org.attribyte.snook.log.Log4jConfigurator;
 import org.attribyte.snook.log.Log4jLogger;
 import org.attribyte.util.InitUtil;
 import org.eclipse.jetty.server.CustomRequestLog;
@@ -93,6 +94,7 @@ public abstract class Server {
                     final boolean withGzip,
                     final ErrorHandler errorHandler) throws Exception {
       this.props = props(propsResourceName, args);
+      Log4jConfigurator.configure(this.props);
       this.serverConfiguration = new ServerConfiguration("server.", props);
       this.debug = debug(this.serverConfiguration.debug);
       this.logger = log4jLogger(loggerName, debug ? Level.DEBUG : Level.INFO);
@@ -148,6 +150,7 @@ public abstract class Server {
                     final boolean withGzip,
                     final ErrorHandler errorHandler) throws Exception {
       this.props = props(propsResourceName, args);
+      Log4jConfigurator.configure(this.props);
       this.logger = logger;
       this.serverConfiguration = new ServerConfiguration("server.", props);
       this.debug = debug(this.serverConfiguration.debug);
@@ -203,6 +206,7 @@ public abstract class Server {
                     final Logger logger,
                     final boolean withGzip) throws Exception {
       this.props = props;
+      Log4jConfigurator.configure(this.props);
       this.logger = logger;
       this.serverConfiguration = new ServerConfiguration("server.", props);
       this.debug = debug(this.serverConfiguration.debug);
@@ -323,6 +327,8 @@ public abstract class Server {
       } else {
          throw new IllegalStateException("Builder requires either args or props");
       }
+
+      Log4jConfigurator.configure(this.props);
 
       this.serverConfiguration = new ServerConfiguration("server.", props);
       this.debug = debug(this.serverConfiguration.debug);
