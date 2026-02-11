@@ -18,7 +18,7 @@
 
 package org.attribyte.snook.auth;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 public interface CredentialsSupplier {
 

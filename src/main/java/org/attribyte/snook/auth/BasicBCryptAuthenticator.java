@@ -26,7 +26,7 @@ import org.attribyte.api.http.Header;
 import org.attribyte.util.Pair;
 import org.mindrot.jbcrypt.BCrypt;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import java.util.function.Function;
 

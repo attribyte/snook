@@ -20,8 +20,8 @@ package org.attribyte.snook;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheckRegistry;
-import com.codahale.metrics.servlets.HealthCheckServlet;
-import com.codahale.metrics.servlets.MetricsServlet;
+import io.dropwizard.metrics.servlets.HealthCheckServlet;
+import io.dropwizard.metrics.servlets.MetricsServlet;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -36,14 +36,12 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.RequestLogWriter;
 import org.eclipse.jetty.server.Slf4jRequestLogWriter;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.DefaultServlet;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -417,32 +415,26 @@ public abstract class Server {
       return httpServer;
    }
 
-   private ServletContextHandler rootContext(boolean withGzip) throws IOException {
+   private ServletContextHandler rootContext(boolean withGzip) {
       ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SECURITY);
       rootContext.setContextPath("/");
-      rootContext.setBaseResource(Resource.newResource("/"));
+      rootContext.setBaseResourceAsString("/");
       if(serverConfiguration.allowSymlinks) {
-         rootContext.addAliasCheck((s, resource) -> true);
+         rootContext.addAliasCheck((pathInContext, resource) -> true);
       }
 
       rootContext.setMaxFormContentSize(serverConfiguration.maxFormContentSize);
       boolean withSecureRedirect = serverConfiguration.connectionSecurity == ServerConfiguration.ConnectionSecurity.REDIRECT;
       if(withGzip) {
          GzipHandler gzip = new GzipHandler();
+         gzip.setHandler(rootContext);
          if(withSecureRedirect) {
-            HandlerList handlers = new HandlerList();
-            handlers.setHandlers(new Handler[]{new SecuredRedirectHandler(), gzip});
-            this.httpServer.setHandler(handlers);
+            this.httpServer.setHandler(new Handler.Sequence(new SecuredRedirectHandler(), gzip));
          } else {
             this.httpServer.setHandler(gzip);
          }
-         HandlerList handlers = new HandlerList();
-         handlers.setHandlers(new Handler[]{rootContext});
-         gzip.setHandler(handlers);
       } else if(withSecureRedirect) {
-         HandlerList handlers = new HandlerList();
-         handlers.setHandlers(new Handler[]{new SecuredRedirectHandler(), rootContext});
-         this.httpServer.setHandler(handlers);
+         this.httpServer.setHandler(new Handler.Sequence(new SecuredRedirectHandler(), rootContext));
       } else {
          this.httpServer.setHandler(rootContext);
       }

@@ -28,7 +28,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Test;
 import org.mindrot.jbcrypt.BCrypt;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 import java.util.List;

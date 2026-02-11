@@ -18,7 +18,7 @@
 package org.attribyte.snook;
 
 import com.google.common.collect.ImmutableMap;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 
 public class ExampleServer extends Server {
 

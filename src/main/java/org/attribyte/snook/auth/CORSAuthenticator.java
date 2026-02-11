@@ -27,8 +27,8 @@ import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
 import com.google.common.primitives.Ints;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Properties;

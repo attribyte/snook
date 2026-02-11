@@ -27,7 +27,7 @@ import com.google.common.net.HttpHeaders;
 import org.attribyte.api.http.Header;
 import org.attribyte.util.Pair;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Set;
 import java.util.function.Function;
 

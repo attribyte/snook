@@ -18,7 +18,7 @@
 
 package org.attribyte.snook.auth;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public interface LoginAuthenticator<T> extends Authenticator<T> {

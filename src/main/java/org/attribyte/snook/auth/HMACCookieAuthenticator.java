@@ -21,7 +21,7 @@ package org.attribyte.snook.auth;
 import com.google.common.hash.HashFunction;
 import org.attribyte.snook.Cookies;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.function.Function;
 
 import static org.attribyte.snook.Cookies.cookieValue;

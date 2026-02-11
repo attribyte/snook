@@ -26,7 +26,7 @@ import org.attribyte.util.Pair;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Test;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 import java.util.List;

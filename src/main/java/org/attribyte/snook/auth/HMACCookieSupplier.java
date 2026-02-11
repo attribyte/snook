@@ -22,7 +22,7 @@ import com.google.common.base.Strings;
 import com.google.common.hash.HashFunction;
 import org.attribyte.snook.Cookies;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;

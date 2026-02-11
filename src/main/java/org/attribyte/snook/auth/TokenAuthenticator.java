@@ -20,7 +20,7 @@ package org.attribyte.snook.auth;
 
 import com.google.common.hash.HashCode;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.function.Function;
 
