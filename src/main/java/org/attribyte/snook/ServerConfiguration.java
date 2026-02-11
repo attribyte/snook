@@ -30,10 +30,11 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -164,11 +165,7 @@ public class ServerConfiguration {
             contextFactory.setTrustStorePath(trustStorePath);
          }
          if(!trustStoreResource.isEmpty()) {
-            try {
-               contextFactory.setTrustStoreResource(Resource.newResource(trustStoreResource, true));
-            } catch(IOException ioe) {
-               throw new InitializationException(String.format("Problem loading 'trustStoreResource' (%s)", trustStoreResource), ioe);
-            }
+            contextFactory.setTrustStoreResource(ResourceFactory.root().newResource(URI.create(trustStoreResource)));
          }
          if(!truststorePassword.isEmpty()) {
             contextFactory.setTrustStorePassword(truststorePassword);

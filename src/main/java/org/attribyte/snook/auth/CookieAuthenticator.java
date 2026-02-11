@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import org.attribyte.snook.Cookies;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.function.Function;
 

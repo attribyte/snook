@@ -18,20 +18,21 @@
 
 package org.attribyte.snook.test;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.DispatcherType;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpUpgradeHandler;
-import javax.servlet.http.Part;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletConnection;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpUpgradeHandler;
+import jakarta.servlet.http.Part;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -163,12 +164,6 @@ public abstract class TestHttpServletRequest implements HttpServletRequest {
 
    @Override
    public boolean isRequestedSessionIdFromURL() {
-      return false;
-   }
-
-   @Override
-   @SuppressWarnings("deprecation")
-   public boolean isRequestedSessionIdFromUrl() {
       return false;
    }
 
@@ -323,12 +318,6 @@ public abstract class TestHttpServletRequest implements HttpServletRequest {
    }
 
    @Override
-   @SuppressWarnings("deprecation")
-   public String getRealPath(final String s) {
-      return null;
-   }
-
-   @Override
    public int getRemotePort() {
       return 0;
    }
@@ -391,5 +380,25 @@ public abstract class TestHttpServletRequest implements HttpServletRequest {
    @Override
    public <T extends HttpUpgradeHandler> T upgrade(Class<T> var1) throws IOException, ServletException {
       return null;
+   }
+
+   @Override
+   public String getRequestId() {
+      return "";
+   }
+
+   @Override
+   public String getProtocolRequestId() {
+      return "";
+   }
+
+   @Override
+   public ServletConnection getServletConnection() {
+      return new ServletConnection() {
+         @Override public String getConnectionId() { return ""; }
+         @Override public String getProtocol() { return "HTTP/1.1"; }
+         @Override public String getProtocolConnectionId() { return ""; }
+         @Override public boolean isSecure() { return false; }
+      };
    }
 }

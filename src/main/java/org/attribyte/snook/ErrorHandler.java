@@ -18,32 +18,27 @@
 
 package org.attribyte.snook;
 
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.net.HttpHeaders;
+import com.google.gson.Gson;
 import org.attribyte.api.Logger;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.io.ByteBufferOutputStream;
-import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.joda.time.format.ISODateTimeFormat;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.List;
@@ -64,15 +59,18 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
 
       /**
        * Write the message.
-       * @param request The request.
        * @param writer The output writer.
        * @param code The error code.
        * @param message The message.
+       * @param requestURI The request URI.
+       * @param servletName The servlet name.
        * @param cause The cause. May be {@code null}.
        * @param withStackTrace Should the stack trace be included?
+       * @param withServletName Should the servlet name be included?
        * @param logger A logger. May be {@code null};
        */
-      public void write(HttpServletRequest request, PrintWriter writer, int code, String message,
+      public void write(PrintWriter writer, int code, String message,
+                        String requestURI, String servletName,
                         Throwable cause, boolean withStackTrace, boolean withServletName,
                         Logger logger);
 
@@ -85,19 +83,25 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
        * @param withStackTrace Should a stack trace be included in the output?
        * @param logger A logger.
        * @param response The response.
+       * @param callback The callback.
        * @throws IOException on write error.
        */
-      public default void send(HttpServletRequest request, int code, String message,
+      public default void send(Request request, int code, String message,
                                boolean withStackTrace, Logger logger,
-                               final HttpServletResponse response) throws IOException {
+                               final Response response, final Callback callback) throws IOException {
          response.setStatus(code);
-         response.setContentType(contentType());
+         response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType());
          Throwable cause = getCause(request);
          if(withStackTrace && cause == null) {
             cause = new Exception("");
          }
-         write(request, response.getWriter(), code, message, cause, withStackTrace, false, logger);
-         response.flushBuffer();
+         OutputStream out = Content.Sink.asOutputStream(response);
+         PrintWriter pw = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
+         String requestURI = request.getHttpURI().getPath();
+         write(pw, code, message, requestURI, "",
+                 cause, withStackTrace, false, logger);
+         pw.flush();
+         callback.succeeded();
       }
 
       /**
@@ -119,7 +123,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
        * </p>
        * @param response The response.
        */
-      public default void addCustomHeaders(HttpServletResponse response) {
+      public default void addCustomHeaders(Response response) {
       }
 
       /**
@@ -171,6 +175,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * @param cacheControlHeader The cache control header value.
     * @param defaultWriter The default writer.
     * @param withStackTrace Should stack traces be sent to the client?
+    * @param withServletName Should the servlet name be included?
     * @param logger A logger.
     * @param overrideWriters A list of prefix, writers to override output type for paths. May be {@code null}.
     */
@@ -255,72 +260,50 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    }
 
    @Override
-   public void handle(String target, Request baseRequest,
-                      HttpServletRequest request,
-                      HttpServletResponse response) throws IOException {
+   public boolean handle(Request request, Response response, Callback callback) throws Exception {
 
       if(cacheControlHeader != null) {
-         response.setHeader(HttpHeaders.CACHE_CONTROL, cacheControlHeader);
+         response.getHeaders().put(HttpHeader.CACHE_CONTROL, cacheControlHeader);
       }
 
-      try {
+      String message = (String)request.getAttribute(ERROR_MESSAGE);
+      int code = response.getStatus();
+      Throwable cause = getCause(request);
+      String requestURI = request.getHttpURI().getPath();
+      String servletName = getServletName(request);
 
-         String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
-         if(message == null) {
-            message = baseRequest.getResponse().getReason();
+      List<String> acceptableMimeTypes = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT);
+
+      Writer writer = overrideWriter(Strings.nullToEmpty(requestURI));
+      if(writer == null) {
+         if(acceptableMimeTypes.isEmpty()) {
+            writer = defaultWriter;
+         } else {
+            for(String contentType : acceptableMimeTypes) {
+               Writer maybeWriter = selectWriter(contentType);
+               if(maybeWriter != null) {
+                  writer = maybeWriter;
+                  break;
+               }
+            }
          }
 
-         List<String> acceptableMimeTypes = baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT,
-                 QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
-
-         Writer writer = overrideWriter(Strings.nullToEmpty(request.getRequestURI()));
          if(writer == null) {
-            if(acceptableMimeTypes.isEmpty()) {
-               writer = defaultWriter;
-            } else {
-               for(String contentType : acceptableMimeTypes) {
-                  Writer maybeWriter = selectWriter(contentType);
-                  if(maybeWriter != null) {
-                     writer = maybeWriter;
-                     break;
-                  }
-               }
-            }
-
-            if(writer == null) {
-               writer = defaultWriter;
-            }
+            writer = defaultWriter;
          }
-
-         response.setHeader(HttpHeaders.CONTENT_TYPE, writer.contentType());
-         writer.addCustomHeaders(response);
-
-         boolean useStackTrace = withStackTrace;
-
-         //See: https://www.eclipse.org/jetty/javadoc/9.4.26.v20200117/org/eclipse/jetty/server/handler/ErrorHandler.html
-
-         while(true) {
-            try {
-               ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getBuffer();
-               ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
-               PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(out, useCharset(baseRequest, writer.contentType())));
-               writer.write(request, printWriter, response.getStatus(), message,
-                       getCause(request), useStackTrace, withServletName, logger);
-               printWriter.flush();
-               break;
-            } catch(BufferOverflowException e) {
-               baseRequest.getResponse().resetContent();
-               if(useStackTrace) {
-                  useStackTrace = false;
-                  continue;
-               }
-               break;
-            }
-         }
-         baseRequest.getHttpChannel().sendResponseAndComplete();
-      } finally {
-         baseRequest.setHandled(true);
       }
+
+      response.getHeaders().put(HttpHeader.CONTENT_TYPE, writer.contentType());
+      writer.addCustomHeaders(response);
+
+      Charset charset = useCharset(request, writer.contentType());
+      OutputStream out = Content.Sink.asOutputStream(response);
+      PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(out, charset));
+      writer.write(printWriter, code, message, requestURI, servletName,
+              cause, withStackTrace, withServletName, logger);
+      printWriter.flush();
+      callback.succeeded();
+      return true;
    }
 
    /**
@@ -406,12 +389,12 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    /**
     * Determine the charset for the response.
     *
-    * @param baseRequest The base request.
+    * @param request The request.
     * @param contentType The output content type.
     * @return The charset or the default charset for the content type.
     */
-   protected static Charset useCharset(final Request baseRequest, final String contentType) {
-      List<String> acceptableCharsets = baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
+   protected static Charset useCharset(final Request request, final String contentType) {
+      List<String> acceptableCharsets = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
       for(String name : acceptableCharsets) {
          if(name.equals("*")) {
             return StandardCharsets.UTF_8;
@@ -447,11 +430,9 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
    /**
     * Writes the stack trace.
     * @param cause The cause.
-    * @param request The request.
     * @param writer The output writer.
     */
-   protected static void writeStackTrace(final Throwable cause,
-                                         final HttpServletRequest request, final PrintWriter writer) {
+   protected static void writeStackTrace(final Throwable cause, final PrintWriter writer) {
       if(cause != null) {
          List<Throwable> chain = Throwables.getCausalChain(cause);
          for(Throwable t : chain) {
@@ -484,8 +465,8 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * @param request The request.
     * @return The cause or {@code null}.
     */
-   public static Throwable getCause(final HttpServletRequest request) {
-      return (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+   public static Throwable getCause(final Request request) {
+      return (Throwable)request.getAttribute(ERROR_EXCEPTION);
    }
 
    /**
@@ -493,8 +474,8 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     * @param request The request.
     * @return The servlet name.
     */
-   public static String getServletName(final HttpServletRequest request) {
-      Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
+   public static String getServletName(final Request request) {
+      Object servlet = request.getAttribute("jakarta.servlet.error.servlet_name");
       return servlet != null ? servlet.toString() : "";
    }
 
@@ -538,9 +519,12 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
     */
    public static final Charset DEFAULT_CHARSET = StandardCharsets.ISO_8859_1;
 
+   private static final Gson GSON = new Gson();
+
    public static final Writer TEXT_WRITER = new Writer() {
       @Override
-      public void write(final HttpServletRequest request, final PrintWriter writer, final int code, final String message,
+      public void write(final PrintWriter writer, final int code, final String message,
+                        final String requestURI, final String servletName,
                         final Throwable cause, final boolean withStackTrace,
                         final boolean withServletName, final Logger logger) {
          if(logger != null && cause != null) {
@@ -552,12 +536,12 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          writer.printf("STATUS: %s%n", code);
          writer.printf("MESSAGE: %s%n", message);
          if(withServletName) {
-            writer.printf("SERVLET: %s%n", getServletName(request));
+            writer.printf("SERVLET: %s%n", servletName);
          }
          if(cause != null && withStackTrace) {
             writer.println("CAUSE:");
             writer.println();
-            writeStackTrace(cause, request, writer);
+            writeStackTrace(cause, writer);
          }
          writer.flush();
       }
@@ -569,13 +553,14 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
 
       @Override
       public String contentType() {
-         return MimeTypes.Type.TEXT_PLAIN.asString();
+         return "text/plain";
       }
    };
 
    public static final Writer HTML_WRITER = new Writer() {
       @Override
-      public void write(final HttpServletRequest request, final PrintWriter writer, final int code, String message,
+      public void write(final PrintWriter writer, final int code, String message,
+                        final String requestURI, final String servletName,
                         final Throwable cause, final boolean withStackTrace,
                         final boolean withServletName, final Logger logger) {
 
@@ -594,7 +579,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          writer.printf("%n<h2>%d %s</h2>%n", code, StringUtil.sanitizeXmlString(message));
          writer.printf("<h3>%s</h3>%n", ISODateTimeFormat.basicDateTimeNoMillis().print(System.currentTimeMillis()));
          if(withServletName) {
-            writer.printf("<h3>%s</h3>%n", getServletName(request));
+            writer.printf("<h3>%s</h3>%n", servletName);
          }
 
          if(logger != null && cause != null) {
@@ -605,7 +590,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
 
          if(cause != null && withStackTrace) {
             writer.println("<pre>");
-            writeStackTrace(cause, request, writer);
+            writeStackTrace(cause, writer);
             writer.println("</pre>");
          }
          writer.write("</body></html>");
@@ -619,22 +604,23 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
 
       @Override
       public String contentType() {
-         return MimeTypes.Type.TEXT_HTML.asString();
+         return "text/html";
       }
    };
 
    public static final Writer JSON_WRITER = new Writer() {
       @Override
-      public void write(final HttpServletRequest request, final PrintWriter writer, final int code, String message,
+      public void write(final PrintWriter writer, final int code, String message,
+                        final String requestURI, final String servletName,
                         final Throwable cause, final boolean withStackTrace,
                         final boolean withServletName,
                         final Logger logger) {
          Map<String, String> json = Maps.newLinkedHashMap();
-         json.put("url", request.getRequestURI());
+         json.put("url", requestURI);
          json.put("status", Integer.toString(code));
          json.put("message", message);
          if(withServletName) {
-            json.put("servlet", getServletName(request));
+            json.put("servlet", servletName);
          }
 
          if(logger != null && cause != null) {
@@ -651,11 +637,11 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
          }
 
          writer.append(json.entrySet().stream()
-                 .map(e -> QuotedStringTokenizer.quote(e.getKey()) +
+                 .map(e -> GSON.toJson(e.getKey()) +
                          ":" +
-                         QuotedStringTokenizer.quote((e.getValue())))
+                         GSON.toJson(e.getValue()))
                  .collect(Collectors.joining(",\n", "{\n", "\n}")));
-         writer.flush();;
+         writer.flush();
       }
 
       @Override
@@ -665,7 +651,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
 
       @Override
       public String contentType() {
-         return MimeTypes.Type.APPLICATION_JSON.asString();
+         return "application/json";
       }
    };
 }

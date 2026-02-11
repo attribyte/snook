@@ -22,14 +22,11 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.EnumSet;
 
-import static org.eclipse.jetty.http.HttpCookie.SAME_SITE_LAX_COMMENT;
-import static org.eclipse.jetty.http.HttpCookie.SAME_SITE_NONE_COMMENT;
-import static org.eclipse.jetty.http.HttpCookie.SAME_SITE_STRICT_COMMENT;
 
 /**
  * "Cookie" operations.
@@ -212,15 +209,15 @@ public class Cookies {
       if(sameSiteOption != null) {
          switch(sameSiteOption) {
             case SAME_SITE_NONE:
-               cookie.setComment(SAME_SITE_NONE_COMMENT);
+               cookie.setAttribute("SameSite", "None");
                cookie.setSecure(true); //Required...
                break;
             case SAME_SITE_LAX:
-               cookie.setComment(SAME_SITE_LAX_COMMENT);
+               cookie.setAttribute("SameSite", "Lax");
                break;
             case SAME_SITE_STRICT:
             default: {
-               cookie.setComment(SAME_SITE_STRICT_COMMENT);
+               cookie.setAttribute("SameSite", "Strict");
                break;
             }
          }

@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import org.attribyte.snook.test.TestHttpServletRequest;
 import org.junit.Test;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Map;
 

@@ -25,10 +25,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HttpHeaders;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -59,18 +59,6 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public String encodeRedirectURL(final String s) {
-      return null;
-   }
-
-   @Override
-   @SuppressWarnings("deprecation")
-   public String encodeUrl(final String s) {
-      return null;
-   }
-
-   @Override
-   @SuppressWarnings("deprecation")
-   public String encodeRedirectUrl(final String s) {
       return null;
    }
 
@@ -121,12 +109,6 @@ public class TestHttpServletResponse implements HttpServletResponse {
 
    @Override
    public void setStatus(final int i) {
-      this.status = i;
-   }
-
-   @Override
-   @SuppressWarnings("deprecation")
-   public void setStatus(final int i, final String s) {
       this.status = i;
    }
 

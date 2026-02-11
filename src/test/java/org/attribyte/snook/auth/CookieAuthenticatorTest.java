@@ -23,8 +23,8 @@ import org.attribyte.snook.Cookies;
 import org.attribyte.snook.test.TestHttpServletRequest;
 import org.junit.Test;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 
 import static org.junit.Assert.*;
 
