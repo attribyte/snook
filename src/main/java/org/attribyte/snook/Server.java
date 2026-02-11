@@ -66,7 +66,9 @@ public abstract class Server {
     * @param loggerName The name of a logger.
     * @param withGzip Should auto-gzip handling be configured?
     * @throws Exception on configuration error.
+    * @deprecated Use {@link #builder(String[])} instead.
     */
+   @Deprecated
    protected Server(String[] args,
                     final String propsResourceName,
                     final String loggerName,
@@ -82,7 +84,9 @@ public abstract class Server {
     * @param withGzip Should auto-gzip handling be configured?
     * @param errorHandler A custom error handler.
     * @throws Exception on configuration error.
+    * @deprecated Use {@link #builder(String[])} instead.
     */
+   @Deprecated
    protected Server(String[] args,
                     final String propsResourceName,
                     final String loggerName,
@@ -117,7 +121,9 @@ public abstract class Server {
     * @param logger The logger.
     * @param withGzip Should auto-gzip handling be configured?
     * @throws Exception on configuration error.
+    * @deprecated Use {@link #builder(String[])} instead.
     */
+   @Deprecated
    protected Server(String[] args,
                     final String propsResourceName,
                     final Logger logger,
@@ -133,7 +139,9 @@ public abstract class Server {
     * @param withGzip Should auto-gzip handling be configured?
     * @param errorHandler A custom error handler.
     * @throws Exception on configuration error.
+    * @deprecated Use {@link #builder(String[])} instead.
     */
+   @Deprecated
    protected Server(String[] args,
                     final String propsResourceName,
                     final Logger logger,
@@ -188,7 +196,9 @@ public abstract class Server {
     * @param logger The logger.
     * @param withGzip Should auto-gzip handling be configured?
     * @throws Exception on configuration error.
+    * @deprecated Use {@link #builder(Properties)} instead.
     */
+   @Deprecated
    protected Server(final Properties props,
                     final Logger logger,
                     final boolean withGzip) throws Exception {
@@ -205,6 +215,145 @@ public abstract class Server {
       if(this.serverConfiguration.customErrorHandler != null) {
          this.httpServer.setErrorHandler(this.serverConfiguration.customErrorHandler.withLogger(logger));
       }
+      initAssets();
+   }
+
+   /**
+    * Creates a builder that loads properties from command line arguments.
+    * @param args The command line arguments.
+    * @return A new builder.
+    */
+   public static Builder builder(String[] args) {
+      Builder b = new Builder();
+      b.args = args;
+      return b;
+   }
+
+   /**
+    * Creates a builder that uses pre-built properties.
+    * @param props The properties.
+    * @return A new builder.
+    */
+   public static Builder builder(Properties props) {
+      Builder b = new Builder();
+      b.props = props;
+      return b;
+   }
+
+   /**
+    * A builder for configuring server options.
+    * <p>
+    *    Use {@link Server#builder(String[])} or {@link Server#builder(Properties)}
+    *    to create instances.
+    * </p>
+    */
+   public static class Builder {
+
+      String[] args;
+      Properties props;
+      String propsResourceName = "";
+      String loggerName;
+      Logger logger;
+      boolean withGzip = true;
+      ErrorHandler errorHandler;
+
+      Builder() {}
+
+      /**
+       * Sets the default properties resource name.
+       * @param name The resource name.
+       * @return A self-reference.
+       */
+      public Builder propsResource(String name) {
+         this.propsResourceName = name;
+         return this;
+      }
+
+      /**
+       * Sets the logger name (creates a log4j logger).
+       * @param name The logger name.
+       * @return A self-reference.
+       */
+      public Builder loggerName(String name) {
+         this.loggerName = name;
+         return this;
+      }
+
+      /**
+       * Sets a pre-built logger.
+       * @param logger The logger.
+       * @return A self-reference.
+       */
+      public Builder logger(Logger logger) {
+         this.logger = logger;
+         return this;
+      }
+
+      /**
+       * Enables or disables gzip handling.
+       * @param withGzip {@code true} to enable gzip.
+       * @return A self-reference.
+       */
+      public Builder withGzip(boolean withGzip) {
+         this.withGzip = withGzip;
+         return this;
+      }
+
+      /**
+       * Sets a custom error handler.
+       * @param errorHandler The error handler.
+       * @return A self-reference.
+       */
+      public Builder errorHandler(ErrorHandler errorHandler) {
+         this.errorHandler = errorHandler;
+         return this;
+      }
+   }
+
+   /**
+    * Creates the server from a builder.
+    * @param builder The builder.
+    * @throws Exception on configuration error.
+    */
+   protected Server(Builder builder) throws Exception {
+      if(builder.args != null) {
+         this.props = props(builder.propsResourceName, builder.args);
+      } else if(builder.props != null) {
+         this.props = builder.props;
+      } else {
+         throw new IllegalStateException("Builder requires either args or props");
+      }
+
+      this.serverConfiguration = new ServerConfiguration("server.", props);
+      this.debug = debug(this.serverConfiguration.debug);
+
+      if(builder.logger != null) {
+         this.logger = builder.logger;
+      } else if(builder.loggerName != null) {
+         this.logger = log4jLogger(builder.loggerName, debug ? Level.DEBUG : Level.INFO);
+      } else {
+         this.logger = log4jLogger(getClass().getName(), debug ? Level.DEBUG : Level.INFO);
+      }
+
+      if(debug) {
+         System.out.println("Configuration...");
+         System.out.println(this.serverConfiguration.toString());
+      }
+
+      this.httpServer = httpServer();
+
+      ErrorHandler errorHandler = builder.errorHandler;
+      if(errorHandler != null) {
+         if(errorHandler.logger == null) {
+            this.httpServer.setErrorHandler(errorHandler.withLogger(logger));
+         } else {
+            this.httpServer.setErrorHandler(errorHandler);
+         }
+      } else if(this.serverConfiguration.customErrorHandler != null) {
+         this.httpServer.setErrorHandler(this.serverConfiguration.customErrorHandler.withLogger(this.logger));
+      }
+
+      this.rootContext = rootContext(builder.withGzip);
       initAssets();
    }
 

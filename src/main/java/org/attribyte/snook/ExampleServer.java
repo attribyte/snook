@@ -23,10 +23,11 @@ import org.eclipse.jetty.ee10.servlet.ServletHolder;
 public class ExampleServer extends Server {
 
    public ExampleServer(String[] args) throws Exception {
-      super(args, "", "example", true,
-              new ErrorHandler().withOverrides(ImmutableMap.of("" +
+      super(Server.builder(args)
+              .loggerName("example")
+              .errorHandler(new ErrorHandler().withOverrides(ImmutableMap.of(
                       "/fail/json", ErrorHandler.JSON_WRITER,
-                      "/fail/text", ErrorHandler.TEXT_WRITER)));
+                      "/fail/text", ErrorHandler.TEXT_WRITER))));
    }
 
    public static void main(String[] args) throws Exception {
