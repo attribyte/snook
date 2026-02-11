@@ -25,7 +25,7 @@ then
   INSTALL_DIR="$(dirname "$DIR")"
 fi
 
-SNOOK_JAR="snook-0.2.8.jar"
+SNOOK_JAR="snook-0.3.0.jar"
 
 CLASSPATH="${INSTALL_DIR}/target/${SNOOK_JAR}:${INSTALL_DIR}/target/dependency/*"
 $JAVA_EXE -cp "${CLASSPATH}" -Dserver.install.dir="$INSTALL_DIR" org.attribyte.snook.QRCode $1 $2 $3 $4 $5 $6 $7
