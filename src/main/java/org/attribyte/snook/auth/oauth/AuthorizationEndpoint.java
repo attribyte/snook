@@ -30,7 +30,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -62,7 +61,7 @@ public class AuthorizationEndpoint extends HttpServlet {
                                 final AuthorizationCodeStore codeStore,
                                 final ConsentHandler consentHandler,
                                 final int codeLifetimeSeconds) {
-      this(userAuthenticator, clientStore, codeStore, consentHandler, codeLifetimeSeconds, null);
+      this(userAuthenticator, clientStore, codeStore, consentHandler, codeLifetimeSeconds, null, null);
    }
 
    /**
@@ -80,12 +79,33 @@ public class AuthorizationEndpoint extends HttpServlet {
                                 final ConsentHandler consentHandler,
                                 final int codeLifetimeSeconds,
                                 final String loginUrl) {
+      this(userAuthenticator, clientStore, codeStore, consentHandler, codeLifetimeSeconds, loginUrl, null);
+   }
+
+   /**
+    * Creates an authorization endpoint with a custom login form renderer.
+    * @param userAuthenticator The authenticator for the resource owner.
+    * @param clientStore The client store.
+    * @param codeStore The authorization code store.
+    * @param consentHandler The consent handler.
+    * @param codeLifetimeSeconds The authorization code lifetime in seconds.
+    * @param loginUrl The URL to redirect to if the user is not authenticated, or {@code null}.
+    * @param loginFormRenderer The login form renderer, or {@code null} for the default.
+    */
+   public AuthorizationEndpoint(final Authenticator<?> userAuthenticator,
+                                final ClientStore clientStore,
+                                final AuthorizationCodeStore codeStore,
+                                final ConsentHandler consentHandler,
+                                final int codeLifetimeSeconds,
+                                final String loginUrl,
+                                final LoginFormRenderer loginFormRenderer) {
       this.userAuthenticator = userAuthenticator;
       this.clientStore = clientStore;
       this.codeStore = codeStore;
       this.consentHandler = consentHandler;
       this.codeLifetimeSeconds = codeLifetimeSeconds;
       this.loginUrl = loginUrl;
+      this.loginFormRenderer = loginFormRenderer != null ? loginFormRenderer : new DefaultLoginFormRenderer();
    }
 
    @Override
@@ -198,9 +218,9 @@ public class AuthorizationEndpoint extends HttpServlet {
             response.sendRedirect(loginUrl + "?return_url=" +
                     URLEncoder.encode(returnUrl, StandardCharsets.UTF_8));
          } else {
-            // Render a login form that preserves all OAuth parameters
-            renderLoginForm(request, response, client.name, null,
-                    clientId, redirectUri, scope, state, codeChallenge);
+            loginFormRenderer.render(request, response, client.name, null,
+                    request.getRequestURI(),
+                    buildHiddenFieldsHtml(clientId, redirectUri, scope, state, codeChallenge));
          }
          return;
       }
@@ -246,8 +266,9 @@ public class AuthorizationEndpoint extends HttpServlet {
       // Check credentials via the authenticator
       String authUsername = userAuthenticator.authorizedUsername(request);
       if(authUsername == null) {
-         renderLoginForm(request, response, client.name, "Invalid username or password",
-                 clientId, redirectUri, scope, state, codeChallenge);
+         loginFormRenderer.render(request, response, client.name, "Invalid username or password",
+                 request.getRequestURI(),
+                 buildHiddenFieldsHtml(clientId, redirectUri, scope, state, codeChallenge));
          return;
       }
 
@@ -318,70 +339,32 @@ public class AuthorizationEndpoint extends HttpServlet {
    }
 
    /**
-    * Renders a minimal HTML login form that preserves OAuth parameters as hidden fields.
+    * Builds the hidden fields HTML for all OAuth parameters.
     */
-   private void renderLoginForm(final HttpServletRequest request,
-                                final HttpServletResponse response,
-                                final String clientName,
-                                final String errorMessage,
-                                final String clientId,
-                                final String redirectUri,
-                                final String scope,
-                                final String state,
-                                final String codeChallenge) throws IOException {
-
-      response.setStatus(errorMessage != null ? 401 : 200);
-      response.setContentType("text/html;charset=UTF-8");
-      PrintWriter writer = response.getWriter();
-      writer.write("<!DOCTYPE html><html><head><meta charset='UTF-8'>");
-      writer.write("<meta name='viewport' content='width=device-width,initial-scale=1'>");
-      writer.write("<title>Sign In</title>");
-      writer.write("<style>");
-      writer.write("body{font-family:system-ui,-apple-system,sans-serif;display:flex;justify-content:center;");
-      writer.write("align-items:center;min-height:100vh;margin:0;background:#f5f5f5}");
-      writer.write(".card{background:white;border-radius:8px;padding:2rem;box-shadow:0 2px 8px rgba(0,0,0,.1);");
-      writer.write("width:100%;max-width:360px}");
-      writer.write("h2{margin:0 0 1.5rem;font-size:1.25rem;text-align:center}");
-      writer.write(".client{color:#666;font-size:.875rem;text-align:center;margin-bottom:1.5rem}");
-      writer.write("label{display:block;font-size:.875rem;margin-bottom:.25rem;color:#333}");
-      writer.write("input[type=text],input[type=password]{width:100%;padding:.5rem;border:1px solid #ddd;");
-      writer.write("border-radius:4px;font-size:1rem;margin-bottom:1rem;box-sizing:border-box}");
-      writer.write("button{width:100%;padding:.625rem;background:#2563eb;color:white;border:none;");
-      writer.write("border-radius:4px;font-size:1rem;cursor:pointer}");
-      writer.write("button:hover{background:#1d4ed8}");
-      writer.write(".error{background:#fef2f2;color:#dc2626;padding:.5rem;border-radius:4px;");
-      writer.write("font-size:.875rem;margin-bottom:1rem;text-align:center}");
-      writer.write("</style></head><body><div class='card'>");
-      writer.write("<h2>Sign In</h2>");
-      writer.write("<div class='client'>" + escapeHtml(clientName) + " is requesting access</div>");
-      if(errorMessage != null) {
-         writer.write("<div class='error'>" + escapeHtml(errorMessage) + "</div>");
-      }
-      writer.write("<form method='POST' action='" + escapeHtml(request.getRequestURI()) + "'>");
-      writer.write("<label for='username'>Username</label>");
-      writer.write("<input type='text' id='username' name='username' required autofocus>");
-      writer.write("<label for='password'>Password</label>");
-      writer.write("<input type='password' id='password' name='password' required>");
-      writeHiddenField(writer, "client_id", clientId);
-      writeHiddenField(writer, "redirect_uri", redirectUri);
-      writeHiddenField(writer, "code_challenge", codeChallenge);
-      writeHiddenField(writer, "response_type", "code");
+   static String buildHiddenFieldsHtml(final String clientId,
+                                       final String redirectUri,
+                                       final String scope,
+                                       final String state,
+                                       final String codeChallenge) {
+      StringBuilder sb = new StringBuilder();
+      sb.append(hiddenField("client_id", clientId));
+      sb.append(hiddenField("redirect_uri", redirectUri));
+      sb.append(hiddenField("code_challenge", codeChallenge));
+      sb.append(hiddenField("response_type", "code"));
       if(!Strings.isNullOrEmpty(scope)) {
-         writeHiddenField(writer, "scope", scope);
+         sb.append(hiddenField("scope", scope));
       }
       if(!Strings.isNullOrEmpty(state)) {
-         writeHiddenField(writer, "state", state);
+         sb.append(hiddenField("state", state));
       }
-      writer.write("<button type='submit'>Sign In</button>");
-      writer.write("</form></div></body></html>");
-      writer.flush();
+      return sb.toString();
    }
 
-   private static void writeHiddenField(PrintWriter writer, String name, String value) {
-      writer.write("<input type='hidden' name='" + escapeHtml(name) + "' value='" + escapeHtml(value) + "'>");
+   private static String hiddenField(final String name, final String value) {
+      return "<input type='hidden' name='" + escapeHtml(name) + "' value='" + escapeHtml(value) + "'>";
    }
 
-   private static String escapeHtml(String s) {
+   static String escapeHtml(String s) {
       if(s == null) return "";
       return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
               .replace("\"", "&quot;").replace("'", "&#39;");
@@ -427,4 +410,5 @@ public class AuthorizationEndpoint extends HttpServlet {
    private final ConsentHandler consentHandler;
    private final int codeLifetimeSeconds;
    private final String loginUrl;
+   private final LoginFormRenderer loginFormRenderer;
 }
