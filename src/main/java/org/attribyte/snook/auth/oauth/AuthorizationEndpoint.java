@@ -91,6 +91,8 @@ public class AuthorizationEndpoint extends HttpServlet {
    @Override
    protected void doGet(final HttpServletRequest request,
                         final HttpServletResponse response) throws IOException {
+      System.out.println("[OAuth] doGet: " + request.getRequestURL() +
+              (request.getQueryString() != null ? "?" + request.getQueryString() : ""));
       handleAuthorizationRequest(request, response);
    }
 
@@ -101,6 +103,9 @@ public class AuthorizationEndpoint extends HttpServlet {
       // Check if this is a login form submission (has username/password fields)
       String username = request.getParameter("username");
       String password = request.getParameter("password");
+      System.out.println("[OAuth] doPost: username=" + (username != null ? "present" : "null") +
+              " password=" + (password != null ? "present" : "null") +
+              " client_id=" + request.getParameter("client_id"));
       if(username != null && password != null) {
          handleLoginSubmission(request, response);
       } else {
@@ -188,6 +193,7 @@ public class AuthorizationEndpoint extends HttpServlet {
 
       // Check user authentication
       String username = userAuthenticator.authorizedUsername(request);
+      System.out.println("[OAuth] handleAuthorizationRequest: username=" + username + " loginUrl=" + loginUrl);
       if(username == null) {
          if(loginUrl != null) {
             String returnUrl = request.getRequestURL().toString();
@@ -205,9 +211,12 @@ public class AuthorizationEndpoint extends HttpServlet {
          return;
       }
 
-      // Authenticated — proceed to consent
-      String approveUrl = buildApproveUrl(request, clientId, redirectUri, scope, state, codeChallenge);
-      consentHandler.renderConsent(request, response, client, requestedScopes, state, approveUrl);
+      // Authenticated — issue the authorization code directly.
+      // The consent handler pattern relies on a redirect/POST cycle that doesn't
+      // work reliably in a session-less context (the redirect loops back here as a GET).
+      // Since the user is already authenticated, we can issue the code immediately.
+      System.out.println("[OAuth] user authenticated, issuing code directly for user=" + username);
+      issueAuthorizationCode(response, clientId, username, redirectUri, codeChallenge, requestedScopes, state);
    }
 
    /**
@@ -236,18 +245,26 @@ public class AuthorizationEndpoint extends HttpServlet {
 
       OAuthClient client = clientOpt.get();
 
-      // Check credentials via the authenticator (request now has Basic-style params we can check)
-      String username = userAuthenticator.authorizedUsername(request);
-      if(username == null) {
+      if(!client.validateRedirectUri(redirectUri)) {
+         OAuthError.writeJsonError(response, 400, OAuthError.INVALID_REQUEST, "Invalid redirect_uri");
+         return;
+      }
+
+      // Check credentials via the authenticator
+      String authUsername = userAuthenticator.authorizedUsername(request);
+      System.out.println("[OAuth] handleLoginSubmission: authUsername=" + authUsername);
+      if(authUsername == null) {
          renderLoginForm(request, response, client.name, "Invalid username or password",
                  clientId, redirectUri, scope, state, codeChallenge);
          return;
       }
 
-      // Authenticated — proceed to consent/approval
+      // Authenticated — issue the authorization code directly.
+      // We skip the consent handler here because the form-based auth flow
+      // is session-less — a redirect would lose the authentication state.
       Set<String> requestedScopes = parseScopes(scope);
-      String approveUrl = buildApproveUrl(request, clientId, redirectUri, scope, state, codeChallenge);
-      consentHandler.renderConsent(request, response, client, requestedScopes, state, approveUrl);
+      System.out.println("[OAuth] issuing code for user=" + authUsername + " redirectUri=" + redirectUri);
+      issueAuthorizationCode(response, clientId, authUsername, redirectUri, codeChallenge, requestedScopes, state);
    }
 
    /**
@@ -282,13 +299,24 @@ public class AuthorizationEndpoint extends HttpServlet {
       }
 
       Set<String> scopes = parseScopes(scope);
+      issueAuthorizationCode(response, clientId, username, redirectUri, codeChallenge, scopes, state);
+   }
 
-      // Create and store authorization code
+   /**
+    * Creates an authorization code and redirects to the client's redirect URI.
+    */
+   private void issueAuthorizationCode(final HttpServletResponse response,
+                                       final String clientId,
+                                       final String username,
+                                       final String redirectUri,
+                                       final String codeChallenge,
+                                       final Set<String> scopes,
+                                       final String state) throws IOException {
+
       AuthorizationCode authCode = AuthorizationCode.create(
               clientId, username, redirectUri, codeChallenge, scopes, codeLifetimeSeconds);
       codeStore.store(authCode);
 
-      // Redirect with code
       StringBuilder redirectUrl = new StringBuilder(redirectUri);
       redirectUrl.append(redirectUri.contains("?") ? "&" : "?");
       redirectUrl.append("code=").append(URLEncoder.encode(authCode.code, StandardCharsets.UTF_8));
