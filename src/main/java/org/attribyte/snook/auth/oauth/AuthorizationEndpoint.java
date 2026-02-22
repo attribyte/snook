@@ -122,6 +122,12 @@ public class AuthorizationEndpoint extends HttpServlet {
       String codeChallenge = request.getParameter("code_challenge");
       String codeChallengeMethod = request.getParameter("code_challenge_method");
 
+      // Default to "code" — it's the only supported type, and some MCP clients
+      // (e.g. Claude Code) omit it from the authorization request.
+      if(responseType == null) {
+         responseType = "code";
+      }
+
       // Validate response_type
       if(!"code".equals(responseType)) {
          if(!Strings.isNullOrEmpty(redirectUri)) {
