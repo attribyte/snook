@@ -24,11 +24,14 @@ import java.util.Optional;
 
 /**
  * Store for registered OAuth clients.
- * <p>
- *    Registration is out-of-band (config, admin UI, etc.).
- * </p>
  */
 public interface ClientStore {
+
+   /**
+    * Registers a client.
+    * @param client The client.
+    */
+   void register(OAuthClient client);
 
    /**
     * Gets a client by id.

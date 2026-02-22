@@ -62,7 +62,7 @@ public class OAuthClient {
       return new OAuthClient(clientId, Optional.of(clientSecretHash), name, redirectUris, allowedScopes, true);
    }
 
-   private OAuthClient(final String clientId,
+   public OAuthClient(final String clientId,
                        final Optional<HashCode> clientSecretHash,
                        final String name,
                        final Collection<String> redirectUris,

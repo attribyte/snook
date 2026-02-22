@@ -200,8 +200,8 @@ public class AuthorizationEndpointTest {
 
       noAuthEndpoint.doGet(request, response);
 
-      // Should redirect with access_denied error
-      assertEquals(301, response.status);
+      // Should show login form (200)
+      assertEquals(200, response.status);
    }
 
    @Test

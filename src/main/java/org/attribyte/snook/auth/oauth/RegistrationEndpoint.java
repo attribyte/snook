@@ -25,7 +25,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.attribyte.snook.auth.oauth.model.OAuthClient;
-import org.attribyte.snook.auth.oauth.store.InMemoryClientStore;
+import org.attribyte.snook.auth.oauth.store.ClientStore;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,7 +43,7 @@ import java.util.UUID;
  * OAuth 2.0 Dynamic Client Registration endpoint (RFC 7591).
  * <p>
  *    Accepts POST requests with client metadata and registers
- *    public clients in an {@link InMemoryClientStore}.
+ *    public clients in a {@link ClientStore}.
  * </p>
  */
 @SuppressWarnings("serial")
@@ -51,7 +51,7 @@ public class RegistrationEndpoint extends HttpServlet {
 
    private static final Gson GSON = new Gson();
 
-   private final InMemoryClientStore clientStore;
+   private final ClientStore clientStore;
    private final Collection<String> defaultScopes;
 
    /**
@@ -59,7 +59,7 @@ public class RegistrationEndpoint extends HttpServlet {
     * @param clientStore The client store.
     * @param defaultScopes The default scopes for registered clients.
     */
-   public RegistrationEndpoint(final InMemoryClientStore clientStore,
+   public RegistrationEndpoint(final ClientStore clientStore,
                                final Collection<String> defaultScopes) {
       this.clientStore = clientStore;
       this.defaultScopes = ImmutableList.copyOf(defaultScopes);

@@ -30,10 +30,7 @@ public class InMemoryClientStore implements ClientStore {
 
    private final ConcurrentHashMap<String, OAuthClient> clients = new ConcurrentHashMap<>();
 
-   /**
-    * Registers a client.
-    * @param client The client.
-    */
+   @Override
    public void register(final OAuthClient client) {
       clients.put(client.clientId, client);
    }
