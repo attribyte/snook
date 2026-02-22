@@ -176,6 +176,9 @@ public class AuthorizationEndpoint extends HttpServlet {
             }
             response.sendRedirect(loginUrl + "?return_url=" +
                     URLEncoder.encode(returnUrl, StandardCharsets.UTF_8));
+         } else if("Basic".equals(userAuthenticator.schemeName())) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setHeader("WWW-Authenticate", "Basic realm=\"oauth\"");
          } else {
             response.sendRedirect(OAuthError.errorRedirectUrl(redirectUri,
                     OAuthError.ACCESS_DENIED, "User not authenticated", state));
