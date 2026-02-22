@@ -48,11 +48,25 @@ public class MetadataEndpoint extends HttpServlet {
     * @param supportedScopes The supported scopes.
     */
    public MetadataEndpoint(final String issuer, final Collection<String> supportedScopes) {
+      this(issuer, supportedScopes, null);
+   }
+
+   /**
+    * Creates a metadata endpoint with optional registration support.
+    * @param issuer The issuer URL.
+    * @param supportedScopes The supported scopes.
+    * @param registrationEndpoint The registration endpoint URL, or {@code null} if registration is not supported.
+    */
+   public MetadataEndpoint(final String issuer, final Collection<String> supportedScopes,
+                           final String registrationEndpoint) {
       Map<String, Object> metadata = new LinkedHashMap<>();
       metadata.put("issuer", issuer);
       metadata.put("authorization_endpoint", issuer + "/oauth/authorize");
       metadata.put("token_endpoint", issuer + "/oauth/token");
       metadata.put("revocation_endpoint", issuer + "/oauth/revoke");
+      if(registrationEndpoint != null) {
+         metadata.put("registration_endpoint", registrationEndpoint);
+      }
       metadata.put("response_types_supported", ImmutableList.of("code"));
       metadata.put("grant_types_supported", ImmutableList.of("authorization_code", "refresh_token"));
       metadata.put("code_challenge_methods_supported", ImmutableList.of("S256"));
