@@ -774,6 +774,7 @@ public abstract class Server {
    protected final Server addStaticAssets(final StaticAssetsConfig config, final List<String> paths) {
       ServletHolder holder = new ServletHolder();
       holder.setInitParameter("resourceBase", config.resourceDirectory);
+      holder.setInitParameter("pathInfoOnly", "false");
       holder.setInitParameter("dirAllowed", config.directoryAllowed ? "true" : "false");
       holder.setInitParameter("gzip", config.gzip ? "true" : "false");
       holder.setInitParameter("etags", config.etags ? "true" : "false");
